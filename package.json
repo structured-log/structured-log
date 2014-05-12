@@ -1,0 +1,25 @@
+{
+  "name": "serilog",
+  "version": "0.0.0",
+  "description": "A serializing logger for JavaScript apps.",
+  "main": "src/serilog.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/serilog/serilog.js"
+  },
+  "keywords": [
+    "structured",
+    "logging"
+  ],
+  "author": "Serilog Contributors",
+  "license": "Apache 2",
+  "bugs": {
+    "url": "https://github.com/serilog/serilog.js/issues"
+  },
+  "devDependencies": {
+    "gulp": "~3.6.2"
+  }
+}
