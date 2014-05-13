@@ -66,11 +66,11 @@
     };
 
     self.warning = function(messageTemplate) {
-      write('WARNING', messageTemplate);
+      self.write('WARNING', messageTemplate);
     };
 
     self.error = function(messageTemplate) {
-      write('ERROR', messageTemplate);
+      self.write('ERROR', messageTemplate);
     };
   };
 
@@ -112,8 +112,30 @@
     var filters = [];
     var enrichers = [];
 
-    self.writeTo = function(sink) {
-      sinks.push(sink);
+    var wireSink = function(sink, minimumLevel) {
+      if (!minimumLevel) {
+        return sink;
+      }
+
+      var levelMap = new LevelMap(minimumLevel);
+      return {
+        emit: function(evt){
+          if (levelMap.isEnabled(evt.level)) {
+            sink.emit(evt);
+          }
+        }
+      };
+    };
+
+    self.writeTo = function(sinkOrEmit, minimumLevel) {
+      if (typeof sinkOrEmit === 'function') {
+        return self.writeTo({
+          emit: sinkOrEmit
+        }, minimumLevel);
+      }
+
+      var wired = wireSink(sinkOrEmit, minimumLevel);
+      sinks.push(wired);
       return self;
     };
 
@@ -146,29 +168,10 @@
   var Serilog = function() {
     var self = this;
 
-    var wireSink = function(sink, minimumLevel) {
-      if (!minimumLevel) {
-        return sink;
-      }
+    self.sink = {};
 
-      var levelMap = new LevelMap(minimumLevel);
-      return {
-        emit: function(evt){
-          if (levelMap.isEnabled(evt.level)) {
-            sink.emit(evt);
-          }
-        }
-      };
-    };
-
-    self.sink = function(emit, minimumLevel) {
-      return wireSink({
-        emit: emit
-      }, minimumLevel);
-    };
-
-    self.sink.console = function(options, minimumLevel) {
-      return wireSink(new ConsoleSink(options), minimumLevel);
+    self.sink.console = function(options) {
+      return new ConsoleSink(options);
     };
 
     self.configuration = function() {
