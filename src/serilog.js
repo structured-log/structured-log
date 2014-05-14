@@ -1,4 +1,52 @@
 (function(){
+  var parseMessageTemplate = function(messageTemplate) {
+    var result = [];
+    result.push({text: 'Hello, '});
+    result.push({name: 'name', raw: '{name}'});
+    result.push({text: '!'});
+    return result;
+  };
+
+  var bindMessageTemplateProperties = function(messageTemplate, positionalArgs) {
+    var result = {};
+
+    var nextArg = 0;
+    for(var i = 0; i < messageTemplate.length && nextArg < positionalArgs.length; ++i) {
+      var token = messageTemplate[i];
+      if (typeof token.name === 'string') {
+        result[token.name] = positionalArgs[nextArg];
+        nextArg++;
+      }
+    }
+
+    while (nextArg < positionalArgs.length) {
+      var p = positionalArgs[nextArg];
+      if (typeof p !== 'undefined') {
+        result['a' + nextArg] = p;
+      }
+      nextArg++;
+    }
+
+    return result;
+  };
+
+  var renderMessageTemplate = function(messageTemplate, properties) {
+    var result = [];
+    for (var i = 0; i < messageTemplate.length; ++i) {
+      var token = messageTemplate[i];
+      if (typeof token.name === 'string') {
+        if (properties.hasOwnProperty(token.name)) {
+          result.push((properties[token.name] || '').toString());
+        } else {
+          result.push(token.raw);
+        }
+      } else {
+        result.push(token.text);
+      }
+    }
+    return result.join('');
+  };
+
   var LogEvent = function(timestamp, level, messageTemplate, properties) {
     var self = this;
 
@@ -6,7 +54,9 @@
     self.level = level;
     self.messageTemplate = messageTemplate;
     self.properties = properties;
-    self.renderedMessage = function() { return messageTemplate; };
+    self.renderedMessage = function() {
+      return renderMessageTemplate(messageTemplate, properties);
+    };
   };
 
   var LevelMap = function(initial) {
@@ -35,12 +85,15 @@
   var Logger = function(levelMap, enrichers, filters, sinks) {
     var self = this;
 
-    self.write = function(level, messageTemplate) {
+    self.write = function(level, messageTemplate, a0, a1, a2, a3, a4, a5) {
       if (!levelMap.isEnabled(level)) {
         return;
       }
 
-      var event = new LogEvent(new Date(), level, messageTemplate, {});
+      var parsedTemplate = parseMessageTemplate(messageTemplate);
+      var boundProperties = bindMessageTemplateProperties(parsedTemplate, [a0, a1, a2, a3, a4, a5]);
+
+      var event = new LogEvent(new Date(), level, parsedTemplate, boundProperties);
 
       for (var i = 0; i < enrichers.length; ++i) {
         enrichers[i](event);
@@ -57,44 +110,82 @@
       });
     };
 
-    self.trace = function(messageTemplate) {
-      self.write('TRACE', messageTemplate);
+    // Yes, these all need to use .apply() and arguments :)
+
+    self.trace = function(messageTemplate, a0, a1, a2, a3, a4, a5) {
+      self.write('TRACE', messageTemplate, a0, a1, a2, a3, a4, a5);
     };
 
-    self.information = function(messageTemplate) {
-      self.write('INFORMATION', messageTemplate);
+    self.information = function(messageTemplate, a0, a1, a2, a3, a4, a5) {
+      self.write('INFORMATION', messageTemplate, a0, a1, a2, a3, a4, a5);
     };
 
-    self.warning = function(messageTemplate) {
-      self.write('WARNING', messageTemplate);
+    self.warning = function(messageTemplate, a0, a1, a2, a3, a4, a5) {
+      self.write('WARNING', messageTemplat, a0, a1, a2, a3, a4, a5);
     };
 
-    self.error = function(messageTemplate) {
-      self.write('ERROR', messageTemplate);
+    self.error = function(messageTemplate, a0, a1, a2, a3, a4, a5) {
+      self.write('ERROR', messageTemplate, a0, a1, a2, a3, a4, a5);
     };
   };
 
   var ConsoleSink = function() {
     var self = this;
 
-    // This is really just hacked up for now; we want to
-    // properly support structured console.log and friends, colorization, etc.
-
     var write = {
-      out: function(m) { },
-      err: function(m) { }
+      log: function() { },
+      info: function() { },
+      warn: function() { },
+      error: function() { }
     };
 
-    if (typeof process !== 'undefined' && typeof process.stdout !== 'undefined') {
-      write.out = function(m) { process.stdout.write(m); };
-      write.err = function(m) { process.stderr.write(m); };
-    } else if (typeof console !== 'undefined') {
-      write.out = write.err = function(m) { console.log(m) };
+    if (typeof console === 'object') {
+      write.log = console.log; // function() { console.log.apply(null, arguments); }
+      write.info = console.info;
+      write.warn = console.warn;
+      write.error = console.error;
     }
 
     self.emit = function(evt) {
       var formatted = evt.timestamp.toString() + ' [' + evt.level + '] ' +
-        evt.renderedMessage() + ' ' + JSON.stringify(evt.properties);
+        evt.renderedMessage();
+
+      if (evt.level === 'ERROR') {
+        write.error(formatted, evt.properties);
+      } else if (evt.level === 'WARNING') {
+        write.warn(formatted, evt.properties);
+      } else if (evt.level === 'INFORMATION') {
+        write.info(formatted, evt.properties);
+      } else {
+        write.log(formatted, evt.properties);
+      }
+    };
+  };
+
+  var ProcessSink = function(options) {
+    var self = this;
+
+    var write = {
+      out: function() { },
+      err: function() { }
+    };
+
+    if (typeof process === 'object' && typeof process.stdout === 'object') {
+      write.out = function(m) { process.stdout.write(m); };
+      write.err = function(m) { process.stderr.write(m); };
+    }
+
+    if (typeof options === 'object') {
+      if (options.all === 'stderr') {
+        write.out = write.err;
+      } else if (options.all === 'stdout') {
+        write.err = write.out;
+      }
+    }
+
+    self.emit = function(evt) {
+      var formatted = evt.timestamp.toString() + ' [' + evt.level + '] ' +
+        evt.renderedMessage();
 
       if (evt.level === 'ERROR') {
         write.err(formatted);
@@ -172,6 +263,10 @@
 
     self.sink.console = function(options) {
       return new ConsoleSink(options);
+    };
+
+    self.sink.process = function(options) {
+      return new ProcessSink(options);
     };
 
     self.configuration = function() {
