@@ -1,9 +1,32 @@
 (function(){
   var parseMessageTemplate = function(messageTemplate) {
     var result = [];
-    result.push({text: 'Hello, '});
-    result.push({name: 'name', raw: '{name}'});
-    result.push({text: '!'});
+
+    var ptre = /\{@?\w+}/g;
+    var res;
+    var textStart = 0;
+    while ((res = ptre.exec(messageTemplate)) !== null)
+    {
+      if (res.index !== textStart) {
+        result.push({text: messageTemplate.slice(textStart, res.index)});
+      }
+
+      var destructure = false;
+
+      var tok = res[0].slice(1, -1);
+      if (tok.indexOf('@') === 0) {
+        tok = tok.slice(1);
+        destructure = true;
+      }
+
+      result.push({name: tok, destructure: destructure, raw: res[0]});
+      textStart = ptre.lastIndex;
+    }
+
+    if (textStart >= 0 && textStart < messageTemplate.length) {
+      result.push({text: messageTemplate.slice(textStart)});
+    }
+
     return result;
   };
 
@@ -121,7 +144,7 @@
     };
 
     self.warning = function(messageTemplate, a0, a1, a2, a3, a4, a5) {
-      self.write('WARNING', messageTemplat, a0, a1, a2, a3, a4, a5);
+      self.write('WARNING', messageTemplate, a0, a1, a2, a3, a4, a5);
     };
 
     self.error = function(messageTemplate, a0, a1, a2, a3, a4, a5) {

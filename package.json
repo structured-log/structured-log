@@ -4,15 +4,16 @@
   "description": "A serializing logger for JavaScript apps.",
   "main": "src/serilog.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node test/serilog.tests.js"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/serilog/serilog.js"
   },
   "keywords": [
+    "logging",
     "structured",
-    "logging"
+    "semantic"
   ],
   "author": "Serilog Contributors",
   "license": "Apache 2",
