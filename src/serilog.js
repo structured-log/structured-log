@@ -105,7 +105,7 @@
     };
   };
 
-  var Logger = function(levelMap, enrichers, filters, sinks) {
+  var Logger = function(levelMap, pipeline) {
     var self = this;
 
     self.write = function(level, messageTemplate, a0, a1, a2, a3, a4, a5) {
@@ -118,19 +118,18 @@
 
       var event = new LogEvent(new Date(), level, parsedTemplate, boundProperties);
 
-      for (var i = 0; i < enrichers.length; ++i) {
-        enrichers[i](event);
-      }
-
-      for (var j = 0; j < filters.length; ++j) {
-        if (!(filters[j](event))) {
+      var execute = function(evt, pipelineIndex) {
+        if (pipelineIndex >= pipeline.length) {
           return;
         }
-      }
 
-      sinks.forEach(function(sink){
-        sink.emit(event);
-      });
+        var element = pipeline[pipelineIndex];
+        element(evt, function(evnext) {
+          execute(evnext, pipelineIndex + 1);
+        });
+      };
+
+      return execute(event, 0);
     };
 
     // Yes, these all need to use .apply() and arguments :)
@@ -208,7 +207,7 @@
 
     self.emit = function(evt) {
       var formatted = evt.timestamp.toString() + ' [' + evt.level + '] ' +
-        evt.renderedMessage();
+        evt.renderedMessage() + ' ' + JSON.stringify(evt.properties);
 
       if (evt.level === 'ERROR') {
         write.err(formatted);
@@ -221,41 +220,37 @@
   var LoggerConfiguration = function() {
     var self = this;
 
-    var sinks = [];
     var minimumLevel = 'INFORMATION';
-    var filters = [];
-    var enrichers = [];
+    var pipeline = [];
 
-    var wireSink = function(sink, minimumLevel) {
-      if (!minimumLevel) {
-        return sink;
-      }
-
-      var levelMap = new LevelMap(minimumLevel);
-      return {
-        emit: function(evt){
-          if (levelMap.isEnabled(evt.level)) {
-            sink.emit(evt);
-          }
-        }
-      };
+    self.pipe = function(element) {
+      pipeline.push(element);
+      return self;
     };
 
-    self.writeTo = function(sinkOrEmit, minimumLevel) {
+    self.minimumLevel = function(lvl) {
+      if (pipeline.length !== 0) {
+        var lm = new LevelMap(lvl);
+        return self.filter(function(evt) {
+          return lm.isEnabled(evt.level);
+        });
+      }
+
+      minimumLevel = (lvl || 'INFORMATION').toUpperCase();
+      return self;
+    };
+
+    self.writeTo = function(sinkOrEmit) {
       if (typeof sinkOrEmit === 'function') {
         return self.writeTo({
           emit: sinkOrEmit
         }, minimumLevel);
       }
 
-      var wired = wireSink(sinkOrEmit, minimumLevel);
-      sinks.push(wired);
-      return self;
-    };
-
-    self.minimumLevel = function(lvl) {
-      minimumLevel = (lvl || 'INFORMATION').toUpperCase();
-      return self;
+      return self.pipe(function(evt, next) {
+        sinkOrEmit.emit(evt);
+        next(evt);
+      });
     };
 
     self.enrich = function(functionOrName, valueOrNull) {
@@ -264,18 +259,24 @@
           event.properties[functionOrName] = valueOrNull;
         });
       }
-      enrichers.push(functionOrName);
-      return self;
+
+      return self.pipe(function(evt, next) {
+        functionOrName(evt);
+        next(evt);
+      });
     };
 
     self.filter = function(filter) {
-      filters.push(filter);
-      return self;
+      return self.pipe(function(evt, next) {
+        if(filter(evt)) {
+          next(evt);
+        }
+      });
     };
 
     self.createLogger = function() {
       var levelMap = new LevelMap(minimumLevel);
-      return new Logger(levelMap, enrichers, filters, sinks);
+      return new Logger(levelMap, pipeline);
     };
   };
 
