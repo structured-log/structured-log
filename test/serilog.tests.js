@@ -14,5 +14,6 @@ var log = serilog.configuration()
   .writeTo(serilog.sink.process({all: 'stderr'}))
   .createLogger();
 
+log('Quick and easy');
 log.information('{prefix}Hello, {name}!', 'Why, ', 'world');
 log.warning('This gets more properties and goes to process as well');

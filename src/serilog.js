@@ -105,8 +105,10 @@
     };
   };
 
-  var Logger = function(levelMap, pipeline) {
-    var self = this;
+  var createLogger = function(levelMap, pipeline) {
+    var self = function() {
+      self.information.apply(null, arguments);
+    };
 
     self.write = function(level, messageTemplate, a0, a1, a2, a3, a4, a5) {
       if (!levelMap.isEnabled(level)) {
@@ -149,6 +151,8 @@
     self.error = function(messageTemplate, a0, a1, a2, a3, a4, a5) {
       self.write('ERROR', messageTemplate, a0, a1, a2, a3, a4, a5);
     };
+
+    return self;
   };
 
   var ConsoleSink = function() {
@@ -169,7 +173,7 @@
     }
 
     self.emit = function(evt) {
-      var formatted = evt.timestamp.toString() + ' [' + evt.level + '] ' +
+      var formatted = evt.timestamp.toISOString() + ' [' + evt.level + '] ' +
         evt.renderedMessage();
 
       if (evt.level === 'ERROR') {
@@ -206,7 +210,7 @@
     }
 
     self.emit = function(evt) {
-      var formatted = evt.timestamp.toString() + ' [' + evt.level + '] ' +
+      var formatted = evt.timestamp.toISOString() + ' [' + evt.level + '] ' +
         evt.renderedMessage() + ' ' + JSON.stringify(evt.properties);
 
       if (evt.level === 'ERROR') {
@@ -240,7 +244,7 @@
       return self;
     };
 
-    self.writeTo = function(sinkOrEmit) {
+    self.writeTo = function(sinkOrEmit, onError) {
       if (typeof sinkOrEmit === 'function') {
         return self.writeTo({
           emit: sinkOrEmit
@@ -248,7 +252,13 @@
       }
 
       return self.pipe(function(evt, next) {
-        sinkOrEmit.emit(evt);
+        try {
+          sinkOrEmit.emit(evt);
+        } catch (err) {
+          if (typeof onError === 'function') {
+            onError(err, evt);
+          }
+        }
         next(evt);
       });
     };
@@ -276,7 +286,7 @@
 
     self.createLogger = function() {
       var levelMap = new LevelMap(minimumLevel);
-      return new Logger(levelMap, pipeline);
+      return createLogger(levelMap, pipeline);
     };
   };
 
