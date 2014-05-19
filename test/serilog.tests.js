@@ -8,12 +8,13 @@ var log = serilog.configuration()
   .filter(function(event){
     return event.properties.isHappy;
   })
-  .writeTo(serilog.sink.console())
+  .writeTo(serilog.sink.console({complete: true}))
   .enrich('machineName', 'BARNEY')
-  .minimumLevel('WARNING')
+  .minimumLevel('ERROR')
   .writeTo(serilog.sink.process({all: 'stderr'}))
   .createLogger();
 
-log('Quick and easy');
-log.information('{prefix}Hello, {name}!', 'Why, ', 'world');
-log.warning('This gets more properties and goes to process as well');
+log('Quick and easy? {isIt}', true);
+log.trace('{prefix}Hello, {name}!', 'Why, ', 'world');
+log.warning('Warning');
+log.error('Uh-oh! {what}', 'broken');

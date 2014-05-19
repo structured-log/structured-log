@@ -110,13 +110,13 @@
       self.information.apply(null, arguments);
     };
 
-    self.write = function(level, messageTemplate, a0, a1, a2, a3, a4, a5) {
+    var invoke = function(level, messageTemplate, args) {
       if (!levelMap.isEnabled(level)) {
         return;
       }
 
       var parsedTemplate = parseMessageTemplate(messageTemplate);
-      var boundProperties = bindMessageTemplateProperties(parsedTemplate, [a0, a1, a2, a3, a4, a5]);
+      var boundProperties = bindMessageTemplateProperties(parsedTemplate, args);
 
       var event = new LogEvent(new Date(), level, parsedTemplate, boundProperties);
 
@@ -134,29 +134,111 @@
       return execute(event, 0);
     };
 
-    // Yes, these all need to use .apply() and arguments :)
-
-    self.trace = function(messageTemplate, a0, a1, a2, a3, a4, a5) {
-      self.write('TRACE', messageTemplate, a0, a1, a2, a3, a4, a5);
+    self.write = function(level, messageTemplate) {
+      var l = Array.prototype.shift.call(arguments);
+      var mt = Array.prototype.shift.call(arguments);
+      invoke(l, mt, arguments);
     };
 
-    self.information = function(messageTemplate, a0, a1, a2, a3, a4, a5) {
-      self.write('INFORMATION', messageTemplate, a0, a1, a2, a3, a4, a5);
+    self.trace = function(messageTemplate) {
+      var mt = Array.prototype.shift.call(arguments);
+      invoke('TRACE', mt, arguments);
     };
 
-    self.warning = function(messageTemplate, a0, a1, a2, a3, a4, a5) {
-      self.write('WARNING', messageTemplate, a0, a1, a2, a3, a4, a5);
+    self.information = function(messageTemplate) {
+      var mt = Array.prototype.shift.call(arguments);
+      invoke('INFORMATION', mt, arguments);
     };
 
-    self.error = function(messageTemplate, a0, a1, a2, a3, a4, a5) {
-      self.write('ERROR', messageTemplate, a0, a1, a2, a3, a4, a5);
+    self.warning = function(messageTemplate) {
+      var mt = Array.prototype.shift.call(arguments);
+      invoke('WARNING', mt, arguments);
+    };
+
+    self.error = function(messageTemplate) {
+      var mt = Array.prototype.shift.call(arguments);
+      invoke('ERROR', mt, arguments);
     };
 
     return self;
   };
 
-  var ConsoleSink = function() {
+  var ConsoleSink = function(options) {
     var self = this;
+    options = options || {};
+
+    options.plain = options.plain || (typeof process === 'undefined' || typeof process.stdout === 'undefined');
+
+    var colors = {
+      reset: "\x1b[0m",
+
+      style: {
+        bright: "\x1b[1m",
+        dim: "\x1b[2m",
+        underscore: "\x1b[4m"
+      },
+
+      foreground: {
+        black: "\x1b[30m",
+        red: "\x1b[31m",
+        green: "\x1b[32m",
+        yellow: "\x1b[33m",
+        blue: "\x1b[34m",
+        magenta: "\x1b[35m",
+        cyan: "\x1b[36m",
+        white: "\x1b[37m"
+      },
+
+      background: {
+        black: "\x1b[40m",
+        red: "\x1b[41m",
+        green: "\x1b[42m",
+        yellow: "\x1b[43m",
+        blue: "\x1b[44m",
+        magenta: "\x1b[45m",
+        cyan: "\x1b[46m",
+        white: "\x1b[47m"
+      }
+    };
+
+    var color = function(fore, back, style) {
+      if (options.plain) {
+        return function(s) { return s; };
+      }
+
+      var cmd = '';
+
+      if (fore) {
+        cmd += colors.foreground[fore];
+      }
+      if (back) {
+        cmd += colors.background[back];
+      }
+      if (style) {
+        cmd += colors.style[style];
+      }
+
+      return function(s) { return cmd + s + colors.reset; };
+    };
+
+    var palettes = {
+      'TRACE': {
+        foreground: color(null, null, 'bright'),
+        property: color(null, null, 'bright')
+      },
+      'INFORMATION': {
+        foreground: color('cyan', null, 'bright'),
+        property: color(null, null, 'bright')
+      },
+      'WARNING': {
+        foreground: color('yellow', null, 'bright'),
+        property: color(null, null, 'bright')
+      },
+      'ERROR': {
+        foreground: color('red', null, 'bright'),
+        property: color(null, null, 'bright')
+      }
+    };
 
     var write = {
       log: function() { },
@@ -166,24 +248,52 @@
     };
 
     if (typeof console === 'object') {
-      write.log = console.log; // function() { console.log.apply(null, arguments); }
-      write.info = console.info;
-      write.warn = console.warn;
-      write.error = console.error;
+      write.log = function(m, p) { p ? console.log(m, p) : console.log(m); };
+      write.info = function(m, p) { p ? console.info(m, p) : console.info(m); };
+      write.warn = function(m, p) { p ? console.warn(m, p) : console.warn(m); };
+      write.error = function(m, p) { p ? console.error(m, p) : console.error(m); };
     }
 
+    var syntaxError = color('white', 'magenta', 'bright');
+
+    var colorMessage = function(palette, messageTemplate, properties) {
+      var result = [];
+      for (var i = 0; i < messageTemplate.length; ++i) {
+        var token = messageTemplate[i];
+        if (typeof token.name === 'string') {
+          if (properties.hasOwnProperty(token.name)) {
+            var val = properties[token.name];
+            if (typeof val === 'undefined') {
+              val = 'undefined';
+            } else if (val === null) {
+              val = 'null';
+            }
+            result.push(palette.property(val.toString()));
+          } else {
+            result.push(syntaxError(token.raw));
+          }
+        } else {
+          result.push(token.text);
+        }
+      }
+      return result.join('');
+    };
+
     self.emit = function(evt) {
-      var formatted = evt.timestamp.toISOString() + ' [' + evt.level + '] ' +
-        evt.renderedMessage();
+      var palette = palettes[evt.level] || palette['TRACE'];
+      var formatted =
+        evt.timestamp.toISOString().replace('T', ' ').replace('Z', '') +
+        palette.foreground(' [' + evt.level.slice(0,3) + '] ') +
+        colorMessage(palette, evt.messageTemplate, evt.properties);
 
       if (evt.level === 'ERROR') {
-        write.error(formatted, evt.properties);
+        write.error(formatted, options.complete ? evt.properties : null);
       } else if (evt.level === 'WARNING') {
-        write.warn(formatted, evt.properties);
+        write.warn(formatted, options.complete ? evt.properties : null);
       } else if (evt.level === 'INFORMATION') {
-        write.info(formatted, evt.properties);
+        write.info(formatted, options.complete ? evt.properties : null);
       } else {
-        write.log(formatted, evt.properties);
+        write.log(formatted, options.complete ? evt.properties : null);
       }
     };
   };
@@ -197,8 +307,9 @@
     };
 
     if (typeof process === 'object' && typeof process.stdout === 'object') {
-      write.out = function(m) { process.stdout.write(m); };
-      write.err = function(m) { process.stderr.write(m); };
+      var newline = process.platform === 'win32' ? '\r\n' : '\n';
+      write.out = function(m) { process.stdout.write(m + newline); };
+      write.err = function(m) { process.stderr.write(m + newline); };
     }
 
     if (typeof options === 'object') {
@@ -210,8 +321,7 @@
     }
 
     self.emit = function(evt) {
-      var formatted = evt.timestamp.toISOString() + ' [' + evt.level + '] ' +
-        evt.renderedMessage() + ' ' + JSON.stringify(evt.properties);
+      var formatted = evt.timestamp.toISOString() + ' [' + evt.level + '] ' + evt.renderedMessage();
 
       if (evt.level === 'ERROR') {
         write.err(formatted);

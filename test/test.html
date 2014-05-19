@@ -6,8 +6,8 @@
   <script type="text/javascript" src="../src/serilog.js"></script>
   <script type="text/javascript">
     var log = serilog.configuration()
-        .writeTo(function(evt) {
-          alert(evt.renderedMessage());
+        .writeTo(serilog.sink.console(), function(err){
+          console.error(err.stack);
         })
         .createLogger();
 
