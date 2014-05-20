@@ -10,11 +10,11 @@ var log = serilog.configuration()
   })
   .writeTo(serilog.sink.console({complete: true}))
   .enrich('machineName', 'BARNEY')
-  .minimumLevel('ERROR')
+  .filter(serilog.filter.selfLog())
   .writeTo(serilog.sink.process({all: 'stderr'}))
   .createLogger();
 
 log('Quick and easy? {isIt}', true);
-log.trace('{prefix}Hello, {name}!', 'Why, ', 'world');
+log.trace('{prefix}Hello, {name}, this fine {day}!', 'Why, ', 'world', new Date());
 log.warning('Warning');
-log.error('Uh-oh! {what}', 'broken');
+log.error('Uh-oh! {what}', 42);
