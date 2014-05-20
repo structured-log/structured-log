@@ -4,7 +4,7 @@
   "description": "A serializing logger for JavaScript apps.",
   "main": "src/serilog.js",
   "scripts": {
-    "test": "node test/serilog.tests.js"
+    "test": "mocha --reporter=spec"
   },
   "repository": {
     "type": "git",
