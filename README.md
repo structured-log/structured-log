@@ -54,7 +54,7 @@ The pipelined implementation of _serilog.js_ borrows from _gulp.js_ and reactive
 
 For example, one to many:
 
-```
+```js
 var warningsToday = 0;
 
 var log = serilog.configuration()
