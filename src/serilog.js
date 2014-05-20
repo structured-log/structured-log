@@ -416,6 +416,14 @@
     self.configuration = function() {
       return new LoggerConfiguration();
     };
+
+    self.event = function(level, messageTemplate) {
+      var l = Array.prototype.shift.call(arguments);
+      var mt = Array.prototype.shift.call(arguments);
+      var parsedTemplate = parseMessageTemplate(mt);
+      var boundProperties = bindMessageTemplateProperties(parsedTemplate, arguments);
+      return new LogEvent(new Date(), l, parsedTemplate, boundProperties);
+    };
   };
 
   if (typeof window === 'undefined') {
