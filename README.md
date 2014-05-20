@@ -44,3 +44,29 @@ log.error('Boom...');
 ```
 
 We'll create packages for NPM and Bower to make it easy to get started.
+
+Design
+------
+
+The pipelined implementation of _serilog.js_ borrows from _gulp.js_ and reactive event processing. Each method on the configuration object (e.g. `minimumLevel()`, `enrich()`, `filter()` and `writeTo()`) is implemented using the `pipe()` primitive.
+
+`pipe()` can make arbitrary transformations on the event stream - simple ones like those above, replacement of events, and more complex many-to-one and one-to-many tranforms.
+
+For example, one to many:
+
+```
+var warningsToday = 0;
+
+var log = serilog.configuration()
+  .pipe(function(evt, next){
+    next(evt);
+    if (evt.level === 'WARNING') {
+      warningsToday++;
+      var agg = serilog.event('INFORMATION', 'Today: {warnings}', warningsToday);
+      next(agg);
+    }
+  })
+  .createLogger();
+```
+
+
