@@ -1,4 +1,4 @@
-var serilog = require('../src/serilog.js');
+var serilog = require('../serilog.min.js');
 var assert = require('assert');
 
 describe('serilog.configuration()', function() {

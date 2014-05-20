@@ -1,3 +1,17 @@
+// Copyright 2014 Serilog Contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 (function(){
   var parseMessageTemplate = function(messageTemplate) {
     var result = [];
@@ -34,7 +48,7 @@
     if (typeof o === 'function') {
       return o.toString();
     }
-    if (typeof o === 'array' || typeof o === 'object') {
+    if (typeof o === 'object') {
       if (destructure || typeof o.toISOString === 'function') {
         return o;
       }
@@ -281,10 +295,10 @@
     };
 
     if (typeof console === 'object') {
-      write.log = function(m, p) { p ? console.log(m, p) : console.log(m); };
-      write.info = function(m, p) { p ? console.info(m, p) : console.info(m); };
-      write.warn = function(m, p) { p ? console.warn(m, p) : console.warn(m); };
-      write.error = function(m, p) { p ? console.error(m, p) : console.error(m); };
+      write.log = function(m, p) { if(p) { console.log(m, p); } else { console.log(m); } };
+      write.info = function(m, p) { if(p) { console.info(m, p); } else { console.info(m); } };
+      write.warn = function(m, p) { if(p) { console.warn(m, p); } else { console.warn(m); } };
+      write.error = function(m, p) { if(p) { console.error(m, p); } else { console.error(m); } };
     }
 
     var syntaxError = color('white', 'magenta', 'bright');
@@ -313,7 +327,7 @@
       if (typeof o.toISOString === 'function') {
         return date(o.toISOString());
       }
-      if (typeof o === 'object' || typeof o === 'array') {
+      if (typeof o === 'object') {
         var s = JSON.stringify(o);
         if (s.length > 70) {
           s = s.slice(0, 67) + '...';
@@ -343,7 +357,7 @@
     };
 
     self.emit = function(evt) {
-      var palette = palettes[evt.level] || palette['TRACE'];
+      var palette = palettes[evt.level] || palette.TRACE;
       var formatted =
         evt.timestamp.toISOString().replace('T', ' ').replace('Z', '') +
         palette.foreground(' [' + evt.level.slice(0,3) + '] ') +
