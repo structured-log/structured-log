@@ -33,4 +33,16 @@ gulp.task('test', ['build'], function(cb) {
   });
 });
 
-gulp.task('default', ['build', 'test']);
+gulp.task('smoke', ['test'], function() {
+  var serilog = require('./web/serilog.min.js');
+  var log = serilog.configuration()
+    .minimumLevel('TRACE')
+    .writeTo(serilog.sink.console())
+    .createLogger();
+  log.trace('This is a trace message');
+  log('Info: length of {string} is {length}', 'hello', 'hello'.length);
+  log.warning('This warning is about {@thing}', {dangerLevel: 'high'});
+  log.error('Last one!')
+});
+
+gulp.task('default', ['smoke']);

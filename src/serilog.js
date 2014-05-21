@@ -117,22 +117,24 @@
     return new LogEvent(new Date(), l, parsedTemplate, boundProperties);
   };
 
-  var LogEvent = function(timestamp, level, messageTemplate, properties) {
-    var self = this;
 
+  function LogEvent(timestamp, level, messageTemplate, properties) {
+    var self = this;
     self.timestamp = timestamp;
     self.level = level;
     self.messageTemplate = messageTemplate;
     self.properties = properties;
-    self.renderedMessage = function() {
-      return renderMessageTemplate(messageTemplate, properties);
-    };
+  }
+
+  LogEvent.prototype.renderedMessage = function() {
+    var self = this;
+    return renderMessageTemplate(self.messageTemplate, self.properties);
   };
 
-  var LevelMap = function(initial) {
-    var self = this;
 
-    var levels = {};
+  function LevelMap(initial) {
+    var self = this;
+    self.levels = {};
 
     if (initial !== 'OFF') {
       var sequence = ['ERROR', 'WARNING', 'INFORMATION', 'TRACE'];
@@ -140,17 +142,39 @@
       var below = false;
       for (var i = 0; i < sequence.length; ++i) {
         var level = sequence[i];
-        levels[level] = !below;
+        self.levels[level] = !below;
         if (level === initial) {
           below = true;
         }
       }
     }
+  }
 
-    self.isEnabled = function(level) {
-      return levels[level || 'NONE'] || false;
-    };
+  LevelMap.prototype.isEnabled = function(level) {
+    var self = this;
+    return self.levels[level || 'NONE'] || false;
   };
+
+
+  function Pipeline(elements) {
+    var self = this;
+    self.elements = elements;
+  }
+
+  Pipeline.prototype.execute = function(evt, index) {
+    var self = this;
+    var pipelineIndex = index || 0;
+
+    if (pipelineIndex >= self.elements.length) {
+      return;
+    }
+
+    var element = self.elements[pipelineIndex];
+    element(evt, function(evnext) {
+      self.execute(evnext, pipelineIndex + 1);
+    });
+  };
+
 
   var createLogger = function(levelMap, pipeline) {
     var self = function() {
@@ -159,22 +183,11 @@
 
     self.toString = function() { return 'serilog.logger'; };
 
-    var execute = function(evt, pipelineIndex) {
-      if (pipelineIndex >= pipeline.length) {
-        return;
-      }
-
-      var element = pipeline[pipelineIndex];
-      element(evt, function(evnext) {
-        execute(evnext, pipelineIndex + 1);
-      });
-    };
-
     self.emit = function(evt) {
       if (!levelMap.isEnabled(evt.level)) {
         return;
       }
-      execute(evt, 0);
+      pipeline.execute(evt);
     };
 
     var invoke = function(level, messageTemplate, args) {
@@ -187,7 +200,7 @@
 
       var evt = new LogEvent(new Date(), level, parsedTemplate, boundProperties);
 
-      execute(evt, 0);
+      pipeline.execute(evt);
     };
 
     self.write = function(level, messageTemplate) {
@@ -281,20 +294,16 @@
 
     var palettes = {
       'TRACE': {
-        foreground: color(null, null, 'bright'),
-        property: color(null, null, 'bright')
+        foreground: color(null, null, 'bright')
       },
       'INFORMATION': {
-        foreground: color('cyan', null, 'bright'),
-        property: color(null, null, 'bright')
+        foreground: color('cyan', null, 'bright')
       },
       'WARNING': {
-        foreground: color('yellow', null, 'bright'),
-        property: color(null, null, 'bright')
+        foreground: color('yellow', null, 'bright')
       },
       'ERROR': {
-        foreground: color('red', null, 'bright'),
-        property: color(null, null, 'bright')
+        foreground: color('red', null, 'bright')
       }
     };
 
@@ -348,6 +357,8 @@
       return text(o.toString());
     };
 
+    var bright = color(null, null, 'bright');
+
     var colorMessage = function(palette, messageTemplate, properties) {
       var result = [];
       for (var i = 0; i < messageTemplate.length; ++i) {
@@ -355,8 +366,8 @@
         if (typeof token.name === 'string') {
           if (properties.hasOwnProperty(token.name)) {
             var val = properties[token.name];
-            var fmt = formatted(val);
-            result.push(palette.property(fmt));
+            var fmt = bright(formatted(val));
+            result.push(fmt);
           } else {
             result.push(syntaxError(token.raw));
           }
@@ -490,7 +501,7 @@
 
     self.createLogger = function() {
       var levelMap = new LevelMap(minimumLevel);
-      return createLogger(levelMap, pipeline);
+      return createLogger(levelMap, new Pipeline(pipeline));
     };
   };
 
