@@ -12,7 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-(function(){
+// UMD bolierplate based on https://github.com/umdjs/umd/blob/master/returnExports.js
+// Supports node.js, AMD and the browser.
+//
+(function (root, factory) {
+  if (typeof define === 'function' && define.amd) {
+    define([], factory);
+  } else if (typeof exports === 'object') {
+    module.exports = factory();
+  } else {
+    root.serilog = factory();
+  }
+}(this, function () {
   var parseMessageTemplate = function(messageTemplate) {
     var result = [];
 
@@ -516,10 +527,5 @@
     self.event = createEvent;
   };
 
-  if (typeof window === 'undefined') {
-    module.exports = new Serilog();
-  } else {
-    window.serilog = new Serilog();
-  }
-
-}(this));
+  return new Serilog();
+}));

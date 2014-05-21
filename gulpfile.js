@@ -17,7 +17,7 @@ gulp.task('build', ['clean'], function(){
     .pipe(jshint.reporter('fail'))
     .pipe(uglify({mangle: false}))
     .pipe(rename('serilog.min.js'))
-    .pipe(gulp.dest('.'));
+    .pipe(gulp.dest('web'));
 });
 
 gulp.task('test', ['build'], function(cb) {
