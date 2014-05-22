@@ -235,6 +235,11 @@
   var ConsoleSink = function(options) {
     var self = this;
 
+    // options are:
+    //   plain -- don't highlight by level or type
+    //   complete -- emit all properties after the message
+    //   timestamp -- show a timestamp before the message
+
     self.toString = function() { return 'serilog.sink.console'; };
 
     options = options || {};
@@ -380,9 +385,11 @@
 
     self.emit = function(evt) {
       var palette = palettes[evt.level] || palette.TRACE;
-      var formatted =
-        evt.timestamp.toISOString().replace('T', ' ').replace('Z', '') +
-        palette.foreground(' [' + evt.level.slice(0,3) + '] ') +
+      var formatted = '';
+      if (options.timestamp) {
+        formatted += evt.timestamp.toISOString().replace('T', ' ').replace('Z', '') + ' ';
+      }
+      formatted += palette.foreground('[' + evt.level.slice(0,3) + '] ') +
         colorMessage(palette, evt.messageTemplate, evt.properties);
 
       if (evt.level === 'ERROR') {
