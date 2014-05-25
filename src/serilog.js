@@ -24,8 +24,11 @@
     root.serilog = factory();
   }
 }(this, function () {
-  var parseMessageTemplate = function(messageTemplate) {
-    var result = [];
+  function MessageTemplate(messageTemplate) {
+    var self = this;
+
+    self.raw = messageTemplate;
+    self.tokens = [];
 
     var ptre = /\{@?\w+}/g;
     var res;
@@ -33,7 +36,7 @@
     while ((res = ptre.exec(messageTemplate)) !== null)
     {
       if (res.index !== textStart) {
-        result.push({text: messageTemplate.slice(textStart, res.index)});
+        self.tokens.push({text: messageTemplate.slice(textStart, res.index)});
       }
 
       var destructure = false;
@@ -44,16 +47,14 @@
         destructure = true;
       }
 
-      result.push({name: tok, destructure: destructure, raw: res[0]});
+      self.tokens.push({name: tok, destructure: destructure, raw: res[0]});
       textStart = ptre.lastIndex;
     }
 
     if (textStart >= 0 && textStart < messageTemplate.length) {
-      result.push({text: messageTemplate.slice(textStart)});
+      self.tokens.push({text: messageTemplate.slice(textStart)});
     }
-
-    return result;
-  };
+  }
 
   var capture = function(o, destructure) {
     if (typeof o === 'function') {
@@ -68,12 +69,14 @@
     return o;
   };
 
-  var bindMessageTemplateProperties = function(messageTemplate, positionalArgs) {
+  MessageTemplate.prototype.bindProperties = function(positionalArgs) {
+    var self = this;
+
     var result = {};
 
     var nextArg = 0;
-    for(var i = 0; i < messageTemplate.length && nextArg < positionalArgs.length; ++i) {
-      var token = messageTemplate[i];
+    for(var i = 0; i < self.tokens.length && nextArg < positionalArgs.length; ++i) {
+      var token = self.tokens[i];
       if (typeof token.name === 'string') {
         var p = positionalArgs[nextArg];
         result[token.name] = capture(p, token.destructure);
@@ -92,10 +95,12 @@
     return result;
   };
 
-  var renderMessageTemplate = function(messageTemplate, properties) {
+  MessageTemplate.prototype.render = function(properties) {
+    var self = this;
+
     var result = [];
-    for (var i = 0; i < messageTemplate.length; ++i) {
-      var token = messageTemplate[i];
+    for (var i = 0; i < self.tokens.length; ++i) {
+      var token = self.tokens[i];
       if (typeof token.name === 'string') {
         if (properties.hasOwnProperty(token.name)) {
           result.push((properties[token.name] || '').toString());
@@ -109,11 +114,12 @@
     return result.join('');
   };
 
+
   var createEvent = function(level, messageTemplate) {
     var l = Array.prototype.shift.call(arguments);
     var mt = Array.prototype.shift.call(arguments);
-    var parsedTemplate = parseMessageTemplate(mt);
-    var boundProperties = bindMessageTemplateProperties(parsedTemplate, arguments);
+    var parsedTemplate = new MessageTemplate(mt);
+    var boundProperties = parsedTemplate.bindProperties(arguments);
     return new LogEvent(new Date(), l, parsedTemplate, boundProperties);
   };
 
@@ -128,7 +134,7 @@
 
   LogEvent.prototype.renderedMessage = function() {
     var self = this;
-    return renderMessageTemplate(self.messageTemplate, self.properties);
+    return self.messageTemplate.render(self.properties);
   };
 
 
@@ -159,20 +165,23 @@
   function Pipeline(elements) {
     var self = this;
     self.elements = elements;
+
+    var head = function(evt) { };
+    var makeHead = function(el) {
+      var oldHead = head;
+      return function(evt) { el(evt, oldHead); };
+    };
+
+    for (var i = self.elements.length - 1; i >= 0; --i) {
+      var el = self.elements[i];
+      head = makeHead(el);
+    }
+    self.head = head;
   }
 
-  Pipeline.prototype.execute = function(evt, index) {
+  Pipeline.prototype.execute = function(evt) {
     var self = this;
-    var pipelineIndex = index || 0;
-
-    if (pipelineIndex >= self.elements.length) {
-      return;
-    }
-
-    var element = self.elements[pipelineIndex];
-    element(evt, function(evnext) {
-      self.execute(evnext, pipelineIndex + 1);
-    });
+    self.head(evt);
   };
 
 
@@ -195,8 +204,8 @@
         return;
       }
 
-      var parsedTemplate = parseMessageTemplate(messageTemplate);
-      var boundProperties = bindMessageTemplateProperties(parsedTemplate, args);
+      var parsedTemplate = new MessageTemplate(messageTemplate);
+      var boundProperties = parsedTemplate.bindProperties(args);
 
       var evt = new LogEvent(new Date(), level, parsedTemplate, boundProperties);
 
@@ -232,7 +241,7 @@
     return self;
   };
 
-  var ConsoleSink = function(options) {
+  function ConsoleSink(options) {
     var self = this;
 
     // options are:
@@ -331,7 +340,7 @@
     var date = color('green');
     var structure = color('green');
     var number = color('magenta');
-    var text = color('white');
+    var text = color('cyan');
 
     var formatted = function(o) {
       if (typeof o === 'undefined') {
@@ -365,9 +374,11 @@
     var bright = color(null, null, 'bright');
 
     var colorMessage = function(palette, messageTemplate, properties) {
+      var tokens = messageTemplate.tokens;
+
       var result = [];
-      for (var i = 0; i < messageTemplate.length; ++i) {
-        var token = messageTemplate[i];
+      for (var i = 0; i < tokens.length; ++i) {
+        var token = tokens[i];
         if (typeof token.name === 'string') {
           if (properties.hasOwnProperty(token.name)) {
             var val = properties[token.name];
@@ -384,12 +395,12 @@
     };
 
     self.emit = function(evt) {
-      var palette = palettes[evt.level] || palette.TRACE;
+      var palette = palettes[evt.level] || palettes.TRACE;
       var formatted = '';
       if (options.timestamp) {
         formatted += evt.timestamp.toISOString().replace('T', ' ').replace('Z', '') + ' ';
       }
-      formatted += palette.foreground('[' + evt.level.slice(0,3) + '] ') +
+      formatted += '[' + palette.foreground(evt.level.slice(0,3)) + '] ' +
         colorMessage(palette, evt.messageTemplate, evt.properties);
 
       if (evt.level === 'ERROR') {
@@ -402,9 +413,9 @@
         write.log(formatted, options.complete ? evt.properties : null);
       }
     };
-  };
+  }
 
-  var ProcessSink = function(options) {
+  function ProcessSink(options) {
     var self = this;
     self.toString = function() { return 'serilog.sink.process'; };
 
@@ -436,9 +447,10 @@
         write.out(formatted);
       }
     };
-  };
+  }
 
-  var LoggerConfiguration = function() {
+
+  function LoggerConfiguration() {
     var self = this;
 
     var minimumLevel = 'INFORMATION';
@@ -510,9 +522,9 @@
       var levelMap = new LevelMap(minimumLevel);
       return createLogger(levelMap, new Pipeline(pipeline));
     };
-  };
+  }
 
-  var Serilog = function() {
+  function Serilog() {
     var self = this;
 
     self.sink = {};
@@ -543,7 +555,7 @@
     };
 
     self.event = createEvent;
-  };
+  }
 
   return new Serilog();
 }));

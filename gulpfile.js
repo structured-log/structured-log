@@ -12,7 +12,7 @@ gulp.task('clean', function(){
 
 gulp.task('build', ['clean'], function(){
   return gulp.src('src/serilog.js')
-    .pipe(jshint())
+    .pipe(jshint('.jshintrc'))
     .pipe(jshint.reporter('default'))
     .pipe(jshint.reporter('fail'))
     .pipe(uglify({mangle: false}))
@@ -35,11 +35,13 @@ gulp.task('test', ['build'], function(cb) {
 
 gulp.task('smoke', ['test'], function() {
   var serilog = require('./web/serilog.min.js');
+
   var log = serilog.configuration()
     .minimumLevel('TRACE')
     .writeTo(serilog.sink.console())
     .createLogger();
-  log.trace('This is a trace message');
+
+  log.trace('This is a trace message: {really}', true);
   log('Info: length of {string} is {length}', 'hello', 'hello'.length);
   log.warning('This warning is about {@thing}', {dangerLevel: 'high'});
   log.error('Last one!')
