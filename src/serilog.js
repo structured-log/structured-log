@@ -71,7 +71,6 @@
 
   MessageTemplate.prototype.bindProperties = function(positionalArgs) {
     var self = this;
-
     var result = {};
 
     var nextArg = 0;
@@ -95,6 +94,35 @@
     return result;
   };
 
+  var toText = function(o) {
+    if (typeof o === 'undefined') {
+      return 'undefined';
+    }
+    if (o === null) {
+      return 'null';
+    }
+    if (typeof o === 'string') {
+      return o;
+    }
+    if (typeof o === 'number') {
+      return o.toString();
+    }
+    if (typeof o === 'boolean') {
+      return o.toString();
+    }
+    if (typeof o.toISOString === 'function') {
+      return o.toISOString();
+    }
+    if (typeof o === 'object') {
+      var s = JSON.stringify(o);
+      if (s.length > 70) {
+        s = s.slice(0, 67) + '...';
+      }
+      return s;
+    }
+    return o.toString();
+  };
+
   MessageTemplate.prototype.render = function(properties) {
     var self = this;
 
@@ -103,7 +131,7 @@
       var token = self.tokens[i];
       if (typeof token.name === 'string') {
         if (properties.hasOwnProperty(token.name)) {
-          result.push((properties[token.name] || '').toString());
+          result.push(toText(properties[token.name]));
         } else {
           result.push(token.raw);
         }
@@ -190,7 +218,7 @@
       self.information.apply(null, arguments);
     };
 
-    self.toString = function() { return 'serilog.logger'; };
+    self.toString = function() { return 'Logger'; };
 
     self.emit = function(evt) {
       if (!levelMap.isEnabled(evt.level)) {
@@ -240,214 +268,6 @@
 
     return self;
   };
-
-  function ConsoleSink(options) {
-    var self = this;
-
-    // options are:
-    //   plain -- don't highlight by level or type
-    //   complete -- emit all properties after the message
-    //   timestamp -- show a timestamp before the message
-
-    self.toString = function() { return 'serilog.sink.console'; };
-
-    options = options || {};
-    options.plain = options.plain || (typeof process === 'undefined' || typeof process.stdout === 'undefined');
-
-    var colors = {
-      reset: "\x1b[0m",
-
-      style: {
-        bright: "\x1b[1m",
-        dim: "\x1b[2m",
-        underscore: "\x1b[4m"
-      },
-
-      foreground: {
-        black: "\x1b[30m",
-        red: "\x1b[31m",
-        green: "\x1b[32m",
-        yellow: "\x1b[33m",
-        blue: "\x1b[34m",
-        magenta: "\x1b[35m",
-        cyan: "\x1b[36m",
-        white: "\x1b[37m"
-      },
-
-      background: {
-        black: "\x1b[40m",
-        red: "\x1b[41m",
-        green: "\x1b[42m",
-        yellow: "\x1b[43m",
-        blue: "\x1b[44m",
-        magenta: "\x1b[45m",
-        cyan: "\x1b[46m",
-        white: "\x1b[47m"
-      }
-    };
-
-    var color = function(fore, back, style) {
-      if (options.plain) {
-        return function(s) { return s; };
-      }
-
-      var cmd = '';
-
-      if (fore) {
-        cmd += colors.foreground[fore];
-      }
-      if (back) {
-        cmd += colors.background[back];
-      }
-      if (style) {
-        cmd += colors.style[style];
-      }
-
-      return function(s) { return cmd + s + colors.reset; };
-    };
-
-    var palettes = {
-      'TRACE': {
-        foreground: color(null, null, 'bright')
-      },
-      'INFORMATION': {
-        foreground: color('cyan', null, 'bright')
-      },
-      'WARNING': {
-        foreground: color('yellow', null, 'bright')
-      },
-      'ERROR': {
-        foreground: color('red', null, 'bright')
-      }
-    };
-
-    var write = {
-      log: function() { },
-      info: function() { },
-      warn: function() { },
-      error: function() { }
-    };
-
-    if (typeof console === 'object') {
-      write.log = function(m, p) { if(p) { console.log(m, p); } else { console.log(m); } };
-      write.info = function(m, p) { if(p) { console.info(m, p); } else { console.info(m); } };
-      write.warn = function(m, p) { if(p) { console.warn(m, p); } else { console.warn(m); } };
-      write.error = function(m, p) { if(p) { console.error(m, p); } else { console.error(m); } };
-    }
-
-    var syntaxError = color('white', 'magenta', 'bright');
-    var keyword = color('blue');
-    var date = color('green');
-    var structure = color('green');
-    var number = color('magenta');
-    var text = color('cyan');
-
-    var formatted = function(o) {
-      if (typeof o === 'undefined') {
-        return keyword('undefined');
-      }
-      if (o === null) {
-        return keyword('null');
-      }
-      if (typeof o === 'string') {
-        return text(o);
-      }
-      if (typeof o === 'number') {
-        return number(o.toString());
-      }
-      if (typeof o === 'boolean') {
-        return keyword(o.toString());
-      }
-      if (typeof o.toISOString === 'function') {
-        return date(o.toISOString());
-      }
-      if (typeof o === 'object') {
-        var s = JSON.stringify(o);
-        if (s.length > 70) {
-          s = s.slice(0, 67) + '...';
-        }
-        return structure(s);
-      }
-      return text(o.toString());
-    };
-
-    var bright = color(null, null, 'bright');
-
-    var colorMessage = function(palette, messageTemplate, properties) {
-      var tokens = messageTemplate.tokens;
-
-      var result = [];
-      for (var i = 0; i < tokens.length; ++i) {
-        var token = tokens[i];
-        if (typeof token.name === 'string') {
-          if (properties.hasOwnProperty(token.name)) {
-            var val = properties[token.name];
-            var fmt = bright(formatted(val));
-            result.push(fmt);
-          } else {
-            result.push(syntaxError(token.raw));
-          }
-        } else {
-          result.push(token.text);
-        }
-      }
-      return result.join('');
-    };
-
-    self.emit = function(evt) {
-      var palette = palettes[evt.level] || palettes.TRACE;
-      var formatted = '';
-      if (options.timestamp) {
-        formatted += evt.timestamp.toISOString().replace('T', ' ').replace('Z', '') + ' ';
-      }
-      formatted += '[' + palette.foreground(evt.level.slice(0,3)) + '] ' +
-        colorMessage(palette, evt.messageTemplate, evt.properties);
-
-      if (evt.level === 'ERROR') {
-        write.error(formatted, options.complete ? evt.properties : null);
-      } else if (evt.level === 'WARNING') {
-        write.warn(formatted, options.complete ? evt.properties : null);
-      } else if (evt.level === 'INFORMATION') {
-        write.info(formatted, options.complete ? evt.properties : null);
-      } else {
-        write.log(formatted, options.complete ? evt.properties : null);
-      }
-    };
-  }
-
-  function ProcessSink(options) {
-    var self = this;
-    self.toString = function() { return 'serilog.sink.process'; };
-
-    var write = {
-      out: function() { },
-      err: function() { }
-    };
-
-    if (typeof process === 'object' && typeof process.stdout === 'object') {
-      var newline = process.platform === 'win32' ? '\r\n' : '\n';
-      write.out = function(m) { process.stdout.write(m + newline); };
-      write.err = function(m) { process.stderr.write(m + newline); };
-    }
-
-    if (typeof options === 'object') {
-      if (options.all === 'stderr') {
-        write.out = write.err;
-      } else if (options.all === 'stdout') {
-        write.err = write.out;
-      }
-    }
-
-    self.emit = function(evt) {
-      var formatted = evt.timestamp.toISOString() + ' [' + evt.level + '] ' + evt.renderedMessage();
-
-      if (evt.level === 'ERROR') {
-        write.err(formatted);
-      } else {
-        write.out(formatted);
-      }
-    };
-  }
 
 
   function LoggerConfiguration() {
@@ -524,18 +344,11 @@
     };
   }
 
+
   function Serilog() {
     var self = this;
 
     self.sink = {};
-    self.sink.console = function(options) {
-      return new ConsoleSink(options);
-    };
-
-    self.sink.process = function(options) {
-      return new ProcessSink(options);
-    };
-
     self.filter = {};
 
     self.filter.selfLog = function() {
@@ -549,13 +362,13 @@
         return !evt.properties.isSelfLog;
       };
     };
-
-    self.configuration = function() {
-      return new LoggerConfiguration();
-    };
-
-    self.event = createEvent;
   }
+
+  Serilog.prototype.configuration = function() {
+    return new LoggerConfiguration();
+  };
+
+  Serilog.prototype.event = createEvent;
 
   return new Serilog();
 }));
