@@ -61,6 +61,8 @@
       return o.toString();
     }
     if (typeof o === 'object') {
+      // Could use instanceof Date, but this way will be kinder
+      // to values passed from other contexts...
       if (destructure || typeof o.toISOString === 'function') {
         return o;
       }
@@ -232,18 +234,13 @@
         return;
       }
 
+      // Template caching opportunity here
       var parsedTemplate = new MessageTemplate(messageTemplate);
       var boundProperties = parsedTemplate.bindProperties(args);
 
       var evt = new LogEvent(new Date(), level, parsedTemplate, boundProperties);
 
       pipeline.execute(evt);
-    };
-
-    self.write = function(level, messageTemplate) {
-      var l = Array.prototype.shift.call(arguments);
-      var mt = Array.prototype.shift.call(arguments);
-      invoke(l, mt, arguments);
     };
 
     self.trace = function(messageTemplate) {
@@ -264,6 +261,22 @@
     self.error = function(messageTemplate) {
       var mt = Array.prototype.shift.call(arguments);
       invoke('ERROR', mt, arguments);
+    };
+
+    self.using = function(properties, destructure){
+      var enriched = new Pipeline([
+        function(evt, next){
+          for (var prop in properties) {
+            if (properties.hasOwnProperty(prop) &&
+                !evt.properties.hasOwnProperty(prop)) {
+              evt.properties[prop] = capture(properties[prop], destructure);
+            }
+          }
+          pipeline.execute(evt);
+          next(evt);
+        }
+      ]);
+      return createLogger(levelMap, enriched);
     };
 
     return self;
