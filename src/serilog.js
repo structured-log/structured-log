@@ -192,9 +192,10 @@
   };
 
 
-  function Pipeline(elements) {
+  function Pipeline(elements, endWith) {
     var self = this;
     self.elements = elements;
+    self.endWith = endWith || [];
 
     var head = function(evt) { };
     var makeHead = function(el) {
@@ -212,6 +213,24 @@
   Pipeline.prototype.execute = function(evt) {
     var self = this;
     self.head(evt);
+  };
+
+  Pipeline.prototype.end = function(cb) {
+    var self = this;
+    var remaining = self.endWith.length;
+    if (remaining === 0) {
+      cb();
+      return;
+    }
+    var onEnd = function() {
+      remaining--;
+      if (remaining === 0) {
+        cb();
+      }
+    };
+    for (var i = 0; i < self.endWith.length; ++i) {
+      self.endWith[i](onEnd);
+    }
   };
 
 
@@ -279,6 +298,10 @@
       return createLogger(levelMap, enriched);
     };
 
+    self.end = function(cb) {
+      pipeline.end(cb);
+    };
+
     return self;
   };
 
@@ -288,6 +311,7 @@
 
     var minimumLevel = 'INFORMATION';
     var pipeline = [];
+    var endWith = [];
 
     self.pipe = function(element) {
       pipeline.push(element);
@@ -314,6 +338,10 @@
         }, minimumLevel);
       }
 
+      if (typeof sinkOrEmit.end === 'function') {
+        endWith.push(sinkOrEmit.end);
+      }
+
       return self.pipe(function(evt, next) {
         try {
           sinkOrEmit.emit(evt);
@@ -321,7 +349,7 @@
           if (typeof onError === 'function') {
             onError(err, evt, next);
           } else if (!evt.properties.isSelfLog) {
-            var notification = createEvent('ERROR', 'Failed to write event {@event} to sink {sink}: {error}', evt, sinkOrEmit, err);
+            var notification = createEvent('ERROR', 'Failed to write event {@event} to {sink}: {error}', evt, sinkOrEmit, err);
             notification.properties.isSelfLog = true;
             next(notification);
           }
@@ -353,7 +381,7 @@
 
     self.createLogger = function() {
       var levelMap = new LevelMap(minimumLevel);
-      return createLogger(levelMap, new Pipeline(pipeline));
+      return createLogger(levelMap, new Pipeline(pipeline, endWith));
     };
   }
 
