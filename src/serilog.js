@@ -24,8 +24,11 @@
     root.serilog = factory();
   }
 }(this, function () {
-  var parseMessageTemplate = function(messageTemplate) {
-    var result = [];
+  function MessageTemplate(messageTemplate) {
+    var self = this;
+
+    self.raw = messageTemplate;
+    self.tokens = [];
 
     var ptre = /\{@?\w+}/g;
     var res;
@@ -33,7 +36,7 @@
     while ((res = ptre.exec(messageTemplate)) !== null)
     {
       if (res.index !== textStart) {
-        result.push({text: messageTemplate.slice(textStart, res.index)});
+        self.tokens.push({text: messageTemplate.slice(textStart, res.index)});
       }
 
       var destructure = false;
@@ -44,22 +47,22 @@
         destructure = true;
       }
 
-      result.push({name: tok, destructure: destructure, raw: res[0]});
+      self.tokens.push({name: tok, destructure: destructure, raw: res[0]});
       textStart = ptre.lastIndex;
     }
 
     if (textStart >= 0 && textStart < messageTemplate.length) {
-      result.push({text: messageTemplate.slice(textStart)});
+      self.tokens.push({text: messageTemplate.slice(textStart)});
     }
-
-    return result;
-  };
+  }
 
   var capture = function(o, destructure) {
     if (typeof o === 'function') {
       return o.toString();
     }
     if (typeof o === 'object') {
+      // Could use instanceof Date, but this way will be kinder
+      // to values passed from other contexts...
       if (destructure || typeof o.toISOString === 'function') {
         return o;
       }
@@ -68,12 +71,13 @@
     return o;
   };
 
-  var bindMessageTemplateProperties = function(messageTemplate, positionalArgs) {
+  MessageTemplate.prototype.bindProperties = function(positionalArgs) {
+    var self = this;
     var result = {};
 
     var nextArg = 0;
-    for(var i = 0; i < messageTemplate.length && nextArg < positionalArgs.length; ++i) {
-      var token = messageTemplate[i];
+    for(var i = 0; i < self.tokens.length && nextArg < positionalArgs.length; ++i) {
+      var token = self.tokens[i];
       if (typeof token.name === 'string') {
         var p = positionalArgs[nextArg];
         result[token.name] = capture(p, token.destructure);
@@ -92,13 +96,44 @@
     return result;
   };
 
-  var renderMessageTemplate = function(messageTemplate, properties) {
+  var toText = function(o) {
+    if (typeof o === 'undefined') {
+      return 'undefined';
+    }
+    if (o === null) {
+      return 'null';
+    }
+    if (typeof o === 'string') {
+      return o;
+    }
+    if (typeof o === 'number') {
+      return o.toString();
+    }
+    if (typeof o === 'boolean') {
+      return o.toString();
+    }
+    if (typeof o.toISOString === 'function') {
+      return o.toISOString();
+    }
+    if (typeof o === 'object') {
+      var s = JSON.stringify(o);
+      if (s.length > 70) {
+        s = s.slice(0, 67) + '...';
+      }
+      return s;
+    }
+    return o.toString();
+  };
+
+  MessageTemplate.prototype.render = function(properties) {
+    var self = this;
+
     var result = [];
-    for (var i = 0; i < messageTemplate.length; ++i) {
-      var token = messageTemplate[i];
+    for (var i = 0; i < self.tokens.length; ++i) {
+      var token = self.tokens[i];
       if (typeof token.name === 'string') {
         if (properties.hasOwnProperty(token.name)) {
-          result.push((properties[token.name] || '').toString());
+          result.push(toText(properties[token.name]));
         } else {
           result.push(token.raw);
         }
@@ -109,11 +144,12 @@
     return result.join('');
   };
 
+
   var createEvent = function(level, messageTemplate) {
     var l = Array.prototype.shift.call(arguments);
     var mt = Array.prototype.shift.call(arguments);
-    var parsedTemplate = parseMessageTemplate(mt);
-    var boundProperties = bindMessageTemplateProperties(parsedTemplate, arguments);
+    var parsedTemplate = new MessageTemplate(mt);
+    var boundProperties = parsedTemplate.bindProperties(arguments);
     return new LogEvent(new Date(), l, parsedTemplate, boundProperties);
   };
 
@@ -128,7 +164,7 @@
 
   LogEvent.prototype.renderedMessage = function() {
     var self = this;
-    return renderMessageTemplate(self.messageTemplate, self.properties);
+    return self.messageTemplate.render(self.properties);
   };
 
 
@@ -156,23 +192,45 @@
   };
 
 
-  function Pipeline(elements) {
+  function Pipeline(elements, endWith) {
     var self = this;
     self.elements = elements;
+    self.endWith = endWith || [];
+
+    var head = function(evt) { };
+    var makeHead = function(el) {
+      var oldHead = head;
+      return function(evt) { el(evt, oldHead); };
+    };
+
+    for (var i = self.elements.length - 1; i >= 0; --i) {
+      var el = self.elements[i];
+      head = makeHead(el);
+    }
+    self.head = head;
   }
 
-  Pipeline.prototype.execute = function(evt, index) {
+  Pipeline.prototype.execute = function(evt) {
     var self = this;
-    var pipelineIndex = index || 0;
+    self.head(evt);
+  };
 
-    if (pipelineIndex >= self.elements.length) {
+  Pipeline.prototype.end = function(cb) {
+    var self = this;
+    var remaining = self.endWith.length;
+    if (remaining === 0) {
+      cb();
       return;
     }
-
-    var element = self.elements[pipelineIndex];
-    element(evt, function(evnext) {
-      self.execute(evnext, pipelineIndex + 1);
-    });
+    var onEnd = function() {
+      remaining--;
+      if (remaining === 0) {
+        cb();
+      }
+    };
+    for (var i = 0; i < self.endWith.length; ++i) {
+      self.endWith[i](onEnd);
+    }
   };
 
 
@@ -181,7 +239,7 @@
       self.information.apply(null, arguments);
     };
 
-    self.toString = function() { return 'serilog.logger'; };
+    self.toString = function() { return 'Logger'; };
 
     self.emit = function(evt) {
       if (!levelMap.isEnabled(evt.level)) {
@@ -195,18 +253,13 @@
         return;
       }
 
-      var parsedTemplate = parseMessageTemplate(messageTemplate);
-      var boundProperties = bindMessageTemplateProperties(parsedTemplate, args);
+      // Template caching opportunity here
+      var parsedTemplate = new MessageTemplate(messageTemplate);
+      var boundProperties = parsedTemplate.bindProperties(args);
 
       var evt = new LogEvent(new Date(), level, parsedTemplate, boundProperties);
 
       pipeline.execute(evt);
-    };
-
-    self.write = function(level, messageTemplate) {
-      var l = Array.prototype.shift.call(arguments);
-      var mt = Array.prototype.shift.call(arguments);
-      invoke(l, mt, arguments);
     };
 
     self.trace = function(messageTemplate) {
@@ -229,213 +282,36 @@
       invoke('ERROR', mt, arguments);
     };
 
+    self.using = function(properties, destructure){
+      var enriched = new Pipeline([
+        function(evt, next){
+          for (var prop in properties) {
+            if (properties.hasOwnProperty(prop) &&
+                !evt.properties.hasOwnProperty(prop)) {
+              evt.properties[prop] = capture(properties[prop], destructure);
+            }
+          }
+          pipeline.execute(evt);
+          next(evt);
+        }
+      ]);
+      return createLogger(levelMap, enriched);
+    };
+
+    self.end = function(cb) {
+      pipeline.end(cb);
+    };
+
     return self;
   };
 
-  var ConsoleSink = function(options) {
-    var self = this;
 
-    self.toString = function() { return 'serilog.sink.console'; };
-
-    options = options || {};
-    options.plain = options.plain || (typeof process === 'undefined' || typeof process.stdout === 'undefined');
-
-    var colors = {
-      reset: "\x1b[0m",
-
-      style: {
-        bright: "\x1b[1m",
-        dim: "\x1b[2m",
-        underscore: "\x1b[4m"
-      },
-
-      foreground: {
-        black: "\x1b[30m",
-        red: "\x1b[31m",
-        green: "\x1b[32m",
-        yellow: "\x1b[33m",
-        blue: "\x1b[34m",
-        magenta: "\x1b[35m",
-        cyan: "\x1b[36m",
-        white: "\x1b[37m"
-      },
-
-      background: {
-        black: "\x1b[40m",
-        red: "\x1b[41m",
-        green: "\x1b[42m",
-        yellow: "\x1b[43m",
-        blue: "\x1b[44m",
-        magenta: "\x1b[45m",
-        cyan: "\x1b[46m",
-        white: "\x1b[47m"
-      }
-    };
-
-    var color = function(fore, back, style) {
-      if (options.plain) {
-        return function(s) { return s; };
-      }
-
-      var cmd = '';
-
-      if (fore) {
-        cmd += colors.foreground[fore];
-      }
-      if (back) {
-        cmd += colors.background[back];
-      }
-      if (style) {
-        cmd += colors.style[style];
-      }
-
-      return function(s) { return cmd + s + colors.reset; };
-    };
-
-    var palettes = {
-      'TRACE': {
-        foreground: color(null, null, 'bright')
-      },
-      'INFORMATION': {
-        foreground: color('cyan', null, 'bright')
-      },
-      'WARNING': {
-        foreground: color('yellow', null, 'bright')
-      },
-      'ERROR': {
-        foreground: color('red', null, 'bright')
-      }
-    };
-
-    var write = {
-      log: function() { },
-      info: function() { },
-      warn: function() { },
-      error: function() { }
-    };
-
-    if (typeof console === 'object') {
-      write.log = function(m, p) { if(p) { console.log(m, p); } else { console.log(m); } };
-      write.info = function(m, p) { if(p) { console.info(m, p); } else { console.info(m); } };
-      write.warn = function(m, p) { if(p) { console.warn(m, p); } else { console.warn(m); } };
-      write.error = function(m, p) { if(p) { console.error(m, p); } else { console.error(m); } };
-    }
-
-    var syntaxError = color('white', 'magenta', 'bright');
-    var keyword = color('blue');
-    var date = color('green');
-    var structure = color('green');
-    var number = color('magenta');
-    var text = color('white');
-
-    var formatted = function(o) {
-      if (typeof o === 'undefined') {
-        return keyword('undefined');
-      }
-      if (o === null) {
-        return keyword('null');
-      }
-      if (typeof o === 'string') {
-        return text(o);
-      }
-      if (typeof o === 'number') {
-        return number(o.toString());
-      }
-      if (typeof o === 'boolean') {
-        return keyword(o.toString());
-      }
-      if (typeof o.toISOString === 'function') {
-        return date(o.toISOString());
-      }
-      if (typeof o === 'object') {
-        var s = JSON.stringify(o);
-        if (s.length > 70) {
-          s = s.slice(0, 67) + '...';
-        }
-        return structure(s);
-      }
-      return text(o.toString());
-    };
-
-    var bright = color(null, null, 'bright');
-
-    var colorMessage = function(palette, messageTemplate, properties) {
-      var result = [];
-      for (var i = 0; i < messageTemplate.length; ++i) {
-        var token = messageTemplate[i];
-        if (typeof token.name === 'string') {
-          if (properties.hasOwnProperty(token.name)) {
-            var val = properties[token.name];
-            var fmt = bright(formatted(val));
-            result.push(fmt);
-          } else {
-            result.push(syntaxError(token.raw));
-          }
-        } else {
-          result.push(token.text);
-        }
-      }
-      return result.join('');
-    };
-
-    self.emit = function(evt) {
-      var palette = palettes[evt.level] || palette.TRACE;
-      var formatted =
-        evt.timestamp.toISOString().replace('T', ' ').replace('Z', '') +
-        palette.foreground(' [' + evt.level.slice(0,3) + '] ') +
-        colorMessage(palette, evt.messageTemplate, evt.properties);
-
-      if (evt.level === 'ERROR') {
-        write.error(formatted, options.complete ? evt.properties : null);
-      } else if (evt.level === 'WARNING') {
-        write.warn(formatted, options.complete ? evt.properties : null);
-      } else if (evt.level === 'INFORMATION') {
-        write.info(formatted, options.complete ? evt.properties : null);
-      } else {
-        write.log(formatted, options.complete ? evt.properties : null);
-      }
-    };
-  };
-
-  var ProcessSink = function(options) {
-    var self = this;
-    self.toString = function() { return 'serilog.sink.process'; };
-
-    var write = {
-      out: function() { },
-      err: function() { }
-    };
-
-    if (typeof process === 'object' && typeof process.stdout === 'object') {
-      var newline = process.platform === 'win32' ? '\r\n' : '\n';
-      write.out = function(m) { process.stdout.write(m + newline); };
-      write.err = function(m) { process.stderr.write(m + newline); };
-    }
-
-    if (typeof options === 'object') {
-      if (options.all === 'stderr') {
-        write.out = write.err;
-      } else if (options.all === 'stdout') {
-        write.err = write.out;
-      }
-    }
-
-    self.emit = function(evt) {
-      var formatted = evt.timestamp.toISOString() + ' [' + evt.level + '] ' + evt.renderedMessage();
-
-      if (evt.level === 'ERROR') {
-        write.err(formatted);
-      } else {
-        write.out(formatted);
-      }
-    };
-  };
-
-  var LoggerConfiguration = function() {
+  function LoggerConfiguration() {
     var self = this;
 
     var minimumLevel = 'INFORMATION';
     var pipeline = [];
+    var endWith = [];
 
     self.pipe = function(element) {
       pipeline.push(element);
@@ -462,6 +338,10 @@
         }, minimumLevel);
       }
 
+      if (typeof sinkOrEmit.end === 'function') {
+        endWith.push(sinkOrEmit.end);
+      }
+
       return self.pipe(function(evt, next) {
         try {
           sinkOrEmit.emit(evt);
@@ -469,7 +349,7 @@
           if (typeof onError === 'function') {
             onError(err, evt, next);
           } else if (!evt.properties.isSelfLog) {
-            var notification = createEvent('ERROR', 'Failed to write event {@event} to sink {sink}: {error}', evt, sinkOrEmit, err);
+            var notification = createEvent('ERROR', 'Failed to write event {@event} to {sink}: {error}', evt, sinkOrEmit, err);
             notification.properties.isSelfLog = true;
             next(notification);
           }
@@ -501,22 +381,15 @@
 
     self.createLogger = function() {
       var levelMap = new LevelMap(minimumLevel);
-      return createLogger(levelMap, new Pipeline(pipeline));
+      return createLogger(levelMap, new Pipeline(pipeline, endWith));
     };
-  };
+  }
 
-  var Serilog = function() {
+
+  function Serilog() {
     var self = this;
 
     self.sink = {};
-    self.sink.console = function(options) {
-      return new ConsoleSink(options);
-    };
-
-    self.sink.process = function(options) {
-      return new ProcessSink(options);
-    };
-
     self.filter = {};
 
     self.filter.selfLog = function() {
@@ -530,13 +403,13 @@
         return !evt.properties.isSelfLog;
       };
     };
+  }
 
-    self.configuration = function() {
-      return new LoggerConfiguration();
-    };
-
-    self.event = createEvent;
+  Serilog.prototype.configuration = function() {
+    return new LoggerConfiguration();
   };
+
+  Serilog.prototype.event = createEvent;
 
   return new Serilog();
 }));

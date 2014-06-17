@@ -1,6 +1,6 @@
 {
   "name": "serilog",
-  "version": "0.0.3",
+  "version": "0.0.5",
   "description": "A serializing logger for JavaScript apps.",
   "main": "src/serilog.js",
   "scripts": {
@@ -23,8 +23,10 @@
   "devDependencies": {
     "gulp": "~3.6.2",
     "gulp-clean": "^0.2.4",
+    "gulp-concat": "^2.2.0",
     "gulp-jshint": "^1.6.1",
     "gulp-rename": "^1.2.0",
-    "gulp-uglify": "^0.3.0"
+    "gulp-uglify": "^0.3.0",
+    "rimraf": "^2.2.8"
   }
 }

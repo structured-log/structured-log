@@ -1,7 +1,7 @@
 var serilog = require('../src/serilog.js');
 var assert = require('assert');
 
-describe('serilog.configuration()', function() {
+describe('LoggerConfiguration', function() {
   describe('#minimumLevel()', function() {
     it('should suppress events below minimum level', function() {
       var written = [];
@@ -143,5 +143,60 @@ describe('serilog.event()', function(){
     var evt = serilog.event('INFORMATION', 'Hi, {@person}!', { name: 'Fred' });
     assert.equal('object', typeof evt.properties.person);
     assert.equal('Fred', evt.properties.person.name);
+  });
+});
+
+describe('Logger', function(){
+  describe('#using()', function(){
+    it('should enrich events with all provided values', function(){
+      var written = [];
+      var log = serilog.configuration()
+        .writeTo(function(evt) { written.push(evt); })
+        .createLogger();
+      var sub = log.using({machine: 'mine', count: 3});
+      sub.error('The sky is falling!');
+
+      assert.equal(1, written.length);
+      assert.equal('mine', written[0].properties.machine);
+      assert.equal(3, written[0].properties.count);
+    });
+
+    it('should preserve existing values', function(){
+      var written = [];
+      var log = serilog.configuration()
+        .writeTo(function(evt) { written.push(evt); })
+        .createLogger();
+      var sub = log.using({machine: 'mine', count: 3});
+      sub.error('{machine}', 'your');
+
+      assert.equal(1, written.length);
+      assert.equal('your', written[0].properties.machine);
+    });
+
+    it('should nest', function(){
+      var written = [];
+      var log = serilog.configuration()
+        .writeTo(function(evt) { written.push(evt); })
+        .createLogger();
+      var sub = log.using({machine: 'mine'});
+      var subsub = sub.using({count: 3});
+      subsub.error('The sky is falling!');
+
+      assert.equal(1, written.length);
+      assert.equal('mine', written[0].properties.machine);
+      assert.equal(3, written[0].properties.count);
+    });
+
+    it('should not interfere with the root logger', function(){
+      var written = [];
+      var log = serilog.configuration()
+        .writeTo(function(evt) { written.push(evt); })
+        .createLogger();
+      log.using({machine: 'mine', count: 3});
+      log.error('The sky is falling!');
+
+      assert.equal(1, written.length);
+      assert.equal(undefined, written[0].properties.machine);
+    });
   });
 });
