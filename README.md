@@ -21,9 +21,9 @@ Loosely, this is what we're heading towards. First, a pipelined configuration sy
 var log = serilog.configuration()
   .minimumLevel('WARNING')
   .filter(function(evt) { return !evt.properties.isNoisy; })
-  .enrich('username', identity.username)
-  .writeTo(serilog.sink.console())
-  .writeTo(serilog.sink.http({url: 'http://my-app/logs'}))
+  .enrich({username: identity.username})
+  .writeTo(terminal())
+  .writeTo(http({url: 'http://my-app/logs'}))
   .createLogger();
 ```
 
