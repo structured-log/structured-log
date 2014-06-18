@@ -78,16 +78,29 @@ describe('LoggerConfiguration', function() {
     it('should add simple properties', function(){
       var written = [];
       var log = serilog.configuration()
-        .enrich('isHappy', true)
+        .enrich({isHappy: true, isSad: false})
         .writeTo(function(evt) { written.push(evt); })
         .createLogger();
       log.error('The sky is falling!');
 
       assert.equal(1, written.length);
       assert(written[0].properties.isHappy);
+      assert(written[0].properties.isSad === false);
     });
 
-    it('should add simple properties', function(){
+    it('should destructure complex properties', function(){
+      var written = [];
+      var log = serilog.configuration()
+        .enrich({user: {name: 'Nick'}}, true)
+        .writeTo(function(evt) { written.push(evt); })
+        .createLogger();
+      log.error('The sky is falling!');
+
+      assert.equal(1, written.length);
+      assert.equal('Nick', written[0].properties.user.name);
+    });
+
+    it('should add properties dynamically', function(){
       var written = [];
       var log = serilog.configuration()
         .enrich(function(evt) { evt.properties.isHappy = true; })

@@ -184,7 +184,7 @@
       if (options.timestamp) {
         formatted += evt.timestamp.toISOString().replace('T', ' ').replace('Z', '') + ' ';
       }
-      formatted += '[' + palette.foreground(evt.level.slice(0,3)) + '] ' +
+      formatted += '[' + palette.foreground(evt.level.slice(0,3).toLowerCase()) + '] ' +
         colorMessage(palette, evt.messageTemplate, evt.properties);
 
       if (evt.level === 'ERROR') {

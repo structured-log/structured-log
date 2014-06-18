@@ -1,6 +1,6 @@
 {
   "name": "serilog",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "A serializing logger for JavaScript apps.",
   "main": "src/serilog.js",
   "scripts": {

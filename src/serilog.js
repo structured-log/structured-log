@@ -145,6 +145,16 @@
   };
 
 
+  var enrich = function(evt, properties, destructure) {
+    for (var prop in properties) {
+      if (properties.hasOwnProperty(prop) &&
+        !evt.properties.hasOwnProperty(prop)) {
+        evt.properties[prop] = capture(properties[prop], destructure);
+      }
+    }
+  };
+
+
   var createEvent = function(level, messageTemplate) {
     var l = Array.prototype.shift.call(arguments);
     var mt = Array.prototype.shift.call(arguments);
@@ -285,12 +295,7 @@
     self.using = function(properties, destructure){
       var enriched = new Pipeline([
         function(evt, next){
-          for (var prop in properties) {
-            if (properties.hasOwnProperty(prop) &&
-                !evt.properties.hasOwnProperty(prop)) {
-              evt.properties[prop] = capture(properties[prop], destructure);
-            }
-          }
+          enrich(evt, properties, destructure);
           pipeline.execute(evt);
           next(evt);
         }
@@ -358,17 +363,19 @@
       });
     };
 
-    self.enrich = function(functionOrName, valueOrNull) {
-      if (typeof functionOrName === 'string') {
+    self.enrich = function(functionOrProperties, destructure) {
+      if (typeof functionOrProperties === 'object') {
         return self.enrich(function(event){
-          event.properties[functionOrName] = valueOrNull;
+          enrich(event, functionOrProperties, destructure);
         });
+      } else if (typeof functionOrProperties === 'function') {
+        return self.pipe(function(evt, next) {
+          functionOrProperties(evt);
+          next(evt);
+        });
+      } else {
+        throw new Error('Events can be enriched using either a function, or a hash of properties');
       }
-
-      return self.pipe(function(evt, next) {
-        functionOrName(evt);
-        next(evt);
-      });
     };
 
     self.filter = function(filter) {
@@ -391,6 +398,7 @@
 
     self.sink = {};
     self.filter = {};
+    self.enrich = {};
 
     self.filter.selfLog = function() {
       return function(evt) {
@@ -401,6 +409,24 @@
     self.filter.notSelfLog = function() {
       return function(evt) {
         return !evt.properties.isSelfLog;
+      };
+    };
+
+    self.enrich.withStack = function() {
+      return function(evt) {
+        try {
+          throw new Error('getstack');
+        } catch (err) {
+          var stack = err.stack;
+          if (stack.indexOf('Error: getstack') === 0) {
+            stack = stack.slice(stack.indexOf('\n') + 1);
+          }
+          stack = stack.replace(/^[ ]+/g, '');
+
+          if (!evt.properties.hasOwnProperty('stack')) {
+            evt.properties.stack = stack;
+          }
+        }
       };
     };
   }
