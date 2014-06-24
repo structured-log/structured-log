@@ -12,34 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// UMD bolierplate based on https://github.com/umdjs/umd/blob/master/returnExports.js
-// Supports node.js, AMD and the browser.
-//
-(function (root, factory) {
-  if (typeof define === 'function' && define.amd) {
-    define(['fs'], factory);
-  } else if (typeof exports === 'object') {
-    module.exports = factory(require('fs'));
-  } else {
-    root.serilog.sink.file = factory(root.fs);
-  }
-}(this, function(fs) {
+var fs = require('fs');
 
-  var newline = process.platform === 'win32' ? '\r\n' : '\n';
+var newline = process.platform === 'win32' ? '\r\n' : '\n';
 
-  function FileSink(path, options) {
-    var self = this;
-    var stream = fs.createWriteStream(path, {encoding: 'utf-8', flags: 'a+'});
+function FileSink(path, options) {
+  var self = this;
+  options = options || {};
+  var stream = fs.createWriteStream(path, {encoding: 'utf-8', flags: 'a+'});
 
-    self.emit = function(evt) {
-      var formatted = evt.timestamp.toISOString() + ' [' + evt.level + '] ' + evt.renderedMessage();
-      stream.write(formatted + newline);
-    };
+  self.emit = function(evt) {
+    var formatted = options.format === 'JSON' ?
+      JSON.stringify({
+        timestamp: evt.timestamp,
+        level: evt.level,
+        message: evt.renderedMessage(),
+        messageTemplate: evt.messageTemplate.raw,
+        properties: evt.properties
+      }) :
+      evt.timestamp.toISOString() + ' [' + evt.level + '] ' + evt.renderedMessage();
+    stream.write(formatted + newline);
+  };
 
-    self.end = function(cb) {
-      stream.end(null, null, cb);
-    };
-  }
+  self.end = function(cb) {
+    stream.end(null, null, cb);
+  };
+}
 
-  return function(path, options) { return new FileSink(path, options); };
-}));
+module.exports = function(path, options) { return new FileSink(path, options); };
+
