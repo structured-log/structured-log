@@ -12,7 +12,7 @@ gulp.task('clean', function(){
 });
 
 gulp.task('build', ['clean'], function(){
-  return gulp.src(['src/serilog.js', 'src/serilog-console-sink.js'])
+  return gulp.src(['src/core/serilog.js', 'src/bower/serilog-console-sink.js'])
     .pipe(jshint('.jshintrc'))
     .pipe(jshint.reporter('default'))
     .pipe(jshint.reporter('fail'))
@@ -35,8 +35,8 @@ gulp.task('test', ['build'], function(cb) {
 });
 
 gulp.task('smoke', ['test'], function() {
-  var serilog = require('./src/serilog.js');
-  var terminal = require('./src/serilog-terminal-sink.js');
+  var serilog = require('./src/core/serilog.js');
+  var terminal = require('./src/npm/serilog-terminal-sink.js');
 
   var log = serilog.configuration()
     .minimumLevel('TRACE')
