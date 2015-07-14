@@ -21,12 +21,12 @@
     "url": "https://github.com/serilog/serilog.js/issues"
   },
   "devDependencies": {
-    "gulp": "~3.6.2",
-    "gulp-clean": "^0.2.4",
-    "gulp-concat": "^2.2.0",
-    "gulp-jshint": "^1.6.1",
-    "gulp-rename": "^1.2.0",
-    "gulp-uglify": "^0.3.0",
-    "rimraf": "^2.2.8"
+    "gulp": "~3.9.0",
+    "gulp-clean": "^0.3.1",
+    "gulp-concat": "^2.6.0",
+    "gulp-jshint": "^1.11.2",
+    "gulp-rename": "^1.2.2",
+    "gulp-uglify": "^1.2.0",
+    "rimraf": "^2.4.1"
   }
 }
