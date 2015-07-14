@@ -1,5 +1,5 @@
-var serilog = require('../src/serilog.js');
-var file = require('../src/serilog-file-sink.js');
+var serilog = require('../src/core/serilog.js');
+var file = require('../src/npm/serilog-file-sink.js');
 var assert = require('assert');
 var fs = require('fs');
 var rimraf = require('rimraf');

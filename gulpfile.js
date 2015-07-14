@@ -21,7 +21,15 @@ gulp.task('build-bower', ['clean'], function(){
     .pipe(gulp.dest('dist/bower'));
 });
 
-gulp.task('test', ['build-bower'], function(cb) {
+gulp.task('build-npm', ['clean'], function(){
+  return gulp.src(['src/core/serilog.js', 'src/npm/*.js'])
+    .pipe(jshint('.jshintrc'))
+    .pipe(jshint.reporter('default'))
+    .pipe(jshint.reporter('fail'))
+    .pipe(gulp.dest('dist/npm'));
+});
+
+gulp.task('test', ['build-bower', 'build-npm'], function(cb) {
   childProcess.exec('mocha --reporter=spec', function(error, stdout, stderr){
     console.log(stdout);
     console.log(stderr);
@@ -35,8 +43,8 @@ gulp.task('test', ['build-bower'], function(cb) {
 });
 
 gulp.task('smoke', ['test'], function() {
-  var serilog = require('./src/core/serilog.js');
-  var terminal = require('./src/npm/serilog-terminal-sink.js');
+  var serilog = require('./dist/npm/serilog.js');
+  var terminal = require('./dist/npm/serilog-terminal-sink.js');
 
   var log = serilog.configuration()
     .minimumLevel('TRACE')
