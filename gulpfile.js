@@ -7,21 +7,21 @@ var childProcess = require('child_process');
 var concat = require('gulp-concat');
 
 gulp.task('clean', function(){
-  return gulp.src('web', {read: false})
+  return gulp.src('dist', {read: false})
     .pipe(clean());
 });
 
-gulp.task('build', ['clean'], function(){
+gulp.task('build-bower', ['clean'], function(){
   return gulp.src(['src/core/serilog.js', 'src/bower/serilog-console-sink.js'])
     .pipe(jshint('.jshintrc'))
     .pipe(jshint.reporter('default'))
     .pipe(jshint.reporter('fail'))
     .pipe(uglify({mangle: false}))
     .pipe(concat('serilog.min.js'))
-    .pipe(gulp.dest('web'));
+    .pipe(gulp.dest('dist/bower'));
 });
 
-gulp.task('test', ['build'], function(cb) {
+gulp.task('test', ['build-bower'], function(cb) {
   childProcess.exec('mocha --reporter=spec', function(error, stdout, stderr){
     console.log(stdout);
     console.log(stderr);
