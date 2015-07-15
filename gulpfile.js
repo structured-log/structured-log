@@ -12,7 +12,7 @@ gulp.task('clean-npm', function(){
 });
 
 gulp.task('build-bower', [], function(){
-  return gulp.src(['src/core/serilog.js', 'src/bower/serilog-console-sink.js'])
+  return gulp.src(['src/core/serilog.js', 'src/bower/*.js', 'src/bower/*.json'])
     .pipe(jshint('.jshintrc'))
     .pipe(jshint.reporter('default'))
     .pipe(jshint.reporter('fail'))
