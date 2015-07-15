@@ -22,14 +22,16 @@ gulp.task('build-bower', ['clean'], function(){
 });
 
 gulp.task('build-npm', ['clean'], function(){
-  return gulp.src(['src/core/serilog.js', 'src/npm/*.js'])
+  return gulp.src(['src/core/serilog.js', 'src/npm/*.js', 'src/npm/*.json'])
     .pipe(jshint('.jshintrc'))
     .pipe(jshint.reporter('default'))
     .pipe(jshint.reporter('fail'))
     .pipe(gulp.dest('dist/npm'));
 });
 
-gulp.task('test', ['build-bower', 'build-npm'], function(cb) {
+gulp.task('build', ['build-bower', 'build-npm']);
+
+gulp.task('test', ['build'], function(cb) {
   childProcess.exec('mocha --reporter=spec', function(error, stdout, stderr){
     console.log(stdout);
     console.log(stderr);
