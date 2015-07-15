@@ -6,12 +6,12 @@ var clean = require('gulp-clean');
 var childProcess = require('child_process');
 var concat = require('gulp-concat');
 
-gulp.task('clean', function(){
-  return gulp.src('dist', {read: false})
+gulp.task('clean-npm', function(){
+  return gulp.src('dist/npm', {read: false})
     .pipe(clean());
 });
 
-gulp.task('build-bower', ['clean'], function(){
+gulp.task('build-bower', [], function(){
   return gulp.src(['src/core/serilog.js', 'src/bower/serilog-console-sink.js'])
     .pipe(jshint('.jshintrc'))
     .pipe(jshint.reporter('default'))
@@ -21,7 +21,7 @@ gulp.task('build-bower', ['clean'], function(){
     .pipe(gulp.dest('dist/bower'));
 });
 
-gulp.task('build-npm', ['clean'], function(){
+gulp.task('build-npm', ['clean-npm'], function(){
   return gulp.src(['src/core/serilog.js', 'src/npm/*.js', 'src/npm/*.json'])
     .pipe(jshint('.jshintrc'))
     .pipe(jshint.reporter('default'))
