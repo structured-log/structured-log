@@ -379,3 +379,4 @@ Logs can also be tagged after configuration, this effectively creates a new log 
   var log2 = log.tag('some-new-tag');
 
   log2.info("This log is tagged with 'some-new-tag'");
+
