@@ -11,7 +11,7 @@ gulp.task('clean-npm', function(){
     .pipe(clean());
 });
 
-gulp.task('minify-js', [], function(){
+gulp.task('minify-bower-js', [], function(){
   return gulp.src(['src/core/serilog.js', 'src/bower/*.js'])
     .pipe(jshint('.jshintrc'))
     .pipe(jshint.reporter('default'))
@@ -21,12 +21,20 @@ gulp.task('minify-js', [], function(){
     .pipe(gulp.dest('dist/bower'));
 });
 
+gulp.task('copy-bower-js', [], function(){
+  return gulp.src(['src/core/serilog.js', 'src/bower/*.js'])
+    .pipe(jshint('.jshintrc'))
+    .pipe(jshint.reporter('default'))
+    .pipe(jshint.reporter('fail'))
+    .pipe(gulp.dest('dist/bower'));
+});
+
 gulp.task('copy-bower-json', [], function(){
   return gulp.src(['src/npm/*.json'])
     .pipe(gulp.dest('dist/bower'));
 });
 
-gulp.task('build-bower', ['minify-js', 'copy-bower-json']);
+gulp.task('build-bower', ['minify-bower-js', 'copy-bower-js', 'copy-bower-json']);
 
 gulp.task('build-npm', ['clean-npm'], function(){
   return gulp.src(['src/core/serilog.js', 'src/npm/*.js', 'src/npm/*.json'])
