@@ -1,0 +1,19 @@
+{
+  "name": "serilogjs-browser-example",
+  "version": "0.0.0",
+  "homepage": "https://github.com/serilog/serilog.js",
+  "authors": [
+    "ashley@codecapers.com.au"
+  ],
+  "license": "Apache 2",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "serilog-dev": "*"
+  }
+}
