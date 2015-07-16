@@ -33,7 +33,9 @@ In your NodeJS script:
 
 In your HTML file:
 
+```
   <script type='text/javascript' src='bower_components/serilog/serilog.js />
+```
 
 In your Javascript code:
 
