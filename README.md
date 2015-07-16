@@ -22,8 +22,8 @@ This section describes the most basic Serilog setup for both server and client.
 
 In your NodeJS script:
 
-	var coloredConsoleSink = require('serilog-colored-console-sink');
 	var serilog = require('serilog');
+	var coloredConsoleSink = require('serilog-colored-console-sink');
 
 	var log = serilog.configuration()
     	.writeTo(coloredConsoleSink())

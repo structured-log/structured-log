@@ -16,4 +16,4 @@ Then navigate your browser to *index.html* at *localhost*. If you are using *htt
 
 Open up your developer console. If you are using *Google Chrome* hit F12 and select the *Console* tab.
 
-You should now see examples of logging that was output from *app.js*.
+You should now see examples of logging that were output from *app.js*.
