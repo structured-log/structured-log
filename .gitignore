@@ -3,3 +3,5 @@ node_modules/
 .idea/
 
 serilog.min.js
+dist/
+examples/browser/bower_components/

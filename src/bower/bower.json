@@ -1,0 +1,23 @@
+{
+  "name": "serilogjs-dev",
+  "version": "0.1.0",
+  "homepage": "https://github.com/serilog/serilog.js",
+  "authors": [
+    "ashley@codecapers.com.au"
+  ],
+  "description": "Cilent-side/browser development/testing version of Serilog.",
+  "main": "serilog.min.js",
+  "keywords": [
+    "logging",
+    "structured",
+    "semantic"
+  ],
+  "license": "Apache 2",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
