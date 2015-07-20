@@ -1,9 +1,9 @@
 
-var serilog = require('serilog-dev');
-var consoleSink = require('serilog-dev/serilog-console-sink');
+var serilog = require('structured-log-dev');
+var consoleSink = require('structured-log-dev/serilog-console-sink');
 
 var log = serilog.configuration()
-    .writeTo(consoleSink())
+	.writeTo(consoleSink())
     .createLogger();
 
 log.information('Hello this is some information.');
