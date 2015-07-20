@@ -1,6 +1,6 @@
 {
-  "name": "serilogjs-dev",
-  "version": "0.1.0",
+  "name": "structured-log-dev",
+  "version": "0.0.2",
   "homepage": "https://github.com/structured-log/serilog.js",
   "authors": [
     "ashley@codecapers.com.au"
