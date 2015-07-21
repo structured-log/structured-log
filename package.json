@@ -1,5 +1,4 @@
 {
-  "name": "structured-log",
   "description": "A serializing logger for JavaScript apps.",
   "main": "src/serilog.js",
   "scripts": {
