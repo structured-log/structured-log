@@ -1,5 +1,5 @@
 {
-  "name": "serilogjs-nodejs-example",
+  "name": "structured-log-nodejs-example",
   "version": "1.0.0",
   "description": "A simple NodeJS example that shows SerilogJS setup and usage.",
   "main": "server.js",
@@ -10,6 +10,6 @@
   "author": "ashley@codecapers.com.au",
   "license": "Apache-2.0",
   "dependencies": {
-    "structured-log-dev": "*"
+    "structured-log": "*"
   }
 }
