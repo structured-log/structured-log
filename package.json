@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/structured-log/serilog.js"
+    "url": "https://github.com/structured-log/structured-log"
   },
   "keywords": [
     "logging",
@@ -18,7 +18,7 @@
   "author": "Serilog Contributors",
   "license": "Apache 2",
   "bugs": {
-    "url": "https://github.com/structured-log/serilog.js/issues"
+    "url": "https://github.com/structured-log/structured-log/issues"
   },
   "devDependencies": {
     "gulp": "~3.6.2",
