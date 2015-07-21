@@ -1,3 +1,3 @@
 [submodule "dist/bower"]
 	path = dist/bower
-url=https://github.com/structured-log/structured-log-dev-bower
+url=https://github.com/structured-log/structured-log-bower
