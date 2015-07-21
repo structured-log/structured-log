@@ -1,11 +1,11 @@
 {
-  "name": "structured-log-dev",
-  "version": "0.0.2",
-  "homepage": "https://github.com/structured-log/serilog.js",
+  "name": "structured-log",
+  "version": "0.0.3",
+  "homepage": "https://github.com/structured-log/structured-log",
   "authors": [
     "ashley@codecapers.com.au"
   ],
-  "description": "Cilent-side/browser development/testing version of Serilog.",
+  "description": "Cilent-side/browser structured logging framework based on Serilog.",
   "main": "serilog.min.js",
   "keywords": [
     "logging",
