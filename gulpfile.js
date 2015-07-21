@@ -6,20 +6,45 @@ var clean = require('gulp-clean');
 var childProcess = require('child_process');
 var concat = require('gulp-concat');
 
-gulp.task('clean', function(){
-  return gulp.src('web', {read: false})
+gulp.task('clean-npm', function(){
+  return gulp.src('dist/npm', {read: false})
     .pipe(clean());
 });
 
-gulp.task('build', ['clean'], function(){
-  return gulp.src(['src/serilog.js', 'src/serilog-console-sink.js'])
+gulp.task('minify-bower-js', [], function(){
+  return gulp.src(['src/core/serilog.js', 'src/bower/*.js'])
     .pipe(jshint('.jshintrc'))
     .pipe(jshint.reporter('default'))
     .pipe(jshint.reporter('fail'))
     .pipe(uglify({mangle: false}))
     .pipe(concat('serilog.min.js'))
-    .pipe(gulp.dest('web'));
+    .pipe(gulp.dest('dist/bower'));
 });
+
+gulp.task('copy-bower-js', [], function(){
+  return gulp.src(['src/core/serilog.js', 'src/bower/*.js'])
+    .pipe(jshint('.jshintrc'))
+    .pipe(jshint.reporter('default'))
+    .pipe(jshint.reporter('fail'))
+    .pipe(gulp.dest('dist/bower'));
+});
+
+gulp.task('copy-bower-json', [], function(){
+  return gulp.src(['src/npm/*.json'])
+    .pipe(gulp.dest('dist/bower'));
+});
+
+gulp.task('build-bower', ['minify-bower-js', 'copy-bower-js', 'copy-bower-json']);
+
+gulp.task('build-npm', ['clean-npm'], function(){
+  return gulp.src(['src/core/serilog.js', 'src/npm/*.js', 'src/npm/*.json'])
+    .pipe(jshint('.jshintrc'))
+    .pipe(jshint.reporter('default'))
+    .pipe(jshint.reporter('fail'))
+    .pipe(gulp.dest('dist/npm'));
+});
+
+gulp.task('build', ['build-bower', 'build-npm']);
 
 gulp.task('test', ['build'], function(cb) {
   childProcess.exec('mocha --reporter=spec', function(error, stdout, stderr){
@@ -35,8 +60,8 @@ gulp.task('test', ['build'], function(cb) {
 });
 
 gulp.task('smoke', ['test'], function() {
-  var serilog = require('./src/serilog.js');
-  var terminal = require('./src/serilog-terminal-sink.js');
+  var serilog = require('./dist/npm/serilog.js');
+  var terminal = require('./dist/npm/serilog-terminal-sink.js');
 
   var log = serilog.configuration()
     .minimumLevel('TRACE')

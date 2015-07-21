@@ -1,0 +1,22 @@
+{
+  "name": "structured-log-dev",
+  "version": "0.0.2",
+  "description": "NodeJS development/testing version of Serilog.",
+  "main": "serilog.js",
+  "scripts": {
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/structured-log/serilog.js"
+  },
+  "keywords": [
+    "logging",
+    "structured",
+    "semantic"
+  ],
+  "author": "Serilog Contributors",
+  "license": "Apache 2",
+  "bugs": {
+    "url": "https://github.com/structured-log/serilog.js/issues"
+  }
+}
