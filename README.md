@@ -1,7 +1,7 @@
 serilog.js
 ==========
 
-**NOTE:** SerilogJS is moving forward and has been moved to the [*structured-log*](https://github.com/structured-log) organisation. Check out the *dev* branch to see how the code is progressing. If you want to try out the latest work see for *structured-log-dev* on npm and bower.  
+**WARNING:** This repository is no longer maintained. SerilogJS has been renamed to [structured-log](https://github.com/structured-log/structured-log) and been moved to the [*structured-log*](https://github.com/structured-log) organisation. 
 
 A sketch pad for exploring what a JavaScript implementation of Serilog might look like.
 
