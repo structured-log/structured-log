@@ -2,7 +2,7 @@
 
 The Javascript version of [Serilog](http://serilog.net/).
 
-**NOTE:** structured-log is a work in progress, this package was published from the [dev branch](https://github.com/structured-log/serilog.js/tree/dev). 
+**WARNING:** structured-log is a work in progress and will change over time.
 
 ## Installation
 
