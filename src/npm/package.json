@@ -1,7 +1,7 @@
 {
-  "name": "structured-log",
+  "name": "structured-log-dev",
   "version": "0.0.5",
-  "description": "NodeJS structured logging framework based on Serilog.",
+  "description": "(Development version). NodeJS structured logging framework based on Serilog.",
   "main": "serilog.js",
   "scripts": {
   },
