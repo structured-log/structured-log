@@ -30,7 +30,7 @@ gulp.task('copy-bower-js', [], function(){
 });
 
 gulp.task('copy-bower-json', [], function(){
-  return gulp.src(['src/npm/*.json'])
+  return gulp.src(['src/bower/*.json'])
     .pipe(gulp.dest('dist/bower'));
 });
 

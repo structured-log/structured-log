@@ -1,18 +1,18 @@
 {
   "name": "structured-log",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "homepage": "https://github.com/structured-log/structured-log",
   "authors": [
-    "ashley@codecapers.com.au"
+    "Ashley Davis <ashley@codecapers.com.au>"
   ],
-  "description": "Cilent-side/browser structured logging framework based on Serilog.",
+  "description": "Client-side/browser structured logging framework based on Serilog.",
   "main": "serilog.min.js",
   "keywords": [
     "logging",
     "structured",
     "semantic"
   ],
-  "license": "Apache 2",
+  "license": "Apache-2.0",
   "ignore": [
     "**/.*",
     "node_modules",
