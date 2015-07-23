@@ -90,8 +90,6 @@ Errors:
 
 	log.error('Something bad happened...');
 	log.error(exceptionOrErrorObject, 'Something bad happend...');
-	log.fatal('Something bad happened...');
-	log.fatal(exceptionOrErrorObject, 'Something bad happend...');
 
 ## Structured Logging
 
