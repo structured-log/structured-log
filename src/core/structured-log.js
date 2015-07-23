@@ -246,7 +246,7 @@
 
   var createLogger = function(levelMap, pipeline) {
     var self = function() {
-      self.information.apply(null, arguments);
+      self.info.apply(null, arguments);
     };
 
     self.toString = function() { return 'Logger'; };
@@ -277,12 +277,12 @@
       invoke('TRACE', mt, arguments);
     };
 
-    self.information = function(messageTemplate) {
+    self.info = function(messageTemplate) {
       var mt = Array.prototype.shift.call(arguments);
       invoke('INFORMATION', mt, arguments);
     };
 
-    self.warning = function(messageTemplate) {
+    self.warn = function(messageTemplate) {
       var mt = Array.prototype.shift.call(arguments);
       invoke('WARNING', mt, arguments);
     };

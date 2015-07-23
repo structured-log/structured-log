@@ -102,14 +102,14 @@ Here are some examples that have been adapted for Javascript from the [Serilog C
 	var position = { Latitude: 25, Longitude: 134 };
 	var elapsedMs = 34;
 	
-	log.information("Processed {@Position} in {Elapsed:000} ms.", {
+	log.info("Processed {@Position} in {Elapsed:000} ms.", {
 		Position: position,
 		Elapsed: elapsedMs
 	});
 
 Properties can also be specified by positional parameters, the same as how it works in Serilog C#: 
 
-	log.information("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+	log.info("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
 
 ## Included Sinks
 
