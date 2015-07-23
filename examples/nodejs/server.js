@@ -6,7 +6,7 @@ var log = structuredLog.configuration()
 	.writeTo(consoleSink())
     .createLogger();
 
-log.information('Hello this is some information.');
+log.info('Hello this is some information.');
 
 log.warn('This is a warning.');
 
