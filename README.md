@@ -1,31 +1,31 @@
-#serilog.js
+#structured-log
 
-The Javascript version of [Serilog](http://serilog.net/).
+A structured logging framework for Javascript. Based on [Serilog](http://serilog.net/).
 
 **WARNING:** structured-log is a work in progress and will change over time.
 
 ## Installation
 
-### Server-side ([Node.js](https://nodejs.org/)) via [npm](https://www.google.com.au/webhp?sourceid=chrome-instant&ion=1&espv=2&es_th=1&ie=UTF-8#es_th=1&q=npm)
+### Server-side ([Node.js](https://nodejs.org/)) via [npm](https://www.npmjs.com/package/structured-log)
 
-  npm install --save serilog
+  npm install --save structured-log
 
-### Client-side (Web Browser) via [Bower](http://bower.io/)
+### Client-side (Web Browser) via [Bower](http://bower.io/search/?q=structured-log)
 
-  bower install --save serilog
+  bower install --save structured-log
  
 ## Basic Setup
 
-This section describes the most basic Serilog setup for both server and client.
+This section describes the most basic *structured-log* configuration for server and client.
 
 ### Server-side
 
 In your NodeJS script:
 
-	var serilog = require('serilog');
-	var coloredConsoleSink = require('serilog-colored-console-sink');
+	var structuredLog = require('structured-log');
+	var coloredConsoleSink = require('structured-log/colored-console-sink');
 
-	var log = serilog.configuration()
+	var log = structuredLog.configuration()
     	.writeTo(coloredConsoleSink())
 	    .createLogger();
     
@@ -34,20 +34,20 @@ In your NodeJS script:
 In your HTML file:
 
 ```
-  <script type='text/javascript' src='bower_components/serilog/serilog.js />
+  <script type='text/javascript' src='bower_components/structured-log/structured-log.min.js />
 ```
 
 In your Javascript code:
 
-	var log = serilog.configuration() 
-    	.writeTo(serilog.consoleSink())
+	var log = structuredLog.configuration() 
+    	.writeTo(structuredLog.consoleSink())
 	    .createLogger();
   
 ### Multiple sinks
 
-Serilog configuration is a *fluent API* that can be used to configure a logger. One example of this is to specify multilple sinks, eg:
+Setup of *structured-log* is via a *fluent API* that configures and creates a logger. One example of this is to specify multilple sinks, eg:
 
-	var log = serilog.configuration() 
+	var log = structuredLog.configuration() 
 		.writeTo(consoleSink)
 		.writeTo(httpSink({ url: '<some-url>' }))
 		.createLogger();
@@ -56,11 +56,11 @@ Serilog configuration is a *fluent API* that can be used to configure a logger. 
 
 A log can easily be piped to another log:
 
-	var someOtherLog = serilog.configuration()
+	var someOtherLog = structuredLog.configuration()
 		// ... setup ...
 		.createLogger(); 
 
-	var log = serilog.configuration() 
+	var log = structuredLog.configuration() 
 		.writeTo(consoleSink)
 		.writeTo(someOtherLog)
 		.createLogger();
@@ -95,7 +95,7 @@ Errors:
 
 ## Structured Logging
 
-All the logging functions accept a message template and a set of key/value properties that are used to render the template when constring the log message for display. The properties are maintained separately to the template and rendered message which is what makes Serilog a structured logging system.
+All the logging functions accept a message template and a set of key/value properties that are used to render the template when constring the log message for display. The properties are maintained separately to the template and rendered message which is what makes this a structured logging system.
 
 Here are some examples that have been adapted for Javascript from the [Serilog C# examples](http://serilog.net/):
  
@@ -115,7 +115,7 @@ Properties can also be specified by positional parameters, the same as how it wo
 
 A *sink* is a plugin that is invoked for each *log event*. Usualy a sink defines an *output method* for logs, such as the ability to output to the [console]( https://developer.mozilla.org/en/docs/Web/API/console).  
 
-Seriogjs includes a number of built-in sinks.
+*structured-log* includes a number of built-in sinks.
 
 ### Server-side
 
@@ -148,9 +148,9 @@ Some of the sinks are batched. Batched sinks process multiple log events at once
 
 All batched sinks (even custom batched sinks) have the same standard configuration options.
 
-	var httpSink = require('serilog-http-sink'); 
+	var httpSink = require('structured-log-http-sink'); 
 	
-	var log = serilog.configuration()
+	var log = structuredLog.configuration()
 		.writeTo(httpSink({
 			url: 'http://somelogreceiver',    // Configuration for the custom sink.
 			batchSize: 1000,          // Flush the queue every 1000 logs.
@@ -200,7 +200,7 @@ The second option is to use the promise that is returned by *flush*:
 
 A number of additional sinks are available as separate packages.
 
-If you release your own custom sink for Serilogjs please let us know and we'll add it to the list!  
+If you release your own custom sink for *structured-log* please let us know and we'll add it to the list!  
 
 ### Server-side (via npm)
 
@@ -240,7 +240,7 @@ Non-batched sinks process each log event individually:
 		// Whatever custom options you need...
 	};
 	
-	var log = serilog.configure()
+	var log = structuredLog.configure()
 		.writeTo(myCustomSink(customSinkOptions))
 		.createLogger();
 
@@ -266,14 +266,14 @@ SomewhereElse.js:
 		// Whatever custom options you need...
 	};
 	
-	var log = serilog.configure()
+	var log = structuredLog.configure()
 		.writeTo(myCustomSink(customSinkOptions))
 		.createLogger();
 
 
 ### Batched custom sink
 
-Batched sinks process a batch of log events at a time. Serilogjs buffers log events until the log queue is flushed. By simply replacing the *emit* function with *emitBatch* you can convert your sink to work in batched mode, accepting an *array* of log events instead of just a single  log event.
+Batched sinks process a batch of log events at a time. *structured-log* buffers log events until the log queue is flushed. By simply replacing the *emit* function with *emitBatch* you can convert your sink to work in batched mode, accepting an *array* of log events instead of just a single  log event.
 
 	var myCustomSink = function (options) {
 		return {
@@ -287,20 +287,20 @@ Batched sinks process a batch of log events at a time. Serilogjs buffers log eve
 
 ## Advanced Setup
 
-The Serilog *fluent API* has a number of functions used to configure your log.
+The *fluent API* has numerous functions to configure your log.
 
 ### Log Levels
 
 Set the minimum log level that is output:
 
-	var log = serilog.configuration()
+	var log = structuredLog.configuration()
 		.minimumLevel('WARN')
 		.writeTo(consoleSink())
 		.createLogger();
 
 *minimumLevel* applies to subsequent sinks in the configuration, so you can use it to set a different level for each sink: 
 
-	var log = serilog.configuration()
+	var log = structuredLog.configuration()
 		.minimumLevel('VERBOSE')
 		.writeTo(consoleSink())
 		.minimumLevel('INFO')
@@ -313,7 +313,7 @@ Set the minimum log level that is output:
 
 Custom filtering can be applied to include/exclude logging based on a predicate function. 
 
-	var log = serilog.configuration()
+	var log = structuredLog.configuration()
 		.filter(function (logEvent) {
 			return someCondition(logEvent);
 		})
@@ -322,7 +322,7 @@ Custom filtering can be applied to include/exclude logging based on a predicate 
 
 This kind of filtering affects subsequent sinks in the configuration, you can use it in combination with *clearFilter* to provide different filters for different sinks: 
 
-	var log = serilog.configuration()
+	var log = structuredLog.configuration()
 		.filter(function (logEvent) {
 			return okForConsole(logEvent);
 		}))
@@ -346,7 +346,7 @@ Logs can also be filtered after configuration, this effectively creates a new lo
 
 Enrichment can be used to add key/value properties to all logs output via a particular logger.
 
-	var log = serilog.configuration()
+	var log = structuredLog.configuration()
 		.enrich({
 			UserId: getCurUserId(),
 			SessionId: getCurSessionId(),
@@ -370,7 +370,7 @@ Logs can also be enriched after configuration, this effectively creates a new lo
 
 Logs can be tagged with string values. This is useful to filter and categories logs generated by an application:
 
-	var log = serilog.configuration()
+	var log = structuredLog.configuration()
 		.tag("authentication-system")
 		.writeTo(consoleSink())
 		.createLogger();
