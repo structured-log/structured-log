@@ -167,8 +167,8 @@ Either of these options can be omitted and be set to default values.
 The queue of batched logs can be flushed at any time by calling the *flush* function.
 
 If it suits your purpose you can simply call flush:
-
-  log.flush();
+	
+	log.flush();
 
 If you need a callback when the flush has completed you have two options.
 
