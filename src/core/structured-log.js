@@ -277,6 +277,9 @@
       invoke('TRACE', mt, arguments);
     };
 
+    self.verbose = self.trace;
+    self.debug = self.trace;
+
     self.info = function(messageTemplate) {
       var mt = Array.prototype.shift.call(arguments);
       invoke('INFORMATION', mt, arguments);
