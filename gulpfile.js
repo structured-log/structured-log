@@ -12,17 +12,17 @@ gulp.task('clean-npm', function(){
 });
 
 gulp.task('minify-bower-js', [], function(){
-  return gulp.src(['src/core/serilog.js', 'src/bower/*.js'])
+  return gulp.src(['src/core/*.js', 'src/bower/*.js'])
     .pipe(jshint('.jshintrc'))
     .pipe(jshint.reporter('default'))
     .pipe(jshint.reporter('fail'))
     .pipe(uglify({mangle: false}))
-    .pipe(concat('serilog.min.js'))
+    .pipe(concat('structured-log.min.js'))
     .pipe(gulp.dest('dist/bower'));
 });
 
 gulp.task('copy-bower-js', [], function(){
-  return gulp.src(['src/core/serilog.js', 'src/bower/*.js'])
+  return gulp.src(['src/core/*.js', 'src/bower/*.js'])
     .pipe(jshint('.jshintrc'))
     .pipe(jshint.reporter('default'))
     .pipe(jshint.reporter('fail'))
@@ -42,7 +42,7 @@ gulp.task('copy-bower-readme', [], function(){
 gulp.task('build-bower', ['minify-bower-js', 'copy-bower-js', 'copy-bower-json', 'copy-bower-readme']);
 
 gulp.task('copy-npm-js', ['clean-npm'], function(){
-  return gulp.src(['src/core/serilog.js', 'src/npm/*.js', 'src/npm/*.json'])
+  return gulp.src(['src/core/*.js', 'src/npm/*.js', 'src/npm/*.json'])
     .pipe(jshint('.jshintrc'))
     .pipe(jshint.reporter('default'))
     .pipe(jshint.reporter('fail'))
@@ -72,8 +72,8 @@ gulp.task('test', ['build'], function(cb) {
 });
 
 gulp.task('smoke', ['test'], function() {
-  var serilog = require('./dist/npm/serilog.js');
-  var terminal = require('./dist/npm/serilog-terminal-sink.js');
+  var serilog = require('./dist/npm/structured-log.js');
+  var terminal = require('./dist/npm/terminal-sink.js');
 
   var log = serilog.configuration()
     .minimumLevel('TRACE')

@@ -1,6 +1,6 @@
 
-var log = serilog.configuration() 
-    .writeTo(serilog.sink.console())
+var log = structuredLog.configuration() 
+    .writeTo(structuredLog.sink.console())
     .createLogger();
 
 log.information('Hello this is some information.');

@@ -1,6 +1,6 @@
-# SerilogJS NodeJS Server-side Example
+# structured-log NodeJS Server-side Example
 
-This example is a very simple example shows setup and usage of SerilogJS in NodeJS.
+This example is a very simple example shows setup and usage of *structured-log* in NodeJS.
 
 To run you first need to have [NodeJS](https://nodejs.org/) installed.
 

@@ -21,7 +21,7 @@
   } else if (typeof exports === 'object') {
     module.exports = factory();
   } else {
-    root.serilog = factory();
+    root.structuredLog = factory();
   }
 }(this, function () {
   function MessageTemplate(messageTemplate) {

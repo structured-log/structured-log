@@ -1,6 +1,6 @@
-# SerilogJS Client-side Example
+# structured-log Client-side Example
 
-This example is a very simple web page that includes an example setup and usage of SerilogJS.
+This example is a very simple web page that includes an example setup and usage of *structured-log*.
 
 To run, first change directory to where the example is (where this *readme* is): 
 
