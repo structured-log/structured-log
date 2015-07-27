@@ -50,7 +50,7 @@
       write.error = function(m, p) { if(p) { console.error(m, p); } else { console.error(m); } };
     }
 
-    self.emit = function(evts) {
+    self.emit = function(evt) {
       var formatted = '';
       if (options.timestamp) {
         formatted += evt.timestamp.toISOString().replace('T', ' ').replace('Z', '') + ' ';
