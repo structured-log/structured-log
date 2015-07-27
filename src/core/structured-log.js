@@ -21,7 +21,7 @@
   } else if (typeof exports === 'object') {
     module.exports = factory();
   } else {
-    root.serilog = factory();
+    root.structuredLog = factory();
   }
 }(this, function () {
   function MessageTemplate(messageTemplate) {
@@ -177,13 +177,17 @@
     return self.messageTemplate.render(self.properties);
   };
 
+  var errorLevel = 'ERROR';
+  var warnLevel = 'WARN';
+  var infoLevel = 'INFO';
+  var verboseLevel = 'VERBOSE';
 
   function LevelMap(initial) {
     var self = this;
     self.levels = {};
 
     if (initial !== 'OFF') {
-      var sequence = ['ERROR', 'WARNING', 'INFORMATION', 'TRACE'];
+      var sequence = [errorLevel, warnLevel, infoLevel, verboseLevel];
 
       var below = false;
       for (var i = 0; i < sequence.length; ++i) {
@@ -246,7 +250,7 @@
 
   var createLogger = function(levelMap, pipeline) {
     var self = function() {
-      self.information.apply(null, arguments);
+      self.info.apply(null, arguments);
     };
 
     self.toString = function() { return 'Logger'; };
@@ -272,24 +276,24 @@
       pipeline.execute(evt);
     };
 
-    self.trace = function(messageTemplate) {
+    self.verbose = function(messageTemplate) {
       var mt = Array.prototype.shift.call(arguments);
-      invoke('TRACE', mt, arguments);
+      invoke(verboseLevel, mt, arguments);
     };
 
-    self.information = function(messageTemplate) {
+    self.info = function(messageTemplate) {
       var mt = Array.prototype.shift.call(arguments);
-      invoke('INFORMATION', mt, arguments);
+      invoke(infoLevel, mt, arguments);
     };
 
-    self.warning = function(messageTemplate) {
+    self.warn = function(messageTemplate) {
       var mt = Array.prototype.shift.call(arguments);
-      invoke('WARNING', mt, arguments);
+      invoke(warnLevel, mt, arguments);
     };
 
     self.error = function(messageTemplate) {
       var mt = Array.prototype.shift.call(arguments);
-      invoke('ERROR', mt, arguments);
+      invoke(errorLevel, mt, arguments);
     };
 
     self.using = function(properties, destructure){
@@ -314,7 +318,7 @@
   function LoggerConfiguration() {
     var self = this;
 
-    var minimumLevel = 'INFORMATION';
+    var minimumLevel = infoLevel;
     var pipeline = [];
     var endWith = [];
 
@@ -354,7 +358,7 @@
           if (typeof onError === 'function') {
             onError(err, evt, next);
           } else if (!evt.properties.isSelfLog) {
-            var notification = createEvent('ERROR', 'Failed to write event {@event} to {sink}: {error}', evt, sinkOrEmit, err);
+            var notification = createEvent(errorLevel, 'Failed to write event {@event} to {sink}: {error}', evt, sinkOrEmit, err);
             notification.properties.isSelfLog = true;
             next(notification);
           }

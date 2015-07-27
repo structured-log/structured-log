@@ -21,7 +21,7 @@
   } else if (typeof exports === 'object') {
     module.exports = factory();
   } else {
-    root.serilog.sink.console = factory();
+    root.structuredLog.sink.console = factory();
   }
 }(this, function() {
 

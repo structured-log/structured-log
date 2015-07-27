@@ -1,13 +1,13 @@
 
-var serilog = require('structured-log');
-var consoleSink = require('structured-log/serilog-console-sink');
+var structuredLog = require('structured-log-dev');
+var consoleSink = require('structured-log-dev/console-sink');
 
-var log = serilog.configuration()
+var log = structuredLog.configuration()
 	.writeTo(consoleSink())
     .createLogger();
 
-log.information('Hello this is some information.');
+log.info('Hello this is some information.');
 
-log.warning('This is a warning.');
+log.warn('This is a warning.');
 
 log.error('This is an error.');

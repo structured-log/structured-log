@@ -1,12 +1,12 @@
 {
-  "name": "structured-log",
-  "version": "0.0.5",
+  "name": "structured-log-dev",
+  "version": "0.0.9",
   "homepage": "https://github.com/structured-log/structured-log",
   "authors": [
     "Ashley Davis <ashley@codecapers.com.au>"
   ],
-  "description": "Client-side/browser structured logging framework based on Serilog.",
-  "main": "serilog.min.js",
+  "description": "(Development version). Client-side/browser structured logging framework based on Serilog.",
+  "main": "structured-log.min.js",
   "keywords": [
     "logging",
     "structured",
