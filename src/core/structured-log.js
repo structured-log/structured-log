@@ -403,26 +403,53 @@
         if (!batchOptions.timeDuration) {
             batchOptions.timeDuration = 1000;
         }
-        
+
         var batchedLogEvents = [];
         var lastFlushTime = (new Date()).getTime();
 
         return self.pipe(function (evt, next) {
-            batchedLogEvents.push(evt);
 
-            var curTime = (new Date()).getTime();
+            if (batchFlushTimeout) {
+                // Cancel previous pending batch flush.
+                clearTimeout(batchFlushTimeout);
+                batchFlushTimeout = null;
+            }
 
-            if ((batchOptions.batchSize && batchedLogEvents.length >= batchOptions.batchSize) ||
-                (batchOptions.timeDuration && (curTime - lastFlushTime) > batchOptions.timeDuration)) {
+            var batchFlushTimeout = null; // Used to cancel the pending flush.        
 
+            // 
+            // Flush the batch.
+            //
+            var flushBatch = function () {
                 // Flush the batch.
                 batchedLogEvents.reverse();
                 batchedLogEvents.forEach(function (batchedEvent) {
                     next(batchedEvent);
                 });
-                batchedLogEvents = [];
 
+                batchedLogEvents = [];
                 lastFlushTime = curTime;
+                batchFlushTimeout = null;
+            };
+
+            // Queue pending batch flush.
+            batchFlushTimeout = setTimeout(flushBatch, batchOptions.timeDuration);
+
+            batchedLogEvents.push(evt);
+
+            var curTime = (new Date()).getTime();
+
+
+            if (batchedLogEvents.length >= batchOptions.batchSize ||
+                batchOptions.timeDuration && (curTime - lastFlushTime) > batchOptions.timeDuration) {
+
+                if (batchFlushTimeout) {
+                    // Cancel previous pending batch flush.
+                    clearTimeout(batchFlushTimeout);
+                    batchFlushTimeout = null;
+                }
+
+                flushBatch();
             }
         });
     };
