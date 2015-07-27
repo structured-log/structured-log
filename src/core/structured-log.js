@@ -335,7 +335,7 @@
         });
       }
 
-      minimumLevel = (lvl || 'INFO').toUpperCase();
+      minimumLevel = (lvl || infoLevel).toUpperCase();
       return self;
     };
 
