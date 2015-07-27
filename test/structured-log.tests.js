@@ -212,4 +212,27 @@ describe('Logger', function(){
       assert.equal(undefined, written[0].properties.machine);
     });
   });
+
+    it('batching by size should suppress log events until the size has been reached', function () {
+
+        var written = [];
+        var log = serilog.configuration()
+            .batch({
+                batchSize: 2,
+            })
+            .writeTo(function(evt) { written.push(evt); })
+            .createLogger();
+
+        var log1 = '1';
+        log(log1);
+
+        assert.equal(0, written.length);
+
+        var log2 = '2';
+        log(log2);
+
+        assert.equal(2, written.length);
+        assert(log1, written[0].message);
+        assert(log2, written[1].message);
+    });
 });

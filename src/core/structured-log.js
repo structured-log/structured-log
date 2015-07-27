@@ -390,6 +390,43 @@
       });
     };
 
+    //
+    // Enable batching for sinks in the pipeline after this function.
+    //
+    self.batch = function (batchOptions) {
+        if (!batchOptions) {
+            batchOptions = {};    
+        }
+        if (!batchOptions.batchSize) {
+            batchOptions.batchSize = 100;
+        }
+        if (!batchOptions.timeDuration) {
+            batchOptions.timeDuration = 1000;
+        }
+        
+        var batchedLogEvents = [];
+        var lastFlushTime = (new Date()).getTime();
+
+        return self.pipe(function (evt, next) {
+            batchedLogEvents.push(evt);
+
+            var curTime = (new Date()).getTime();
+
+            if ((batchOptions.batchSize && batchedLogEvents.length >= batchOptions.batchSize) ||
+                (batchOptions.timeDuration && (curTime - lastFlushTime) > batchOptions.timeDuration)) {
+
+                // Flush the batch.
+                batchedLogEvents.reverse();
+                batchedLogEvents.forEach(function (batchedEvent) {
+                    next(batchedEvent);
+                });
+                batchedLogEvents = [];
+
+                lastFlushTime = curTime;
+            }
+        });
+    };
+
     self.createLogger = function() {
       var levelMap = new LevelMap(minimumLevel);
       return createLogger(levelMap, new Pipeline(pipeline, endWith));
