@@ -6,7 +6,7 @@ describe('LoggerConfiguration', function() {
     it('should suppress events below minimum level', function() {
       var written = [];
       var log = serilog.configuration()
-        .minimumLevel('WARNING')
+        .minimumLevel('WARN')
         .writeTo(function(evt) { written.push(evt); })
         .createLogger();
       log('Today is sunnny and clear');
@@ -17,7 +17,7 @@ describe('LoggerConfiguration', function() {
     it('should permit events above minimum level', function() {
       var written = [];
       var log = serilog.configuration()
-        .minimumLevel('WARNING')
+        .minimumLevel('WARN')
         .writeTo(function(evt) { written.push(evt); })
         .createLogger();
       log.error('The sky is falling!');
@@ -34,7 +34,7 @@ describe('LoggerConfiguration', function() {
         .minimumLevel('ERROR')
         .writeTo(function(evt) { errs.push(evt); })
         .createLogger();
-      log.warning('Today is stormy');
+      log.warn('Today is stormy');
 
       assert.equal(1, info.length);
       assert.equal(0, errs.length);
@@ -61,7 +61,7 @@ describe('LoggerConfiguration', function() {
         })
         .writeTo(function(evt) { written.push(evt); })
         .createLogger();
-      log.warning('A timely warning');
+      log.warn('A timely warning');
 
       assert.equal(2, written.length);
 
@@ -69,7 +69,7 @@ describe('LoggerConfiguration', function() {
       assert(written[0].properties.isSelfLog);
       assert.notEqual(-1, written[0].renderedMessage().indexOf('Broken!'));
 
-      assert.equal('WARNING', written[1].level);
+      assert.equal('WARN', written[1].level);
       assert(!written[1].properties.isSelfLog);
     });
   });
@@ -116,44 +116,44 @@ describe('LoggerConfiguration', function() {
 
 describe('serilog.event()', function(){
   it('should capture message template parameters', function(){
-    var evt = serilog.event('INFORMATION', 'Happy {age}th birthday, {name}!', 30, 'Fred');
+    var evt = serilog.event('INFO', 'Happy {age}th birthday, {name}!', 30, 'Fred');
     assert.equal(30, evt.properties.age);
     assert.equal('Fred', evt.properties.name);
   });
 
   it('should render messages', function(){
-    var evt = serilog.event('INFORMATION', 'Happy {age}th birthday, {name}!', 30, 'Fred');
+    var evt = serilog.event('INFO', 'Happy {age}th birthday, {name}!', 30, 'Fred');
     assert.equal('Happy 30th birthday, Fred!', evt.renderedMessage());
   });
 
   it('should capture extra parameters', function(){
-    var evt = serilog.event('INFORMATION', 'Hi, {name}!', 'Fred', 'Smith');
+    var evt = serilog.event('INFO', 'Hi, {name}!', 'Fred', 'Smith');
     assert.equal('Smith', evt.properties.a1);
     assert.equal('Fred', evt.properties.name);
   });
 
   it('should render missing parameters', function(){
-    var evt = serilog.event('INFORMATION', 'Happy {age}th birthday, {name}!', 30);
+    var evt = serilog.event('INFO', 'Happy {age}th birthday, {name}!', 30);
     assert.equal('Happy 30th birthday, {name}!', evt.renderedMessage());
   });
 
   it('should suppress missing properties', function(){
-    var evt = serilog.event('INFORMATION', 'Happy {age}th birthday, {name}!', 30);
+    var evt = serilog.event('INFO', 'Happy {age}th birthday, {name}!', 30);
     assert(!evt.properties.hasOwnProperty('name'));
   });
 
   it('should survive duplicate properties', function(){
-    var evt = serilog.event('INFORMATION', 'Hi, {name} {name}!', 'Fred', 'Smith');
+    var evt = serilog.event('INFO', 'Hi, {name} {name}!', 'Fred', 'Smith');
     assert.equal('Smith', evt.properties.name);
   });
 
   it('should stringify objects', function(){
-    var evt = serilog.event('INFORMATION', 'Hi, {person}!', { name: 'Fred' });
+    var evt = serilog.event('INFO', 'Hi, {person}!', { name: 'Fred' });
     assert.equal('string', typeof evt.properties.person);
   });
 
   it('should observe destructuring hints', function(){
-    var evt = serilog.event('INFORMATION', 'Hi, {@person}!', { name: 'Fred' });
+    var evt = serilog.event('INFO', 'Hi, {@person}!', { name: 'Fred' });
     assert.equal('object', typeof evt.properties.person);
     assert.equal('Fred', evt.properties.person.name);
   });
