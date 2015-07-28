@@ -80,9 +80,10 @@ gulp.task('smoke', ['test'], function() {
     .writeTo(terminal())
     .createLogger();
 
-  log.trace('This is a trace message: {really}', true);
-  log('Info: length of {string} is {length}', 'hello', 'hello'.length);
-  log.warning('This warning is about {@thing}', {dangerLevel: 'high'});
+  log.verbose('This is a verbose message: {really}', true);
+  log.debug('This is a debug message');
+  log('Length of {string} is {length}', 'hello', 'hello'.length);
+  log.warn('This warning is about {@thing}', {dangerLevel: 'high'});
   log.error('Last one!')
 });
 
