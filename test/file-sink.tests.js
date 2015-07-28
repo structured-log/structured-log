@@ -44,7 +44,7 @@ describe('FileSink', function() {
       assert(jvent.message === 'Hello, world!');
       assert(jvent.messageTemplate === 'Hello, {name}!');
       assert(jvent.properties.name === 'world');
-      assert(jvent.level === 'INFORMATION');
+      assert(jvent.level === 'INFO');
       done();
     });
   });
