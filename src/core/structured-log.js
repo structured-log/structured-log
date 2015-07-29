@@ -180,6 +180,7 @@
   var errorLevel = 'ERROR';
   var warnLevel = 'WARN';
   var infoLevel = 'INFO';
+  var debugLevel = 'DEBUG';
   var verboseLevel = 'VERBOSE';
 
   function LevelMap(initial) {
@@ -187,7 +188,7 @@
     self.levels = {};
 
     if (initial !== 'OFF') {
-      var sequence = [errorLevel, warnLevel, infoLevel, verboseLevel];
+      var sequence = [errorLevel, warnLevel, infoLevel, debugLevel, verboseLevel];
 
       var below = false;
       for (var i = 0; i < sequence.length; ++i) {
@@ -279,6 +280,11 @@
     self.verbose = function(messageTemplate) {
       var mt = Array.prototype.shift.call(arguments);
       invoke(verboseLevel, mt, arguments);
+    };
+
+    self.debug = function(messageTemplate) {
+      var mt = Array.prototype.shift.call(arguments);
+      invoke(debugLevel, mt, arguments);
     };
 
     self.info = function(messageTemplate) {
@@ -461,7 +467,7 @@
   }
 
 
-  function Serilog() {
+  function StructuredLog() {
     var self = this;
 
     self.sink = {};
@@ -483,6 +489,7 @@
     self.enrich.withStack = function() {
       return function(evt) {
         try {
+          //noinspection ExceptionCaughtLocallyJS
           throw new Error('getstack');
         } catch (err) {
           var stack = err.stack;
@@ -499,11 +506,11 @@
     };
   }
 
-  Serilog.prototype.configuration = function() {
+  StructuredLog.prototype.configuration = function() {
     return new LoggerConfiguration();
   };
 
-  Serilog.prototype.event = createEvent;
+  StructuredLog.prototype.event = createEvent;
 
-  return new Serilog();
+  return new StructuredLog();
 }));

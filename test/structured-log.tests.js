@@ -29,7 +29,7 @@ describe('LoggerConfiguration', function() {
       var info = [];
       var errs = [];
       var log = serilog.configuration()
-        .minimumLevel('INFORMATION')
+        .minimumLevel('INFO')
         .writeTo(function(evt) { info.push(evt); })
         .minimumLevel('ERROR')
         .writeTo(function(evt) { errs.push(evt); })

@@ -78,10 +78,13 @@ function TerminalSink(options) {
   };
 
   var palettes = {
-    'TRACE': {
+    'VERBOSE': {
       foreground: color(null, null, 'bright')
     },
-    'INFOR': {
+    'DEBUG': {
+      foreground: color(null, null, 'bright')
+    },
+    'INFO': {
       foreground: color('cyan', null, 'bright')
     },
     'WARN': {
