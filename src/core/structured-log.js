@@ -376,11 +376,11 @@
     self.enrich = function(functionOrProperties, destructure) {
       if (typeof functionOrProperties === 'object') {
         return self.enrich(function(event){
-          enrich(event, functionOrProperties, destructure);
-        });
+          return functionOrProperties;
+        }, destructure);
       } else if (typeof functionOrProperties === 'function') {
         return self.pipe(function(evt, next) {
-          functionOrProperties(evt);
+          enrich(evt, functionOrProperties(), destructure);
           next(evt);
         });
       } else {

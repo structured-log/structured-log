@@ -103,7 +103,7 @@ describe('LoggerConfiguration', function() {
     it('should add properties dynamically', function(){
       var written = [];
       var log = serilog.configuration()
-        .enrich(function(evt) { evt.properties.isHappy = true; })
+        .enrich(function() { return { isHappy: true }; })
         .writeTo(function(evt) { written.push(evt); })
         .createLogger();
       log.error('The sky is falling!');
