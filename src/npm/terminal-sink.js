@@ -78,13 +78,16 @@ function TerminalSink(options) {
   };
 
   var palettes = {
-    'TRACE': {
+    'VERBOSE': {
       foreground: color(null, null, 'bright')
     },
-    'INFORMATION': {
+    'DEBUG': {
+      foreground: color(null, null, 'bright')
+    },
+    'INFO': {
       foreground: color('cyan', null, 'bright')
     },
-    'WARNING': {
+    'WARN': {
       foreground: color('yellow', null, 'bright')
     },
     'ERROR': {
@@ -176,9 +179,9 @@ function TerminalSink(options) {
 
     if (evt.level === 'ERROR') {
       write.error(formatted, options.complete ? evt.properties : null);
-    } else if (evt.level === 'WARNING') {
+    } else if (evt.level === 'WARN') {
       write.warn(formatted, options.complete ? evt.properties : null);
-    } else if (evt.level === 'INFORMATION') {
+    } else if (evt.level === 'INFO') {
       write.info(formatted, options.complete ? evt.properties : null);
     } else {
       write.log(formatted, options.complete ? evt.properties : null);

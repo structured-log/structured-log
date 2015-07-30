@@ -60,9 +60,9 @@
 
       if (evt.level === 'ERROR') {
         write.error(formatted, options.complete ? evt.properties : null);
-      } else if (evt.level === 'WARNING') {
+      } else if (evt.level === 'WARN') {
         write.warn(formatted, options.complete ? evt.properties : null);
-      } else if (evt.level === 'INFORMATION') {
+      } else if (evt.level === 'INFO') {
         write.info(formatted, options.complete ? evt.properties : null);
       } else {
         write.log(formatted, options.complete ? evt.properties : null);
