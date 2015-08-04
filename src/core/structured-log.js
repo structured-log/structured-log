@@ -243,9 +243,9 @@
         cb();
       }
     };
-    for (var i = 0; i < self.endWith.length; ++i) {
-      self.endWith[i](onEnd);
-    }
+    self.endWith.forEach(function (endWith) {
+      endWith(onEnd);
+    });
   };
 
 
