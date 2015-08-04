@@ -231,21 +231,21 @@
     self.head(evt);
   };
 
-  Pipeline.prototype.end = function(cb) {
+  Pipeline.prototype.close = function(cb) {
     var self = this;
     var remaining = self.closeStages.length;
     if (remaining === 0) {
       cb();
       return;
     }
-    var onEnded = function() {
+    var onClosed = function() {
       remaining--;
       if (remaining === 0) {
         cb();
       }
     };
     self.closeStages.forEach(function (closeStage) {
-      closeStage(onEnded);
+      closeStage(onClosed);
     });
   };
 
@@ -314,8 +314,8 @@
       return createLogger(levelMap, enriched);
     };
 
-    self.end = function(cb) {
-      pipeline.end(cb);
+    self.close = function(cb) {
+      pipeline.close(cb);
     };
 
     return self;
@@ -354,8 +354,8 @@
         }, minimumLevel);
       }
 
-      if (typeof sinkOrEmit.end === 'function') {
-        closeStages.push(sinkOrEmit.end);
+      if (typeof sinkOrEmit.close === 'function') {
+        closeStages.push(sinkOrEmit.close);
       }
 
       return self.pipe(function(evt, next) {

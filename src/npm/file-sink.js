@@ -34,7 +34,7 @@ function FileSink(path, options) {
     stream.write(formatted + newline);
   };
 
-  self.end = function(cb) {
+  self.close = function(cb) {
     stream.end(null, null, cb);
   };
 }
