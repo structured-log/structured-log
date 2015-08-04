@@ -327,7 +327,7 @@
 
     var minimumLevel = infoLevel;
     var pipeline = [];
-    var endWith = [];
+    var closeStages = [];
 
     self.pipe = function(pipelineStage) {
       pipeline.push(pipelineStage);
@@ -355,7 +355,7 @@
       }
 
       if (typeof sinkOrEmit.end === 'function') {
-        endWith.push(sinkOrEmit.end);
+        closeStages.push(sinkOrEmit.end);
       }
 
       return self.pipe(function(evt, next) {
@@ -463,7 +463,7 @@
 
     self.createLogger = function() {
       var levelMap = new LevelMap(minimumLevel);
-      return createLogger(levelMap, new Pipeline(pipeline, endWith));
+      return createLogger(levelMap, new Pipeline(pipeline, closeStages));
     };
   }
 
