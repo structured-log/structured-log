@@ -207,20 +207,21 @@
   };
 
 
-  function Pipeline(elements, endWith) {
+  function Pipeline(pipelineStages, endWith) {
     var self = this;
-    self.elements = elements;
+    self.pipelineStages = pipelineStages;
     self.endWith = endWith || [];
 
     var head = function(evt) { };
-    var makeHead = function(el) {
+    var makeHead = function(pipelineStage) {
       var oldHead = head;
-      return function(evt) { el(evt, oldHead); };
+      return function(evt) { 
+        pipelineStage(evt, oldHead); 
+      };
     };
 
-    for (var i = self.elements.length - 1; i >= 0; --i) {
-      var el = self.elements[i];
-      head = makeHead(el);
+    for (var i = self.pipelineStages.length - 1; i >= 0; --i) {
+      head = makeHead(self.pipelineStages[i]);
     }
     self.head = head;
   }
@@ -328,8 +329,8 @@
     var pipeline = [];
     var endWith = [];
 
-    self.pipe = function(element) {
-      pipeline.push(element);
+    self.pipe = function(pipelineStage) {
+      pipeline.push(pipelineStage);
       return self;
     };
 
