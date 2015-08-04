@@ -207,10 +207,10 @@
   };
 
 
-  function Pipeline(pipelineStages, endWith) {
+  function Pipeline(pipelineStages, closeStages) {
     var self = this;
     self.pipelineStages = pipelineStages;
-    self.endWith = endWith || [];
+    self.closeStages = closeStages || [];
 
     var head = function(evt) { };
     var makeHead = function(pipelineStage) {
@@ -233,19 +233,19 @@
 
   Pipeline.prototype.end = function(cb) {
     var self = this;
-    var remaining = self.endWith.length;
+    var remaining = self.closeStages.length;
     if (remaining === 0) {
       cb();
       return;
     }
-    var onEnd = function() {
+    var onEnded = function() {
       remaining--;
       if (remaining === 0) {
         cb();
       }
     };
-    self.endWith.forEach(function (endWith) {
-      endWith(onEnd);
+    self.closeStages.forEach(function (closeStage) {
+      closeStage(onEnded);
     });
   };
 
