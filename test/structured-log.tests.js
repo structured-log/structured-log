@@ -268,4 +268,28 @@ describe('Logger', function(){
             }, 100);
 
     });
+
+    it('batching should be flushed on close', function (done) {
+
+        var written = [];
+        var log = serilog.configuration()
+            .batch({
+                timeDuration: 100,
+            })
+            .writeTo(function(evt) { written.push(evt); })
+            .createLogger();
+
+        var log1 = '1';
+        log(log1);
+
+        assert.equal(0, written.length);
+
+        log.close(function () {
+            assert.equal(1, written.length);
+            assert(log1, written[0].message);
+
+            done();
+        });
+
+    });    
 });

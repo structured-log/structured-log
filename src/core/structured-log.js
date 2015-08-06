@@ -414,6 +414,17 @@
         var batchedLogEvents = [];
         var lastFlushTime = (new Date()).getTime();
 
+        var flushBatch = null;
+
+        closeStages.push(function (callback) {
+            // Flush the batch when the log is closed.
+            if (flushBatch) {
+                flushBatch();
+            }
+
+            callback();
+        });
+
         return self.pipe(function (evt, next) {
 
             if (batchFlushTimeout) {
@@ -427,7 +438,7 @@
             // 
             // Flush the batch.
             //
-            var flushBatch = function () {
+            flushBatch = function () {
                 // Flush the batch.
                 batchedLogEvents.reverse();
                 batchedLogEvents.forEach(function (batchedEvent) {
@@ -437,6 +448,7 @@
                 batchedLogEvents = [];
                 lastFlushTime = curTime;
                 batchFlushTimeout = null;
+                flushBatch = null;
             };
 
             // Queue pending batch flush.
