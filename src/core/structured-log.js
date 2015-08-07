@@ -207,20 +207,21 @@
   };
 
 
-  function Pipeline(elements, endWith) {
+  function Pipeline(pipelineStages, closeStages) {
     var self = this;
-    self.elements = elements;
-    self.endWith = endWith || [];
+    self.pipelineStages = pipelineStages;
+    self.closeStages = closeStages || [];
 
     var head = function(evt) { };
-    var makeHead = function(el) {
+    var makeHead = function(pipelineStage) {
       var oldHead = head;
-      return function(evt) { el(evt, oldHead); };
+      return function(evt) { 
+        pipelineStage(evt, oldHead); 
+      };
     };
 
-    for (var i = self.elements.length - 1; i >= 0; --i) {
-      var el = self.elements[i];
-      head = makeHead(el);
+    for (var i = self.pipelineStages.length - 1; i >= 0; --i) {
+      head = makeHead(self.pipelineStages[i]);
     }
     self.head = head;
   }
@@ -230,22 +231,22 @@
     self.head(evt);
   };
 
-  Pipeline.prototype.end = function(cb) {
+  Pipeline.prototype.close = function(cb) {
     var self = this;
-    var remaining = self.endWith.length;
+    var remaining = self.closeStages.length;
     if (remaining === 0) {
       cb();
       return;
     }
-    var onEnd = function() {
+    var onClosed = function() {
       remaining--;
       if (remaining === 0) {
         cb();
       }
     };
-    for (var i = 0; i < self.endWith.length; ++i) {
-      self.endWith[i](onEnd);
-    }
+    self.closeStages.forEach(function (closeStage) {
+      closeStage(onClosed);
+    });
   };
 
 
@@ -313,8 +314,8 @@
       return createLogger(levelMap, enriched);
     };
 
-    self.end = function(cb) {
-      pipeline.end(cb);
+    self.close = function(cb) {
+      pipeline.close(cb);
     };
 
     return self;
@@ -326,10 +327,10 @@
 
     var minimumLevel = infoLevel;
     var pipeline = [];
-    var endWith = [];
+    var closeStages = [];
 
-    self.pipe = function(element) {
-      pipeline.push(element);
+    self.pipe = function(pipelineStage) {
+      pipeline.push(pipelineStage);
       return self;
     };
 
@@ -341,7 +342,7 @@
         });
       }
 
-      minimumLevel = (lvl || 'INFO').toUpperCase();
+      minimumLevel = (lvl || infoLevel).toUpperCase();
       return self;
     };
 
@@ -353,8 +354,8 @@
         }, minimumLevel);
       }
 
-      if (typeof sinkOrEmit.end === 'function') {
-        endWith.push(sinkOrEmit.end);
+      if (typeof sinkOrEmit.close === 'function') {
+        closeStages.push(sinkOrEmit.close);
       }
 
       return self.pipe(function(evt, next) {
@@ -376,11 +377,11 @@
     self.enrich = function(functionOrProperties, destructure) {
       if (typeof functionOrProperties === 'object') {
         return self.enrich(function(event){
-          enrich(event, functionOrProperties, destructure);
-        });
+          return functionOrProperties;
+        }, destructure);
       } else if (typeof functionOrProperties === 'function') {
         return self.pipe(function(evt, next) {
-          functionOrProperties(evt);
+          enrich(evt, functionOrProperties(), destructure);
           next(evt);
         });
       } else {
@@ -396,9 +397,85 @@
       });
     };
 
+    //
+    // Enable batching for sinks in the pipeline after this function.
+    //
+    self.batch = function (batchOptions) {
+        if (!batchOptions) {
+            batchOptions = {};    
+        }
+        if (!batchOptions.batchSize) {
+            batchOptions.batchSize = 100;
+        }
+        if (!batchOptions.timeDuration) {
+            batchOptions.timeDuration = 1000;
+        }
+
+        var batchedLogEvents = [];
+        var lastFlushTime = (new Date()).getTime();
+
+        var flushBatch = null;
+
+        closeStages.push(function (callback) {
+            // Flush the batch when the log is closed.
+            if (flushBatch) {
+                flushBatch();
+            }
+
+            callback();
+        });
+
+        return self.pipe(function (evt, next) {
+
+            if (batchFlushTimeout) {
+                // Cancel previous pending batch flush.
+                clearTimeout(batchFlushTimeout);
+                batchFlushTimeout = null;
+            }
+
+            var batchFlushTimeout = null; // Used to cancel the pending flush.        
+
+            // 
+            // Flush the batch.
+            //
+            flushBatch = function () {
+                // Flush the batch.
+                batchedLogEvents.reverse();
+                batchedLogEvents.forEach(function (batchedEvent) {
+                    next(batchedEvent);
+                });
+
+                batchedLogEvents = [];
+                lastFlushTime = curTime;
+                batchFlushTimeout = null;
+                flushBatch = null;
+            };
+
+            // Queue pending batch flush.
+            batchFlushTimeout = setTimeout(flushBatch, batchOptions.timeDuration);
+
+            batchedLogEvents.push(evt);
+
+            var curTime = (new Date()).getTime();
+
+
+            if (batchedLogEvents.length >= batchOptions.batchSize ||
+                batchOptions.timeDuration && (curTime - lastFlushTime) > batchOptions.timeDuration) {
+
+                if (batchFlushTimeout) {
+                    // Cancel previous pending batch flush.
+                    clearTimeout(batchFlushTimeout);
+                    batchFlushTimeout = null;
+                }
+
+                flushBatch();
+            }
+        });
+    };
+
     self.createLogger = function() {
       var levelMap = new LevelMap(minimumLevel);
-      return createLogger(levelMap, new Pipeline(pipeline, endWith));
+      return createLogger(levelMap, new Pipeline(pipeline, closeStages));
     };
   }
 

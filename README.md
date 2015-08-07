@@ -352,6 +352,18 @@ Enrichment can be used to add key/value properties to all logs output via a part
 		.writeTo(consoleSink())
 		.createLogger();
 
+A function can also be provided that is evaluated at runtime to attach properties to log events in a more dynamic fashion:
+
+	var log = structuredLog.configuration()
+		.enrich(function () {
+			return {
+				UserId: getCurUserId(),
+				SessionId: getCurSessionId(),		
+			};
+		})
+		.writeTo(consoleSink())
+		.createLogger();
+
 Any number of properties can be attached to log messages in this manner. The properties may then be used in the log messages themselves:
 
 	log.info("Current user {UserId} has done something.");

@@ -23,7 +23,7 @@ describe('FileSink', function() {
     log('Hello, world!');
     log.error('Bork!');
 
-    log.end(function(){
+    log.close(function(){
       var content = fs.readFileSync('tmp/file-sink-test1.txt', {encoding: 'utf-8'});
       assert(content.indexOf('Hello') !== -1);
       assert(content.indexOf('Bork') !== -1);
@@ -38,7 +38,7 @@ describe('FileSink', function() {
 
     log('Hello, {name}!', 'world');
 
-    log.end(function(){
+    log.close(function(){
       var content = fs.readFileSync('tmp/file-sink-test2.jsnl', {encoding: 'utf-8'});
       var jvent = JSON.parse(content);
       assert(jvent.message === 'Hello, world!');

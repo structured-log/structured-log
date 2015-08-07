@@ -103,7 +103,7 @@ describe('LoggerConfiguration', function() {
     it('should add properties dynamically', function(){
       var written = [];
       var log = serilog.configuration()
-        .enrich(function(evt) { evt.properties.isHappy = true; })
+        .enrich(function() { return { isHappy: true }; })
         .writeTo(function(evt) { written.push(evt); })
         .createLogger();
       log.error('The sky is falling!');
@@ -212,4 +212,84 @@ describe('Logger', function(){
       assert.equal(undefined, written[0].properties.machine);
     });
   });
+
+    it('batching by size should suppress log events until the size has been reached', function () {
+
+        var written = [];
+        var log = serilog.configuration()
+            .batch({
+                batchSize: 2,
+            })
+            .writeTo(function(evt) { written.push(evt); })
+            .createLogger();
+
+        var log1 = '1';
+        log(log1);
+
+        assert.equal(0, written.length);
+
+        var log2 = '2';
+        log(log2);
+
+        assert.equal(2, written.length);
+        assert(log1, written[0].message);
+        assert(log2, written[1].message);
+    });
+
+    it('batching by time should suppress log events until the time has elapsed', function (done) {
+
+        var written = [];
+        var log = serilog.configuration()
+            .batch({
+                timeDuration: 100,
+            })
+            .writeTo(function(evt) { written.push(evt); })
+            .createLogger();
+
+        var log1 = '1';
+        log(log1);
+
+        assert.equal(0, written.length);
+
+        // Wait for the time out to elapse.
+        setTimeout(function () {
+    
+                try {
+                    assert.equal(1, written.length);
+                    assert(log1, written[0].message);
+                }
+                catch (ex)
+                {
+                    done(ex);
+                    return;
+                }
+
+                done();
+            }, 100);
+
+    });
+
+    it('batching should be flushed on close', function (done) {
+
+        var written = [];
+        var log = serilog.configuration()
+            .batch({
+                timeDuration: 100,
+            })
+            .writeTo(function(evt) { written.push(evt); })
+            .createLogger();
+
+        var log1 = '1';
+        log(log1);
+
+        assert.equal(0, written.length);
+
+        log.close(function () {
+            assert.equal(1, written.length);
+            assert(log1, written[0].message);
+
+            done();
+        });
+
+    });    
 });
