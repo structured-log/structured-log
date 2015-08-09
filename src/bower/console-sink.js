@@ -50,23 +50,25 @@
       write.error = function(m, p) { if(p) { console.error(m, p); } else { console.error(m); } };
     }
 
-    self.emit = function(evt) {
-      var formatted = '';
-      if (options.timestamp) {
-        formatted += evt.timestamp.toISOString().replace('T', ' ').replace('Z', '') + ' ';
-      }
-      formatted += '[' + evt.level.slice(0,3) + '] ' +
-        evt.messageTemplate.render(evt.properties);
+    self.emit = function(evts) {
+      evts.forEach(function (evt) {
+        var formatted = '';
+        if (options.timestamp) {
+          formatted += evt.timestamp.toISOString().replace('T', ' ').replace('Z', '') + ' ';
+        }
+        formatted += '[' + evt.level.slice(0,3) + '] ' +
+          evt.messageTemplate.render(evt.properties);
 
-      if (evt.level === 'ERROR') {
-        write.error(formatted, options.complete ? evt.properties : null);
-      } else if (evt.level === 'WARN') {
-        write.warn(formatted, options.complete ? evt.properties : null);
-      } else if (evt.level === 'INFO') {
-        write.info(formatted, options.complete ? evt.properties : null);
-      } else {
-        write.log(formatted, options.complete ? evt.properties : null);
-      }
+        if (evt.level === 'ERROR') {
+          write.error(formatted, options.complete ? evt.properties : null);
+        } else if (evt.level === 'WARN') {
+          write.warn(formatted, options.complete ? evt.properties : null);
+        } else if (evt.level === 'INFO') {
+          write.info(formatted, options.complete ? evt.properties : null);
+        } else {
+          write.log(formatted, options.complete ? evt.properties : null);
+        }
+      });
     };
   }
 

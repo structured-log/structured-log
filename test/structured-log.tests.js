@@ -7,7 +7,11 @@ describe('LoggerConfiguration', function() {
       var written = [];
       var log = serilog.configuration()
         .minimumLevel('WARN')
-        .writeTo(function(evt) { written.push(evt); })
+        .writeTo(function (evts) { 
+          evts.forEach(function (evt) {
+            written.push(evt); 
+          });            
+        })
         .createLogger();
       log('Today is sunnny and clear');
 
@@ -18,7 +22,11 @@ describe('LoggerConfiguration', function() {
       var written = [];
       var log = serilog.configuration()
         .minimumLevel('WARN')
-        .writeTo(function(evt) { written.push(evt); })
+        .writeTo(function (evts) { 
+          evts.forEach(function (evt) {
+            written.push(evt); 
+          });            
+        })
         .createLogger();
       log.error('The sky is falling!');
 
@@ -30,9 +38,17 @@ describe('LoggerConfiguration', function() {
       var errs = [];
       var log = serilog.configuration()
         .minimumLevel('INFO')
-        .writeTo(function(evt) { info.push(evt); })
+        .writeTo(function(evts) { 
+          evts.forEach(function (evt) {            
+            info.push(evt); 
+          });
+        })
         .minimumLevel('ERROR')
-        .writeTo(function(evt) { errs.push(evt); })
+        .writeTo(function (evts) { 
+          evts.forEach(function (evt) {
+            errs.push(evt);   
+          });          
+        })
         .createLogger();
       log.warn('Today is stormy');
 
@@ -45,7 +61,11 @@ describe('LoggerConfiguration', function() {
     it('should emit events', function(){
       var written = [];
       var log = serilog.configuration()
-        .writeTo(function(evt) { written.push(evt); })
+        .writeTo(function (evts) { 
+          evts.forEach(function (evt) {
+            written.push(evt); 
+          });            
+        })
         .createLogger();
       log.error('The sky is falling!');
 
@@ -59,7 +79,11 @@ describe('LoggerConfiguration', function() {
         .writeTo(function(){
           throw 'Broken!';
         })
-        .writeTo(function(evt) { written.push(evt); })
+        .writeTo(function (evts) { 
+          evts.forEach(function (evt) {
+            written.push(evt); 
+          });          
+        })
         .createLogger();
       log.warn('A timely warning');
 
@@ -79,7 +103,11 @@ describe('LoggerConfiguration', function() {
       var written = [];
       var log = serilog.configuration()
         .enrich({isHappy: true, isSad: false})
-        .writeTo(function(evt) { written.push(evt); })
+        .writeTo(function (evts) { 
+          evts.forEach(function (evt) {
+            written.push(evt); 
+          });          
+        })
         .createLogger();
       log.error('The sky is falling!');
 
@@ -92,7 +120,11 @@ describe('LoggerConfiguration', function() {
       var written = [];
       var log = serilog.configuration()
         .enrich({user: {name: 'Nick'}}, true)
-        .writeTo(function(evt) { written.push(evt); })
+        .writeTo(function (evts) { 
+          evts.forEach(function (evt) {
+            written.push(evt);   
+          });          
+        })
         .createLogger();
       log.error('The sky is falling!');
 
@@ -104,7 +136,11 @@ describe('LoggerConfiguration', function() {
       var written = [];
       var log = serilog.configuration()
         .enrich(function() { return { isHappy: true }; })
-        .writeTo(function(evt) { written.push(evt); })
+        .writeTo(function (evts) { 
+          evts.forEach(function (evt) {
+            written.push(evt); 
+          });          
+        })
         .createLogger();
       log.error('The sky is falling!');
 
@@ -164,7 +200,11 @@ describe('Logger', function(){
     it('should enrich events with all provided values', function(){
       var written = [];
       var log = serilog.configuration()
-        .writeTo(function(evt) { written.push(evt); })
+        .writeTo(function (evts) { 
+          evts.forEach(function (evt) {
+            written.push(evt); 
+          });          
+        })
         .createLogger();
       var sub = log.using({machine: 'mine', count: 3});
       sub.error('The sky is falling!');
@@ -177,7 +217,11 @@ describe('Logger', function(){
     it('should preserve existing values', function(){
       var written = [];
       var log = serilog.configuration()
-        .writeTo(function(evt) { written.push(evt); })
+        .writeTo(function (evts) { 
+          evts.forEach(function (evt) {
+            written.push(evt); 
+          });          
+        })
         .createLogger();
       var sub = log.using({machine: 'mine', count: 3});
       sub.error('{machine}', 'your');
@@ -189,7 +233,11 @@ describe('Logger', function(){
     it('should nest', function(){
       var written = [];
       var log = serilog.configuration()
-        .writeTo(function(evt) { written.push(evt); })
+        .writeTo(function (evts) { 
+          evts.forEach(function (evt) {
+            written.push(evt); 
+          });          
+        })
         .createLogger();
       var sub = log.using({machine: 'mine'});
       var subsub = sub.using({count: 3});
@@ -203,7 +251,11 @@ describe('Logger', function(){
     it('should not interfere with the root logger', function(){
       var written = [];
       var log = serilog.configuration()
-        .writeTo(function(evt) { written.push(evt); })
+        .writeTo(function (evts) { 
+          evts.forEach(function (evt) {
+            written.push(evt); 
+          });          
+        })
         .createLogger();
       log.using({machine: 'mine', count: 3});
       log.error('The sky is falling!');
@@ -220,7 +272,11 @@ describe('Logger', function(){
             .batch({
                 batchSize: 2,
             })
-            .writeTo(function(evt) { written.push(evt); })
+            .writeTo(function (evts) { 
+              evts.forEach(function (evt) {
+                written.push(evt); 
+              });              
+            })
             .createLogger();
 
         var log1 = '1';
@@ -243,7 +299,11 @@ describe('Logger', function(){
             .batch({
                 timeDuration: 100,
             })
-            .writeTo(function(evt) { written.push(evt); })
+            .writeTo(function (evts) { 
+              evts.forEach(function (evt) {
+                written.push(evt);
+              });              
+            })
             .createLogger();
 
         var log1 = '1';
@@ -276,7 +336,11 @@ describe('Logger', function(){
             .batch({
                 timeDuration: 100,
             })
-            .writeTo(function(evt) { written.push(evt); })
+            .writeTo(function (evts) { 
+              evts.forEach(function (evt) {
+                written.push(evt); 
+              });              
+            })
             .createLogger();
 
         var log1 = '1';

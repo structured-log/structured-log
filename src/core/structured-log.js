@@ -145,13 +145,15 @@
   };
 
 
-  var enrich = function(evt, properties, destructure) {
-    for (var prop in properties) {
-      if (properties.hasOwnProperty(prop) &&
-        !evt.properties.hasOwnProperty(prop)) {
-        evt.properties[prop] = capture(properties[prop], destructure);
+  var enrich = function(evts, properties, destructure) {
+    evts.forEach(function (evt) {
+      for (var prop in properties) {
+        if (properties.hasOwnProperty(prop) &&
+          !evt.properties.hasOwnProperty(prop)) {
+          evt.properties[prop] = capture(properties[prop], destructure);
+        }
       }
-    }
+    });
   };
 
 
@@ -212,11 +214,11 @@
     self.pipelineStages = pipelineStages;
     self.closeStages = closeStages || [];
 
-    var head = function(evt) { };
+    var head = function(evts) { };
     var makeHead = function(pipelineStage) {
       var oldHead = head;
-      return function(evt) { 
-        pipelineStage(evt, oldHead); 
+      return function(evts) { 
+        pipelineStage(evts, oldHead); 
       };
     };
 
@@ -226,9 +228,9 @@
     self.head = head;
   }
 
-  Pipeline.prototype.execute = function(evt) {
+  Pipeline.prototype.execute = function(evts) {
     var self = this;
-    self.head(evt);
+    self.head(evts);
   };
 
   Pipeline.prototype.close = function(cb) {
@@ -257,11 +259,12 @@
 
     self.toString = function() { return 'Logger'; };
 
-    self.emit = function(evt) {
-      if (!levelMap.isEnabled(evt.level)) {
-        return;
-      }
-      pipeline.execute(evt);
+    self.emit = function(evts) {
+      evts = evts.filter(function (evt) { //todo: is this tested?
+          return levelMap.isEnabled(evt.level);
+        });
+
+      pipeline.execute(evts);
     };
 
     var invoke = function(level, messageTemplate, args) {
@@ -275,7 +278,7 @@
 
       var evt = new LogEvent(new Date(), level, parsedTemplate, boundProperties);
 
-      pipeline.execute(evt);
+      pipeline.execute([evt]);
     };
 
     self.verbose = function(messageTemplate) {
@@ -305,10 +308,10 @@
 
     self.using = function(properties, destructure){
       var enriched = new Pipeline([
-        function(evt, next){
-          enrich(evt, properties, destructure);
-          pipeline.execute(evt);
-          next(evt);
+        function (evts, next){
+          enrich(evts, properties, destructure);
+          pipeline.execute(evts);
+          next(evts);
         }
       ]);
       return createLogger(levelMap, enriched);
@@ -337,9 +340,9 @@
     self.minimumLevel = function(lvl) {
       if (pipeline.length !== 0) {
         var lm = new LevelMap(lvl);
-        return self.filter(function(evt) {
-          return lm.isEnabled(evt.level);
-        });
+        return self.filter(function (evt) {
+            return lm.isEnabled(evt.level);
+          });
       }
 
       minimumLevel = (lvl || infoLevel).toUpperCase();
@@ -358,55 +361,58 @@
         closeStages.push(sinkOrEmit.close);
       }
 
-      return self.pipe(function(evt, next) {
+      return self.pipe(function(evts, next) {
         try {
-          sinkOrEmit.emit(evt);
-        } catch (err) {
+          sinkOrEmit.emit(evts);
+        } 
+        catch (err) {
           if (typeof onError === 'function') {
-            onError(err, evt, next);
-          } else if (!evt.properties.isSelfLog) {
-            var notification = createEvent(errorLevel, 'Failed to write event {@event} to {sink}: {error}', evt, sinkOrEmit, err);
+            onError(err, evts, next);
+          } 
+          else {
+            var notification = createEvent(errorLevel, 'Failed to write to {sink}: {error}', sinkOrEmit, err);
             notification.properties.isSelfLog = true;
-            next(notification);
+            next([notification]);
           }
         }
-        next(evt);
+        next(evts);        
       });
     };
 
     self.enrich = function(functionOrProperties, destructure) {
       if (typeof functionOrProperties === 'object') {
-        return self.enrich(function(event){
-          return functionOrProperties;
-        }, destructure);
+        return self.enrich(function(evts){
+            return functionOrProperties;
+          }, destructure);
       } else if (typeof functionOrProperties === 'function') {
-        return self.pipe(function(evt, next) {
-          enrich(evt, functionOrProperties(), destructure);
-          next(evt);
+        return self.pipe(function(evts, next) {
+          enrich(evts, functionOrProperties(), destructure);
+          next(evts);
         });
       } else {
         throw new Error('Events can be enriched using either a function, or a hash of properties');
       }
     };
 
-    self.filter = function(filter) {
-      return self.pipe(function(evt, next) {
-        if(filter(evt)) {
-          next(evt);
-        }
-      });
+    self.filter = function (filter) {
+      return self.pipe(function (evts, next) {
+          next(evts.filter(filter));
+        });
     };
 
     //
     // Enable batching for sinks in the pipeline after this function.
     //
     self.batch = function (batchOptions) {
+
         if (!batchOptions) {
             batchOptions = {};    
         }
+
         if (!batchOptions.batchSize) {
             batchOptions.batchSize = 100;
         }
+
         if (!batchOptions.timeDuration) {
             batchOptions.timeDuration = 1000;
         }
@@ -425,7 +431,7 @@
             callback();
         });
 
-        return self.pipe(function (evt, next) {
+        return self.pipe(function (evts, next) {
 
             if (batchFlushTimeout) {
                 // Cancel previous pending batch flush.
@@ -441,9 +447,7 @@
             flushBatch = function () {
                 // Flush the batch.
                 batchedLogEvents.reverse();
-                batchedLogEvents.forEach(function (batchedEvent) {
-                    next(batchedEvent);
-                });
+                next(batchedLogEvents);
 
                 batchedLogEvents = [];
                 lastFlushTime = curTime;
@@ -454,10 +458,11 @@
             // Queue pending batch flush.
             batchFlushTimeout = setTimeout(flushBatch, batchOptions.timeDuration);
 
-            batchedLogEvents.push(evt);
+            evts.forEach(function (evt) { //todo: is there a more efficient way?
+              batchedLogEvents.push(evt);
+            });            
 
             var curTime = (new Date()).getTime();
-
 
             if (batchedLogEvents.length >= batchOptions.batchSize ||
                 batchOptions.timeDuration && (curTime - lastFlushTime) > batchOptions.timeDuration) {
@@ -488,19 +493,23 @@
     self.enrich = {};
 
     self.filter.selfLog = function() {
-      return function(evt) {
-        return evt.properties.isSelfLog;
+      return function (evts) {
+        return evts.filter(function (evt) {
+            return evt.properties.isSelfLog;
+          });
       };
     };
 
     self.filter.notSelfLog = function() {
-      return function(evt) {
-        return !evt.properties.isSelfLog;
+      return function (evts) {
+        return evts.filter(function (evt) {
+            return !evt.properties.isSelfLog;
+          });        
       };
     };
 
     self.enrich.withStack = function() {
-      return function(evt) {
+      return function(evts) {
         try {
           //noinspection ExceptionCaughtLocallyJS
           throw new Error('getstack');
@@ -511,9 +520,11 @@
           }
           stack = stack.replace(/^[ ]+/g, '');
 
-          if (!evt.properties.hasOwnProperty('stack')) {
-            evt.properties.stack = stack;
-          }
+          evts.forEach(function (evt) {
+            if (!evt.properties.hasOwnProperty('stack')) {
+              evt.properties.stack = stack;
+            }
+          });
         }
       };
     };
