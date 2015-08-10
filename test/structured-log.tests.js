@@ -2,11 +2,11 @@ var serilog = require('../src/core/structured-log.js');
 var assert = require('assert');
 
 describe('LoggerConfiguration', function() {
-  describe('#minimumLevel()', function() {
+  describe('#minLevel()', function() {
     it('should suppress events below minimum level', function() {
       var written = [];
       var log = serilog.configuration()
-        .minimumLevel('WARN')
+        .minLevel('WARN')
         .writeTo(function (evts) { 
           evts.forEach(function (evt) {
             written.push(evt); 
@@ -21,7 +21,7 @@ describe('LoggerConfiguration', function() {
     it('should permit events above minimum level', function() {
       var written = [];
       var log = serilog.configuration()
-        .minimumLevel('WARN')
+        .minLevel('WARN')
         .writeTo(function (evts) { 
           evts.forEach(function (evt) {
             written.push(evt); 
@@ -37,13 +37,13 @@ describe('LoggerConfiguration', function() {
       var info = [];
       var errs = [];
       var log = serilog.configuration()
-        .minimumLevel('INFO')
+        .minLevel('INFO')
         .writeTo(function(evts) { 
           evts.forEach(function (evt) {            
             info.push(evt); 
           });
         })
-        .minimumLevel('ERROR')
+        .minLevel('ERROR')
         .writeTo(function (evts) { 
           evts.forEach(function (evt) {
             errs.push(evt);   

@@ -359,7 +359,7 @@
   function LoggerConfiguration() {
     var self = this;
 
-    var minimumLevel = infoLevel;
+    var minLevel = infoLevel;
     var pipeline = [];
     var closeStages = [];
     var flushStages = [];
@@ -369,7 +369,7 @@
       return self;
     };
 
-    self.minimumLevel = function(lvl) {
+    self.minLevel = function(lvl) {
       if (pipeline.length !== 0) {
         var lm = new LevelMap(lvl);
         return self.filter(function (evt) {
@@ -377,7 +377,7 @@
           });
       }
 
-      minimumLevel = (lvl || infoLevel).toUpperCase();
+      minLevel = (lvl || infoLevel).toUpperCase();
       return self;
     };
 
@@ -386,7 +386,7 @@
         return self.writeTo({
           emit: sinkOrEmit,
           toString: function() { return sinkOrEmit.toString(); }
-        }, minimumLevel);
+        }, minLevel);
       }
 
       if (typeof sinkOrEmit.close === 'function') {
@@ -517,7 +517,7 @@
     };
 
     self.createLogger = function() {
-      var levelMap = new LevelMap(minimumLevel);
+      var levelMap = new LevelMap(minLevel);
       return createLogger(levelMap, new Pipeline(pipeline, closeStages, flushStages));
     };
   }
