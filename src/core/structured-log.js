@@ -568,7 +568,7 @@
     };
   }
 
-  StructuredLog.prototype.configuration = function() {
+  StructuredLog.prototype.configure = function() {
     return new LoggerConfiguration();
   };
 

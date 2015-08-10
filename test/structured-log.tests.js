@@ -5,7 +5,7 @@ describe('LoggerConfiguration', function() {
   describe('#minLevel()', function() {
     it('should suppress events below minimum level', function() {
       var written = [];
-      var log = serilog.configuration()
+      var log = serilog.configure()
         .minLevel('WARN')
         .writeTo(function (evts) { 
           evts.forEach(function (evt) {
@@ -20,7 +20,7 @@ describe('LoggerConfiguration', function() {
 
     it('should permit events above minimum level', function() {
       var written = [];
-      var log = serilog.configuration()
+      var log = serilog.configure()
         .minLevel('WARN')
         .writeTo(function (evts) { 
           evts.forEach(function (evt) {
@@ -36,7 +36,7 @@ describe('LoggerConfiguration', function() {
     it('should apply in pipeline order', function() {
       var info = [];
       var errs = [];
-      var log = serilog.configuration()
+      var log = serilog.configure()
         .minLevel('INFO')
         .writeTo(function(evts) { 
           evts.forEach(function (evt) {            
@@ -60,7 +60,7 @@ describe('LoggerConfiguration', function() {
   describe('#writeTo()', function() {
     it('should emit events', function(){
       var written = [];
-      var log = serilog.configuration()
+      var log = serilog.configure()
         .writeTo(function (evts) { 
           evts.forEach(function (evt) {
             written.push(evt); 
@@ -75,7 +75,7 @@ describe('LoggerConfiguration', function() {
 
     it('should report failures', function(){
       var written = [];
-      var log = serilog.configuration()
+      var log = serilog.configure()
         .writeTo(function(){
           throw 'Broken!';
         })
@@ -101,7 +101,7 @@ describe('LoggerConfiguration', function() {
   describe('#enrich()', function() {
     it('should add simple properties', function(){
       var written = [];
-      var log = serilog.configuration()
+      var log = serilog.configure()
         .enrich({isHappy: true, isSad: false})
         .writeTo(function (evts) { 
           evts.forEach(function (evt) {
@@ -118,7 +118,7 @@ describe('LoggerConfiguration', function() {
 
     it('should destructure complex properties', function(){
       var written = [];
-      var log = serilog.configuration()
+      var log = serilog.configure()
         .enrich({user: {name: 'Nick'}}, true)
         .writeTo(function (evts) { 
           evts.forEach(function (evt) {
@@ -134,7 +134,7 @@ describe('LoggerConfiguration', function() {
 
     it('should add properties dynamically', function(){
       var written = [];
-      var log = serilog.configuration()
+      var log = serilog.configure()
         .enrich(function() { return { isHappy: true }; })
         .writeTo(function (evts) { 
           evts.forEach(function (evt) {
@@ -199,7 +199,7 @@ describe('Logger', function(){
   describe('#enrich()', function(){
     it('should enrich events with all provided values', function(){
       var written = [];
-      var log = serilog.configuration()
+      var log = serilog.configure()
         .writeTo(function (evts) { 
           evts.forEach(function (evt) {
             written.push(evt); 
@@ -216,7 +216,7 @@ describe('Logger', function(){
 
     it('should preserve existing values', function(){
       var written = [];
-      var log = serilog.configuration()
+      var log = serilog.configure()
         .writeTo(function (evts) { 
           evts.forEach(function (evt) {
             written.push(evt); 
@@ -232,7 +232,7 @@ describe('Logger', function(){
 
     it('should nest', function(){
       var written = [];
-      var log = serilog.configuration()
+      var log = serilog.configure()
         .writeTo(function (evts) { 
           evts.forEach(function (evt) {
             written.push(evt); 
@@ -250,7 +250,7 @@ describe('Logger', function(){
 
     it('should not interfere with the root logger', function(){
       var written = [];
-      var log = serilog.configuration()
+      var log = serilog.configure()
         .writeTo(function (evts) { 
           evts.forEach(function (evt) {
             written.push(evt); 
@@ -268,7 +268,7 @@ describe('Logger', function(){
     it('batching by size should suppress log events until the size has been reached', function () {
 
         var written = [];
-        var log = serilog.configuration()
+        var log = serilog.configure()
             .batch({
                 batchSize: 2,
             })
@@ -295,7 +295,7 @@ describe('Logger', function(){
     it('batching by time should suppress log events until the time has elapsed', function (done) {
 
         var written = [];
-        var log = serilog.configuration()
+        var log = serilog.configure()
             .batch({
                 timeDuration: 100,
             })
@@ -332,7 +332,7 @@ describe('Logger', function(){
     it('batching should be flushed on close', function (done) {
 
         var written = [];
-        var log = serilog.configuration()
+        var log = serilog.configure()
             .batch({
                 timeDuration: 100,
             })
@@ -359,7 +359,7 @@ describe('Logger', function(){
     it('flush forces batched log through the pipeline', function (done) {
 
         var written = [];
-        var log = serilog.configuration()
+        var log = serilog.configure()
             .batch({
                 timeDuration: 100,
             })
