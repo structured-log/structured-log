@@ -18,7 +18,7 @@ describe('FileSink', function() {
   it('should write events', function(done){
     var log = serilog.configuration()
       .writeTo(file('tmp/file-sink-test1.txt'))
-      .createLogger();
+      .create();
 
     log('Hello, world!');
     log.error('Bork!');
@@ -34,7 +34,7 @@ describe('FileSink', function() {
   it('should format events as JSON', function(done){
     var log = serilog.configuration()
       .writeTo(file('tmp/file-sink-test2.jsnl', {format: 'JSON'}))
-      .createLogger();
+      .create();
 
     log('Hello, {name}!', 'world');
 

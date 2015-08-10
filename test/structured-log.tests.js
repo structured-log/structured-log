@@ -12,7 +12,7 @@ describe('LoggerConfiguration', function() {
             written.push(evt); 
           });            
         })
-        .createLogger();
+        .create();
       log('Today is sunnny and clear');
 
       assert.equal(0, written.length);
@@ -27,7 +27,7 @@ describe('LoggerConfiguration', function() {
             written.push(evt); 
           });            
         })
-        .createLogger();
+        .create();
       log.error('The sky is falling!');
 
       assert.equal(1, written.length);
@@ -49,7 +49,7 @@ describe('LoggerConfiguration', function() {
             errs.push(evt);   
           });          
         })
-        .createLogger();
+        .create();
       log.warn('Today is stormy');
 
       assert.equal(1, info.length);
@@ -66,7 +66,7 @@ describe('LoggerConfiguration', function() {
             written.push(evt); 
           });            
         })
-        .createLogger();
+        .create();
       log.error('The sky is falling!');
 
       assert.equal(1, written.length);
@@ -84,7 +84,7 @@ describe('LoggerConfiguration', function() {
             written.push(evt); 
           });          
         })
-        .createLogger();
+        .create();
       log.warn('A timely warning');
 
       assert.equal(2, written.length);
@@ -108,7 +108,7 @@ describe('LoggerConfiguration', function() {
             written.push(evt); 
           });          
         })
-        .createLogger();
+        .create();
       log.error('The sky is falling!');
 
       assert.equal(1, written.length);
@@ -125,7 +125,7 @@ describe('LoggerConfiguration', function() {
             written.push(evt);   
           });          
         })
-        .createLogger();
+        .create();
       log.error('The sky is falling!');
 
       assert.equal(1, written.length);
@@ -141,7 +141,7 @@ describe('LoggerConfiguration', function() {
             written.push(evt); 
           });          
         })
-        .createLogger();
+        .create();
       log.error('The sky is falling!');
 
       assert.equal(1, written.length);
@@ -205,7 +205,7 @@ describe('Logger', function(){
             written.push(evt); 
           });          
         })
-        .createLogger();
+        .create();
       var sub = log.enrich({machine: 'mine', count: 3});
       sub.error('The sky is falling!');
 
@@ -222,7 +222,7 @@ describe('Logger', function(){
             written.push(evt); 
           });          
         })
-        .createLogger();
+        .create();
       var sub = log.enrich({machine: 'mine', count: 3});
       sub.error('{machine}', 'your');
 
@@ -238,7 +238,7 @@ describe('Logger', function(){
             written.push(evt); 
           });          
         })
-        .createLogger();
+        .create();
       var sub = log.enrich({machine: 'mine'});
       var subsub = sub.enrich({count: 3});
       subsub.error('The sky is falling!');
@@ -256,7 +256,7 @@ describe('Logger', function(){
             written.push(evt); 
           });          
         })
-        .createLogger();
+        .create();
       log.enrich({machine: 'mine', count: 3});
       log.error('The sky is falling!');
 
@@ -277,7 +277,7 @@ describe('Logger', function(){
                 written.push(evt); 
               });              
             })
-            .createLogger();
+            .create();
 
         var log1 = '1';
         log(log1);
@@ -304,7 +304,7 @@ describe('Logger', function(){
                 written.push(evt);
               });              
             })
-            .createLogger();
+            .create();
 
         var log1 = '1';
         log(log1);
@@ -341,7 +341,7 @@ describe('Logger', function(){
                 written.push(evt); 
               });              
             })
-            .createLogger();
+            .create();
 
         var log1 = '1';
         log(log1);
@@ -368,7 +368,7 @@ describe('Logger', function(){
                 written.push(evt); 
               });              
             })
-            .createLogger();
+            .create();
 
         var log1 = '1';
         log(log1);

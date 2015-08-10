@@ -516,7 +516,7 @@
         });
     };
 
-    self.createLogger = function() {
+    self.create = function() {
       var levelMap = new LevelMap(minLevel);
       return createLogger(levelMap, new Pipeline(pipeline, closeStages, flushStages));
     };
