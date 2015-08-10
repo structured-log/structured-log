@@ -329,7 +329,7 @@
       invoke(errorLevel, mt, arguments);
     };
 
-    self.using = function(properties, destructure){
+    self.enrich = function(properties, destructure){
       var enriched = new Pipeline([
         function (evts, next){
           enrich(evts, properties, destructure);

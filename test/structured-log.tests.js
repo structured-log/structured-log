@@ -196,7 +196,7 @@ describe('serilog.event()', function(){
 });
 
 describe('Logger', function(){
-  describe('#using()', function(){
+  describe('#enrich()', function(){
     it('should enrich events with all provided values', function(){
       var written = [];
       var log = serilog.configuration()
@@ -206,7 +206,7 @@ describe('Logger', function(){
           });          
         })
         .createLogger();
-      var sub = log.using({machine: 'mine', count: 3});
+      var sub = log.enrich({machine: 'mine', count: 3});
       sub.error('The sky is falling!');
 
       assert.equal(1, written.length);
@@ -223,7 +223,7 @@ describe('Logger', function(){
           });          
         })
         .createLogger();
-      var sub = log.using({machine: 'mine', count: 3});
+      var sub = log.enrich({machine: 'mine', count: 3});
       sub.error('{machine}', 'your');
 
       assert.equal(1, written.length);
@@ -239,8 +239,8 @@ describe('Logger', function(){
           });          
         })
         .createLogger();
-      var sub = log.using({machine: 'mine'});
-      var subsub = sub.using({count: 3});
+      var sub = log.enrich({machine: 'mine'});
+      var subsub = sub.enrich({count: 3});
       subsub.error('The sky is falling!');
 
       assert.equal(1, written.length);
@@ -257,7 +257,7 @@ describe('Logger', function(){
           });          
         })
         .createLogger();
-      log.using({machine: 'mine', count: 3});
+      log.enrich({machine: 'mine', count: 3});
       log.error('The sky is falling!');
 
       assert.equal(1, written.length);
