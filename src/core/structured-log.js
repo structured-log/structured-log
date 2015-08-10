@@ -209,10 +209,11 @@
   };
 
 
-  function Pipeline(pipelineStages, closeStages) {
+  function Pipeline(pipelineStages, closeStages, flushStages) {
     var self = this;
     self.pipelineStages = pipelineStages;
     self.closeStages = closeStages || [];
+    self.flushStages = flushStages || [];
 
     var head = function(evts) { };
     var makeHead = function(pipelineStage) {
@@ -250,6 +251,28 @@
       closeStage(onClosed);
     });
   };
+
+    // 
+    // Flush the pipeline.
+    // After completion the queue of batched logs will have been flushed through to all sinks.
+    //
+    Pipeline.prototype.flush = function (cb) {
+        var self = this;
+        var remaining = self.flushStages.length;
+        if (remaining === 0) {
+          cb();
+          return;
+        }
+        var onFlushed = function() {
+          remaining--;
+          if (remaining === 0) {
+            cb();
+          }
+        };
+        self.flushStages.forEach(function (flushStage) {
+          flushStage(onFlushed);
+        });
+    };
 
 
   var createLogger = function(levelMap, pipeline) {
@@ -321,6 +344,14 @@
       pipeline.close(cb);
     };
 
+    // 
+    // Flush the pipeline.
+    // After completion the queue of batched logs will have been flushed through to all sinks.
+    //
+    self.flush = function (cb) {
+        pipeline.flush(cb);
+    };
+
     return self;
   };
 
@@ -331,6 +362,7 @@
     var minimumLevel = infoLevel;
     var pipeline = [];
     var closeStages = [];
+    var flushStages = [];
 
     self.pipe = function(pipelineStage) {
       pipeline.push(pipelineStage);
@@ -422,14 +454,20 @@
 
         var flushBatch = null;
 
-        closeStages.push(function (callback) {
-            // Flush the batch when the log is closed.
+        //
+        // Flush the batch when the log is flushed or closed.
+        //
+        var flushStage = function (callback) {
+
             if (flushBatch) {
                 flushBatch();
             }
 
             callback();
-        });
+        }
+
+        closeStages.push(flushStage);
+        flushStages.push(flushStage);
 
         return self.pipe(function (evts, next) {
 
@@ -459,7 +497,7 @@
             batchFlushTimeout = setTimeout(flushBatch, batchOptions.timeDuration);
 
             evts.forEach(function (evt) { //todo: is there a more efficient way?
-              batchedLogEvents.push(evt);
+                batchedLogEvents.push(evt);
             });            
 
             var curTime = (new Date()).getTime();
@@ -480,7 +518,7 @@
 
     self.createLogger = function() {
       var levelMap = new LevelMap(minimumLevel);
-      return createLogger(levelMap, new Pipeline(pipeline, closeStages));
+      return createLogger(levelMap, new Pipeline(pipeline, closeStages, flushStages));
     };
   }
 

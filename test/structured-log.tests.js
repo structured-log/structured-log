@@ -354,6 +354,33 @@ describe('Logger', function(){
 
             done();
         });
+    });    
 
+    it('flush forces batched log through the pipeline', function (done) {
+
+        var written = [];
+        var log = serilog.configuration()
+            .batch({
+                timeDuration: 100,
+            })
+            .writeTo(function (evts) { 
+              evts.forEach(function (evt) {
+                written.push(evt); 
+              });              
+            })
+            .createLogger();
+
+        var log1 = '1';
+        log(log1);
+
+        assert.equal(0, written.length);
+
+        log.flush(function () {
+            
+            assert.equal(1, written.length);
+            assert(log1, written[0].message);
+
+            done();
+        });
     });    
 });
