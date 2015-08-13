@@ -1,9 +1,11 @@
 
-var log = structuredLog.configuration() 
+var log = structuredLog.configure() 
     .writeTo(structuredLog.sink.console())
-    .createLogger();
+    .create();
 
 log.info('Hello this is some information.');
+
+log('Hello this is more information.');
 
 log.warn('This is a warning.');
 
