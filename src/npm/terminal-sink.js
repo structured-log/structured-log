@@ -169,7 +169,7 @@ function TerminalSink(options) {
   };
 
   self.emit = function(evts) {
-    evts.forEach(function (evt) {)
+    evts.forEach(function (evt) {
       var palette = palettes[evt.level] || palettes.TRACE;
       var formatted = '';
       if (options.timestamp) {
