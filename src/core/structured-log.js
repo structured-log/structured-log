@@ -402,7 +402,7 @@
             onError(err, evts, next);
           } 
           else {
-            var notification = createEvent(errorLevel, 'Failed to write to {sink}: {error}', sinkOrEmit, err);
+            var notification = createEvent(errorLevel, 'Failed to write to {sink}: {error}', sinkOrEmit, err.stack);
             notification.properties.isSelfLog = true;
             next([notification]);
           }
