@@ -75,10 +75,10 @@ gulp.task('smoke', ['test'], function() {
   var serilog = require('./dist/npm/structured-log.js');
   var terminal = require('./dist/npm/terminal-sink.js');
 
-  var log = serilog.configuration()
-    .minimumLevel('TRACE')
+  var log = serilog.configure()
+    .minLevel('TRACE')
     .writeTo(terminal())
-    .createLogger();
+    .create();
 
   log.verbose('This is a verbose message: {really}', true);
   log.debug('This is a debug message');
