@@ -8,6 +8,10 @@ The change directory to where the example is (where this *readme* is):
 
 	cd examples/nodejs 
 
+You may have to install dependencies:
+
+	npm install	
+
 Then run the script using NodeJS:
 
 	node server.js
