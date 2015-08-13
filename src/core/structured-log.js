@@ -464,7 +464,7 @@
             }
 
             callback();
-        }
+        };
 
         closeStages.push(flushStage);
         flushStages.push(flushStage);
