@@ -35,14 +35,16 @@ function StdioSink(options) {
     }
   }
 
-  self.emit = function(evt) {
-    var formatted = evt.timestamp.toISOString() + ' [' + evt.level + '] ' + evt.renderedMessage();
+  self.emit = function(evts) {
+    evts.forEach(function (evt) {
+      var formatted = evt.timestamp.toISOString() + ' [' + evt.level + '] ' + evt.renderedMessage();
 
-    if (evt.level === 'ERROR') {
-      write.err(formatted);
-    } else {
-      write.out(formatted);
-    }
+      if (evt.level === 'ERROR') {
+        write.err(formatted);
+      } else {
+        write.out(formatted);
+      }
+    });
   };
 }
 

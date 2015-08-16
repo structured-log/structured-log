@@ -168,24 +168,26 @@ function TerminalSink(options) {
     return result.join('');
   };
 
-  self.emit = function(evt) {
-    var palette = palettes[evt.level] || palettes.TRACE;
-    var formatted = '';
-    if (options.timestamp) {
-      formatted += evt.timestamp.toISOString().replace('T', ' ').replace('Z', '') + ' ';
-    }
-    formatted += '[' + palette.foreground(evt.level.slice(0,3).toLowerCase()) + '] ' +
-      colorMessage(palette, evt.messageTemplate, evt.properties);
+  self.emit = function(evts) {
+    evts.forEach(function (evt) {
+      var palette = palettes[evt.level] || palettes.TRACE;
+      var formatted = '';
+      if (options.timestamp) {
+        formatted += evt.timestamp.toISOString().replace('T', ' ').replace('Z', '') + ' ';
+      }
+      formatted += '[' + palette.foreground(evt.level.slice(0,3).toLowerCase()) + '] ' +
+        colorMessage(palette, evt.messageTemplate, evt.properties);
 
-    if (evt.level === 'ERROR') {
-      write.error(formatted, options.complete ? evt.properties : null);
-    } else if (evt.level === 'WARN') {
-      write.warn(formatted, options.complete ? evt.properties : null);
-    } else if (evt.level === 'INFO') {
-      write.info(formatted, options.complete ? evt.properties : null);
-    } else {
-      write.log(formatted, options.complete ? evt.properties : null);
-    }
+      if (evt.level === 'ERROR') {
+        write.error(formatted, options.complete ? evt.properties : null);
+      } else if (evt.level === 'WARN') {
+        write.warn(formatted, options.complete ? evt.properties : null);
+      } else if (evt.level === 'INFO') {
+        write.info(formatted, options.complete ? evt.properties : null);
+      } else {
+        write.log(formatted, options.complete ? evt.properties : null);
+      }
+    });
   };
 }
 

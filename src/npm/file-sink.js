@@ -21,17 +21,19 @@ function FileSink(path, options) {
   options = options || {};
   var stream = fs.createWriteStream(path, {encoding: 'utf-8', flags: 'a+'});
 
-  self.emit = function(evt) {
-    var formatted = options.format === 'JSON' ?
-      JSON.stringify({
-        timestamp: evt.timestamp,
-        level: evt.level,
-        message: evt.renderedMessage(),
-        messageTemplate: evt.messageTemplate.raw,
-        properties: evt.properties
-      }) :
-      evt.timestamp.toISOString() + ' [' + evt.level + '] ' + evt.renderedMessage();
-    stream.write(formatted + newline);
+  self.emit = function(evts) {
+    evts.forEach(function (evt) {
+      var formatted = options.format === 'JSON' ?
+        JSON.stringify({
+          timestamp: evt.timestamp,
+          level: evt.level,
+          message: evt.renderedMessage(),
+          messageTemplate: evt.messageTemplate.raw,
+          properties: evt.properties
+        }) :
+        evt.timestamp.toISOString() + ' [' + evt.level + '] ' + evt.renderedMessage();
+      stream.write(formatted + newline);
+    });
   };
 
   self.close = function(cb) {

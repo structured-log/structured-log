@@ -6,6 +6,10 @@ To run, first change directory to where the example is (where this *readme* is):
 
 	cd examples/browser 
 
+You may have to install dependencies:
+
+	bower install	
+
 Then run a web server of your choice.
 
 I recommend that you install [*http-server*](https://www.npmjs.com/package/http-server) globally, it's great for testing. 

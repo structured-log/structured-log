@@ -2,13 +2,17 @@ var serilog = require('../src/core/structured-log.js');
 var assert = require('assert');
 
 describe('LoggerConfiguration', function() {
-  describe('#minimumLevel()', function() {
+  describe('#minLevel()', function() {
     it('should suppress events below minimum level', function() {
       var written = [];
-      var log = serilog.configuration()
-        .minimumLevel('WARN')
-        .writeTo(function(evt) { written.push(evt); })
-        .createLogger();
+      var log = serilog.configure()
+        .minLevel('WARN')
+        .writeTo(function (evts) { 
+          evts.forEach(function (evt) {
+            written.push(evt); 
+          });            
+        })
+        .create();
       log('Today is sunnny and clear');
 
       assert.equal(0, written.length);
@@ -16,10 +20,14 @@ describe('LoggerConfiguration', function() {
 
     it('should permit events above minimum level', function() {
       var written = [];
-      var log = serilog.configuration()
-        .minimumLevel('WARN')
-        .writeTo(function(evt) { written.push(evt); })
-        .createLogger();
+      var log = serilog.configure()
+        .minLevel('WARN')
+        .writeTo(function (evts) { 
+          evts.forEach(function (evt) {
+            written.push(evt); 
+          });            
+        })
+        .create();
       log.error('The sky is falling!');
 
       assert.equal(1, written.length);
@@ -28,12 +36,20 @@ describe('LoggerConfiguration', function() {
     it('should apply in pipeline order', function() {
       var info = [];
       var errs = [];
-      var log = serilog.configuration()
-        .minimumLevel('INFO')
-        .writeTo(function(evt) { info.push(evt); })
-        .minimumLevel('ERROR')
-        .writeTo(function(evt) { errs.push(evt); })
-        .createLogger();
+      var log = serilog.configure()
+        .minLevel('INFO')
+        .writeTo(function(evts) { 
+          evts.forEach(function (evt) {            
+            info.push(evt); 
+          });
+        })
+        .minLevel('ERROR')
+        .writeTo(function (evts) { 
+          evts.forEach(function (evt) {
+            errs.push(evt);   
+          });          
+        })
+        .create();
       log.warn('Today is stormy');
 
       assert.equal(1, info.length);
@@ -44,9 +60,13 @@ describe('LoggerConfiguration', function() {
   describe('#writeTo()', function() {
     it('should emit events', function(){
       var written = [];
-      var log = serilog.configuration()
-        .writeTo(function(evt) { written.push(evt); })
-        .createLogger();
+      var log = serilog.configure()
+        .writeTo(function (evts) { 
+          evts.forEach(function (evt) {
+            written.push(evt); 
+          });            
+        })
+        .create();
       log.error('The sky is falling!');
 
       assert.equal(1, written.length);
@@ -55,12 +75,16 @@ describe('LoggerConfiguration', function() {
 
     it('should report failures', function(){
       var written = [];
-      var log = serilog.configuration()
+      var log = serilog.configure()
         .writeTo(function(){
           throw 'Broken!';
         })
-        .writeTo(function(evt) { written.push(evt); })
-        .createLogger();
+        .writeTo(function (evts) { 
+          evts.forEach(function (evt) {
+            written.push(evt); 
+          });          
+        })
+        .create();
       log.warn('A timely warning');
 
       assert.equal(2, written.length);
@@ -77,10 +101,14 @@ describe('LoggerConfiguration', function() {
   describe('#enrich()', function() {
     it('should add simple properties', function(){
       var written = [];
-      var log = serilog.configuration()
+      var log = serilog.configure()
         .enrich({isHappy: true, isSad: false})
-        .writeTo(function(evt) { written.push(evt); })
-        .createLogger();
+        .writeTo(function (evts) { 
+          evts.forEach(function (evt) {
+            written.push(evt); 
+          });          
+        })
+        .create();
       log.error('The sky is falling!');
 
       assert.equal(1, written.length);
@@ -90,10 +118,14 @@ describe('LoggerConfiguration', function() {
 
     it('should destructure complex properties', function(){
       var written = [];
-      var log = serilog.configuration()
+      var log = serilog.configure()
         .enrich({user: {name: 'Nick'}}, true)
-        .writeTo(function(evt) { written.push(evt); })
-        .createLogger();
+        .writeTo(function (evts) { 
+          evts.forEach(function (evt) {
+            written.push(evt);   
+          });          
+        })
+        .create();
       log.error('The sky is falling!');
 
       assert.equal(1, written.length);
@@ -102,10 +134,14 @@ describe('LoggerConfiguration', function() {
 
     it('should add properties dynamically', function(){
       var written = [];
-      var log = serilog.configuration()
+      var log = serilog.configure()
         .enrich(function() { return { isHappy: true }; })
-        .writeTo(function(evt) { written.push(evt); })
-        .createLogger();
+        .writeTo(function (evts) { 
+          evts.forEach(function (evt) {
+            written.push(evt); 
+          });          
+        })
+        .create();
       log.error('The sky is falling!');
 
       assert.equal(1, written.length);
@@ -160,13 +196,17 @@ describe('serilog.event()', function(){
 });
 
 describe('Logger', function(){
-  describe('#using()', function(){
+  describe('#enrich()', function(){
     it('should enrich events with all provided values', function(){
       var written = [];
-      var log = serilog.configuration()
-        .writeTo(function(evt) { written.push(evt); })
-        .createLogger();
-      var sub = log.using({machine: 'mine', count: 3});
+      var log = serilog.configure()
+        .writeTo(function (evts) { 
+          evts.forEach(function (evt) {
+            written.push(evt); 
+          });          
+        })
+        .create();
+      var sub = log.enrich({machine: 'mine', count: 3});
       sub.error('The sky is falling!');
 
       assert.equal(1, written.length);
@@ -176,10 +216,14 @@ describe('Logger', function(){
 
     it('should preserve existing values', function(){
       var written = [];
-      var log = serilog.configuration()
-        .writeTo(function(evt) { written.push(evt); })
-        .createLogger();
-      var sub = log.using({machine: 'mine', count: 3});
+      var log = serilog.configure()
+        .writeTo(function (evts) { 
+          evts.forEach(function (evt) {
+            written.push(evt); 
+          });          
+        })
+        .create();
+      var sub = log.enrich({machine: 'mine', count: 3});
       sub.error('{machine}', 'your');
 
       assert.equal(1, written.length);
@@ -188,11 +232,15 @@ describe('Logger', function(){
 
     it('should nest', function(){
       var written = [];
-      var log = serilog.configuration()
-        .writeTo(function(evt) { written.push(evt); })
-        .createLogger();
-      var sub = log.using({machine: 'mine'});
-      var subsub = sub.using({count: 3});
+      var log = serilog.configure()
+        .writeTo(function (evts) { 
+          evts.forEach(function (evt) {
+            written.push(evt); 
+          });          
+        })
+        .create();
+      var sub = log.enrich({machine: 'mine'});
+      var subsub = sub.enrich({count: 3});
       subsub.error('The sky is falling!');
 
       assert.equal(1, written.length);
@@ -202,10 +250,14 @@ describe('Logger', function(){
 
     it('should not interfere with the root logger', function(){
       var written = [];
-      var log = serilog.configuration()
-        .writeTo(function(evt) { written.push(evt); })
-        .createLogger();
-      log.using({machine: 'mine', count: 3});
+      var log = serilog.configure()
+        .writeTo(function (evts) { 
+          evts.forEach(function (evt) {
+            written.push(evt); 
+          });          
+        })
+        .create();
+      log.enrich({machine: 'mine', count: 3});
       log.error('The sky is falling!');
 
       assert.equal(1, written.length);
@@ -216,12 +268,16 @@ describe('Logger', function(){
     it('batching by size should suppress log events until the size has been reached', function () {
 
         var written = [];
-        var log = serilog.configuration()
+        var log = serilog.configure()
             .batch({
                 batchSize: 2,
             })
-            .writeTo(function(evt) { written.push(evt); })
-            .createLogger();
+            .writeTo(function (evts) { 
+              evts.forEach(function (evt) {
+                written.push(evt); 
+              });              
+            })
+            .create();
 
         var log1 = '1';
         log(log1);
@@ -239,12 +295,16 @@ describe('Logger', function(){
     it('batching by time should suppress log events until the time has elapsed', function (done) {
 
         var written = [];
-        var log = serilog.configuration()
+        var log = serilog.configure()
             .batch({
                 timeDuration: 100,
             })
-            .writeTo(function(evt) { written.push(evt); })
-            .createLogger();
+            .writeTo(function (evts) { 
+              evts.forEach(function (evt) {
+                written.push(evt);
+              });              
+            })
+            .create();
 
         var log1 = '1';
         log(log1);
@@ -272,12 +332,16 @@ describe('Logger', function(){
     it('batching should be flushed on close', function (done) {
 
         var written = [];
-        var log = serilog.configuration()
+        var log = serilog.configure()
             .batch({
                 timeDuration: 100,
             })
-            .writeTo(function(evt) { written.push(evt); })
-            .createLogger();
+            .writeTo(function (evts) { 
+              evts.forEach(function (evt) {
+                written.push(evt); 
+              });              
+            })
+            .create();
 
         var log1 = '1';
         log(log1);
@@ -290,6 +354,33 @@ describe('Logger', function(){
 
             done();
         });
+    });    
 
+    it('flush forces batched log through the pipeline', function (done) {
+
+        var written = [];
+        var log = serilog.configure()
+            .batch({
+                timeDuration: 100,
+            })
+            .writeTo(function (evts) { 
+              evts.forEach(function (evt) {
+                written.push(evt); 
+              });              
+            })
+            .create();
+
+        var log1 = '1';
+        log(log1);
+
+        assert.equal(0, written.length);
+
+        log.flush(function () {
+            
+            assert.equal(1, written.length);
+            assert(log1, written[0].message);
+
+            done();
+        });
     });    
 });

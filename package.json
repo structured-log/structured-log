@@ -1,12 +1,12 @@
 {
-  "description": "A serializing logger for JavaScript apps.",
-  "main": "src/serilog.js",
+  "description": "A serializing logger for JavaScript apps based on Serilog.",
+  "main": "src/structured-log.js",
   "scripts": {
     "test": "mocha --reporter=spec"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/structured-log/serilog.js"
+    "url": "https://github.com/structured-log/structured-log.js"
   },
   "keywords": [
     "logging",
@@ -16,7 +16,7 @@
   "author": "Serilog Contributors",
   "license": "Apache 2",
   "bugs": {
-    "url": "https://github.com/structured-log/serilog.js/issues"
+    "url": "https://github.com/structured-log/structured-log.js/issues"
   },
   "devDependencies": {
     "gulp": "~3.9.0",
