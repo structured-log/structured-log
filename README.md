@@ -1,4 +1,4 @@
-#structured-log
+#structured-log [![Build Status](https://travis-ci.org/structured-log/structured-log.svg)](https://travis-ci.org/structured-log/structured-log)
 
 A structured logging framework for Javascript. Based on [Serilog](http://serilog.net/).
 
