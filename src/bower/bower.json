@@ -1,6 +1,6 @@
 {
-  "name": "structured-log-dev",
-  "version": "0.0.10",
+  "name": "structured-log",
+  "version": "0.0.11",
   "homepage": "https://github.com/structured-log/structured-log",
   "authors": [
     "Ashley Davis <ashley@codecapers.com.au>"
