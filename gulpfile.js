@@ -18,7 +18,7 @@ gulp.task('minify-bower-js', [], function(){
     .pipe(jshint.reporter('fail'))
     .pipe(uglify({mangle: false}))
     .pipe(concat('structured-log.min.js'))
-    .pipe(gulp.dest('dist/bower'));
+    .pipe(gulp.dest('../structured-log-bower'));
 });
 
 gulp.task('copy-bower-js', [], function(){
@@ -26,17 +26,17 @@ gulp.task('copy-bower-js', [], function(){
     .pipe(jshint('.jshintrc'))
     .pipe(jshint.reporter('default'))
     .pipe(jshint.reporter('fail'))
-    .pipe(gulp.dest('dist/bower'));
+    .pipe(gulp.dest('../structured-log-bower'));
 });
 
 gulp.task('copy-bower-json', [], function(){
   return gulp.src(['src/bower/*.json'])
-    .pipe(gulp.dest('dist/bower'));
+    .pipe(gulp.dest('../structured-log-bower'));
 });
 
 gulp.task('copy-bower-readme', [], function(){
   return gulp.src(['README.MD'])
-    .pipe(gulp.dest('dist/bower'));
+    .pipe(gulp.dest('../structured-log-bower'));
 });
 
 gulp.task('build-bower', ['minify-bower-js', 'copy-bower-js', 'copy-bower-json', 'copy-bower-readme']);
