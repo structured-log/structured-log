@@ -25,9 +25,9 @@ In your NodeJS script:
 	var structuredLog = require('structured-log');
 	var coloredConsoleSink = require('structured-log/colored-console-sink');
 
-	var log = structuredLog.configuration()
+	var log = structuredLog.configure()
     	.writeTo(coloredConsoleSink())
-	    .createLogger();
+	    .create();
     
 ### Client-side
 
@@ -39,31 +39,31 @@ In your HTML file:
 
 In your Javascript code:
 
-	var log = structuredLog.configuration() 
+	var log = structuredLog.configure() 
     	.writeTo(structuredLog.consoleSink())
-	    .createLogger();
+	    .create();
   
 ### Multiple sinks
 
 Setup of *structured-log* is via a *fluent API* that configures and creates a logger. One example of this is to specify multilple sinks, eg:
 
-	var log = structuredLog.configuration() 
+	var log = structuredLog.configure() 
 		.writeTo(consoleSink)
 		.writeTo(httpSink({ url: '<some-url>' }))
-		.createLogger();
+		.create();
 
 ### Writing to another log
 
 A log can easily be piped to another log:
 
-	var someOtherLog = structuredLog.configuration()
+	var someOtherLog = structuredLog.configure()
 		// ... setup ...
-		.createLogger(); 
+		.create(); 
 
-	var log = structuredLog.configuration() 
+	var log = structuredLog.configure() 
 		.writeTo(consoleSink)
 		.writeTo(someOtherLog)
-		.createLogger();
+		.create();
 
 
 ## Basic Usage
@@ -148,13 +148,15 @@ All batched sinks (even custom batched sinks) have the same standard configurati
 
 	var httpSink = require('structured-log-http-sink'); 
 	
-	var log = structuredLog.configuration()
-		.writeTo(httpSink({
-			url: 'http://somelogreceiver',    // Configuration for the custom sink.
-			batchSize: 1000,          // Flush the queue every 1000 logs.
+	var log = structuredLog.configure()
+		.batch({
+			batchSize: 1000,          	// Flush the queue every 1000 logs.
 			timeDuration: 3000,         // Milliseconds to wait before flushing the queue.            
 		})
-		.createLogger();
+		.writeTo(httpSink({
+			url: 'http://somelogreceiver',	// Configuration for the custom sink.
+		})
+		.create();
 
 *batchSize* specifies the amount of logs to include in a batch. When this number of logs are in the queue the queue will be flushed and processed by the sink.
 
@@ -240,7 +242,7 @@ Non-batched sinks process each log event individually:
 	
 	var log = structuredLog.configure()
 		.writeTo(myCustomSink(customSinkOptions))
-		.createLogger();
+		.create();
 
 ### As a Nodejs module
 
@@ -266,7 +268,7 @@ SomewhereElse.js:
 	
 	var log = structuredLog.configure()
 		.writeTo(myCustomSink(customSinkOptions))
-		.createLogger();
+		.create();
 
 
 ### Batched custom sink
@@ -291,36 +293,36 @@ The *fluent API* has numerous functions to configure your log.
 
 Set the minimum log level that is output:
 
-	var log = structuredLog.configuration()
-		.minimumLevel('WARN')
+	var log = structuredLog.configure()
+		.minLevel('WARN')
 		.writeTo(consoleSink())
-		.createLogger();
+		.create();
 
 *minimumLevel* applies to subsequent sinks in the configuration, so you can use it to set a different level for each sink: 
 
 	var log = structuredLog.configuration()
-		.minimumLevel('VERBOSE')
+		.minLevel('VERBOSE')
 		.writeTo(consoleSink())
-		.minimumLevel('INFO')
+		.minLevel('INFO')
 		.writeTo(httpSink())
-		.minimumLevel('ERROR')
+		.minLevel('ERROR')
 		.writeTo(emailSink())
-		.createLogger();
+		.create();
 
 ### Filtering
 
 Custom filtering can be applied to include/exclude logging based on a predicate function. 
 
-	var log = structuredLog.configuration()
+	var log = structuredLog.configure()
 		.filter(function (logEvent) {
 			return someCondition(logEvent);
 		})
 		.writeTo(consoleSink())
-		.createLogger();
+		.create();
 
 This kind of filtering affects subsequent sinks in the configuration, you can use it in combination with *clearFilter* to provide different filters for different sinks: 
 
-	var log = structuredLog.configuration()
+	var log = structuredLog.configure()
 		.filter(function (logEvent) {
 			return okForConsole(logEvent);
 		}))
@@ -329,7 +331,7 @@ This kind of filtering affects subsequent sinks in the configuration, you can us
 		.filter(function (logEvent) {
 			return okForHttp(logEvent);
 		}))
-		.createLogger();
+		.create();
 
 Logs can also be filtered after configuration, this effectively creates a new log with the added filter:
 
@@ -344,17 +346,17 @@ Logs can also be filtered after configuration, this effectively creates a new lo
 
 Enrichment can be used to add key/value properties to all logs output via a particular logger.
 
-	var log = structuredLog.configuration()
+	var log = structuredLog.configure()
 		.enrich({
 			UserId: getCurUserId(),
 			SessionId: getCurSessionId(),
 		})
 		.writeTo(consoleSink())
-		.createLogger();
+		.create();
 
 A function can also be provided that is evaluated at runtime to attach properties to log events in a more dynamic fashion:
 
-	var log = structuredLog.configuration()
+	var log = structuredLog.configure()
 		.enrich(function () {
 			return {
 				UserId: getCurUserId(),
@@ -362,7 +364,7 @@ A function can also be provided that is evaluated at runtime to attach propertie
 			};
 		})
 		.writeTo(consoleSink())
-		.createLogger();
+		.create();
 
 Any number of properties can be attached to log messages in this manner. The properties may then be used in the log messages themselves:
 
@@ -380,10 +382,10 @@ Logs can also be enriched after configuration, this effectively creates a new lo
 
 Logs can be tagged with string values. This is useful to filter and categories logs generated by an application:
 
-	var log = structuredLog.configuration()
+	var log = structuredLog.configure()
 		.tag("authentication-system")
 		.writeTo(consoleSink())
-		.createLogger();
+		.create();
 
 Logs can also be tagged after configuration, this effectively creates a new log that has the desired tag:
 	
