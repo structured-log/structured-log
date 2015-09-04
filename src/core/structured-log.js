@@ -453,6 +453,7 @@
         var lastFlushTime = (new Date()).getTime();
 
         var flushBatch = null;
+        var batchFlushTimeout = null; // Used to cancel the pending flush.        
 
         //
         // Flush the batch when the log is flushed or closed.
@@ -476,8 +477,6 @@
                 clearTimeout(batchFlushTimeout);
                 batchFlushTimeout = null;
             }
-
-            var batchFlushTimeout = null; // Used to cancel the pending flush.        
 
             // 
             // Flush the batch.

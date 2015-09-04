@@ -383,4 +383,39 @@ describe('Logger', function(){
             done();
         });
     });    
+
+    it('running multiple logs thru a single batch should only invoke the sink once', function (done) {
+
+        var sinkInvocations = 0;
+
+        var log = serilog.configure()
+            .batch({
+                batchSize: 5,
+                timeDuration: 100,
+            })
+            .writeTo(function (evts) { 
+              ++sinkInvocations;
+            })
+            .create();
+
+        log('1');
+        log('2');
+        log('3');
+        log('4');
+
+        assert.equal(0, sinkInvocations);
+
+        log('5');
+
+        assert.equal(1, sinkInvocations);
+
+        // Wait for the time out to elapse.
+        setTimeout(function () {
+
+              // Ensure the sink hasn't been invoked again!
+              assert.equal(1, sinkInvocations);
+              done();
+            }, 500);
+    });
+
 });
