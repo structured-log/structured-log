@@ -484,7 +484,7 @@
             flushBatch = function () {
                 // Flush the batch.
                 batchedLogEvents.reverse();
-                next(batchedLogEvents);
+                next(batchedLogEvents); // Allow the log events to flow to the next stage to of the pipeline.
 
                 batchedLogEvents = [];
                 lastFlushTime = curTime;
