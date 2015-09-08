@@ -1,6 +1,6 @@
 
-var structuredLog = require('structured-log-dev');
-var consoleSink = require('structured-log-dev/console-sink');
+var structuredLog = require('structured-log');
+var consoleSink = require('structured-log/console-sink');
 
 var log = structuredLog.configure()
 	.writeTo(consoleSink())
