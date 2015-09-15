@@ -73,11 +73,35 @@ describe('LoggerConfiguration', function() {
       assert.equal('ERROR', written[0].level);
     });
 
-    it('should report failures', function(){
+    it('should propagate exception to next pipeline stage - when throwing a string', function(){
       var written = [];
       var log = serilog.configure()
         .writeTo(function(){
           throw 'Broken!';
+        })
+        .writeTo(function (evts) { 
+          evts.forEach(function (evt) {
+            written.push(evt); 
+          });          
+        })
+        .create();
+      log.warn('A timely warning');
+
+      assert.equal(2, written.length);
+
+      assert.equal('ERROR', written[0].level);
+      assert(written[0].properties.isSelfLog);
+      assert.notEqual(-1, written[0].renderedMessage().indexOf('Broken!'));
+
+      assert.equal('WARN', written[1].level);
+      assert(!written[1].properties.isSelfLog);
+    });
+
+    it('should propagate exception to next pipeline stage - when throwing an Error', function(){
+      var written = [];
+      var log = serilog.configure()
+        .writeTo(function(){
+          throw new Error('Broken!');
         })
         .writeTo(function (evts) { 
           evts.forEach(function (evt) {
@@ -382,6 +406,42 @@ describe('Logger', function(){
 
             done();
         });
+    });    
+
+    it('flush doesnt complete until async sink has completed', function (done) {
+
+        var written = [];
+        var log = serilog.configure()
+            .batch({
+                timeDuration: 100,
+            })
+            .writeTo(function (evts, done) { 
+              setTimeout(
+                function () {
+                  evts.forEach(function (evt) {
+                    written.push(evt); 
+                  });
+
+                  done();
+                },
+                100
+              )
+            })
+            .create();
+
+        log('1');
+
+        assert.equal(0, written.length);
+
+        log.flush(function () {
+            
+            assert.equal(1, written.length);
+            assert('1', written[0].message);
+
+            done();
+        });
+
+        assert.equal(0, written.length); // Will still be 0 until flush has completed.
     });    
 
     it('running multiple logs thru a single batch should only invoke the sink once', function (done) {
