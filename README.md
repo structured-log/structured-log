@@ -23,10 +23,10 @@ This section describes the most basic *structured-log* configuration for server 
 In your NodeJS script:
 
 	var structuredLog = require('structured-log');
-	var coloredConsoleSink = require('structured-log/colored-console-sink');
+	var consoleSink = require('structured-log/console-sink');
 
 	var log = structuredLog.configure()
-    	.writeTo(coloredConsoleSink())
+    	.writeTo(consoleSink())
 	    .create();
     
 ### Client-side
@@ -49,7 +49,7 @@ Setup of *structured-log* is via a *fluent API* that configures and creates a lo
 
 	var log = structuredLog.configure() 
 		.writeTo(consoleSink)
-		.writeTo(httpSink({ url: '<some-url>' }))
+		.writeTo(httpSink({ url: 'http://somewhere.com' }))
 		.create();
 
 ### Writing to another log
@@ -68,32 +68,35 @@ A log can easily be piped to another log:
 
 ## Basic Usage
 
-Debugging:
+Verbose (not output by default):
 
-	log.trace('My debug message!');
-	log.debug('My debug message!');
 	log.verbose('My debug message!');
  
-Information:
+Info:
 
 	log.info('Something happened in the application...');
 
-Information alternative:
+Info alternative:
 
 	log('Something happened in the application...');
 
-Warnings:
+Warning:
   
 	log.warn('Some not-fatal error happened...');
 
-Errors:
+Error:
 
 	log.error('Something bad happened...');
+
+Error can also accept an exception or error object:
+
 	log.error(exceptionOrErrorObject, 'Something bad happend...');
 
 ## Structured Logging
 
-All the logging functions accept a message template and a set of key/value properties that are used to render the template when constring the log message for display. The properties are maintained separately to the template and rendered message which is what makes this a structured logging system.
+All the logging functions accept a message template and a set of key/value properties. When the template is rendered for display the values of the properties can be included in the message. 
+
+The properties are maintained separately to the template and rendered message which is what makes this a structured logging system.
 
 Here are some examples that have been adapted for Javascript from the [Serilog C# examples](http://serilog.net/):
  
@@ -105,7 +108,7 @@ Here are some examples that have been adapted for Javascript from the [Serilog C
 		Elapsed: elapsedMs
 	});
 
-Properties can also be specified by positional parameters, the same as how it works in Serilog C#: 
+Properties can also be specified by positional parameters, the same as in Serilog C#: 
 
 	log.info("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
 
@@ -121,30 +124,30 @@ All sinks are imported using the Nodejs *require* function as follows:
 
 	var someSink = require('<sink-name>');
 
-| Name | Description | Batched/Unbatched |
-| ---- | ----------- | ----------------- |
-| console-sink | Writes formatted log events to the *console* | Unbatched |
-| colored-console-sink | Same as above, but with colors | Unbatched |
-| json-console-sink | Writes structured json to the console for each log event | Unbatched |
-| stream-sink | Writes formatted log events to a Nodejs stream | Unbatched |
-| json-stream-sink | Writes structured json tot he console for each log event | Unbatched |
-| http-sink | Outputs structured json log events via HTTP post |  Batched |
+| Name | Description |
+| ---- | ----------- |
+| console-sink | Writes formatted log events to the *console* |
+| colored-console-sink | Same as above, but with colors |
+| json-console-sink | Writes structured json to the console for each log event |
+| stream-sink | Writes formatted log events to a Nodejs stream |
+| json-stream-sink | Writes structured json tot he console for each log event |
+| http-sink | Outputs structured json log events via HTTP post |
 
 ### Client-side
 
 | Name | Description |
 | ---- | ------------- |
-| console-sink | Writes formatted log events to the *console* | Unbatched |
-| json-console-sink | Writes structured json to the console for each log event | Unbatched |
-| http-sink | Outputs structured json log events via HTTP post | Batched |
+| console-sink | Writes formatted log events to the *console* |
+| json-console-sink | Writes structured json to the console for each log event |
+| http-sink | Outputs structured json log events via HTTP post |
 
 ## Batching
 
-Some of the sinks are batched. Batched sinks process multiple log events at once usually for increased performance or to reduce timing issues (eg HTTP logs being received out of order). 
+All sinks can be batched, although it only really makes sense for sinks that require batching for increased performance or to reduce timing issues (eg HTTP logs being received out of order). 
 
-### Configuring Batched Sinks
+### Configuring Batching
 
-All batched sinks (even custom batched sinks) have the same standard configuration options.
+All sinks can have batching enabled by calling the *batch* function with an appropriate configuration:
 
 	var httpSink = require('structured-log-http-sink'); 
 	
@@ -162,7 +165,7 @@ All batched sinks (even custom batched sinks) have the same standard configurati
 
 *timeDuration* specifies the amount of time that will pass before the log queue is flushed. This ensure that the queue is periodically flushed even if not enought logs events have been queued to trigger the *batchSize* flush. 
 
-Either of these options can be omitted and be set to default values.
+Either of these options can be omitted and will be set to default values.
 
 ### Flushing Queued Logs
 
@@ -218,19 +221,17 @@ If you release your own custom sink for *structured-log* please let us know and 
 
 ## Make your own sink
 
-It is very easy to make your own sink. You first have to decide if the sink should process log events individually or as a batch.
+It is very easy to make your own sink. There are plenty of built-in examples of sinks. So can you can always copy and modify an existing sink.
 
-There are plenty of built-in examples of sinks. So can you can always copy and modify an existing sink.
+### Custom sink
 
-### Non-batched custom sink
-
-Non-batched sinks process each log event individually:
+All sinks are designed to run in either *batched* or *unbatched* modes. The *emit* function always accepts an array of *log events*. When running unbatched this array will contain only a single item. When running batched the array may contain more than 1 *log event* depending on how many have been queued. 
 
 	var myCustomSink = function (options) {
 		return {
-			emit: function (logEvent) {
+			emit: function (logEvents) {
 				//
-				// ... your custom log event processing goes here ...
+				// ... process array of log events ...
 				//
 			}
 		};
@@ -244,21 +245,19 @@ Non-batched sinks process each log event individually:
 		.writeTo(myCustomSink(customSinkOptions))
 		.create();
 
-### As a Nodejs module
-
-MyCustomSink.js:
+**As a Nodejs module:**
 
 	module.exports = function (options) {
 		return {
-			emit: function (logEvent) {
+			emit: function (logEvents) {
 				//
-				// ... your custom log event processing goes here ...
+				// ... process array of log events ...
 				//
 			}
 		};
 	};
 
-SomewhereElse.js:
+**Somewhere else:**
 
 	var myCustomSink = require('./MyCustomSink');
 	
@@ -270,20 +269,6 @@ SomewhereElse.js:
 		.writeTo(myCustomSink(customSinkOptions))
 		.create();
 
-
-### Batched custom sink
-
-Batched sinks process a batch of log events at a time. *structured-log* buffers log events until the log queue is flushed. By simply replacing the *emit* function with *emitBatch* you can convert your sink to work in batched mode, accepting an *array* of log events instead of just a single  log event.
-
-	var myCustomSink = function (options) {
-		return {
-			emitBatch: function (logEvents) {
-				//
-				// ... process the array of log events ...
-				//
-			}
-		};
-	};
 
 ## Advanced Setup
 
@@ -298,7 +283,7 @@ Set the minimum log level that is output:
 		.writeTo(consoleSink())
 		.create();
 
-*minimumLevel* applies to subsequent sinks in the configuration, so you can use it to set a different level for each sink: 
+*minLevel* applies to subsequent sinks in the configuration, so you can use it to set a different level for each sink: 
 
 	var log = structuredLog.configuration()
 		.minLevel('VERBOSE')
