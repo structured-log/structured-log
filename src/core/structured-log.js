@@ -32,7 +32,7 @@
         if (!val || typeof val !== 'string') {
             throw new Error("Expected " + typeof(val) + " to be a string.");
         }
-    };
+    }
 
     //
     // Throws an exception if the passed-in value is not a function.
@@ -41,7 +41,7 @@
         if (!val || typeof val !== 'function') {
             throw new Error("Expected " + typeof(val) + " to be a function.");
         }
-    };
+    }
 
     //
     // Throws an exception if the passed-in value is not an object.
@@ -50,7 +50,7 @@
         if (!val || typeof val !== 'object') {
             throw new Error("Expected " + typeof(val) + " to be an object.");
         }
-    };
+    }
 
     //
     // Throws an exception if the passed-in value is not an array.
@@ -59,7 +59,7 @@
         if (!val || Object.prototype.toString.call(val) !== '[object Array]') {
             throw new Error("Expected " + typeof(val) + " to be an array.");
         }
-    };
+    }
 
   function MessageTemplate(messageTemplate) {
     var self = this;
@@ -633,7 +633,7 @@
             // Close the next stage.
             //
             self.nextStage.close(done);
-        })
+        });
     };    
 
     //
@@ -916,7 +916,7 @@
             var nextStage = self.pipelineStages[stageIndex+1];
             var stage = self.pipelineStages[stageIndex].setNextStage(nextStage);
         }
-    };
+    }
 
     //
     // Emit log events to the pipeline.
