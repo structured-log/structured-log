@@ -5,27 +5,35 @@ var rename = require('gulp-rename');
 var clean = require('gulp-clean');
 var childProcess = require('child_process');
 var concat = require('gulp-concat');
+var browserify = require('gulp-browserify');
+var using = require('gulp-using');
 
 gulp.task('clean-npm', function(){
   return gulp.src('dist/npm', {read: false})
     .pipe(clean());
 });
 
-gulp.task('minify-bower-js', [], function(){
-  return gulp.src(['src/core/*.js', 'src/bower/*.js'])
+gulp.task('browserify-bower', function () {
+
+  return gulp.src('./src/bower/structured-log.js')
     .pipe(jshint('.jshintrc'))
     .pipe(jshint.reporter('default'))
     .pipe(jshint.reporter('fail'))
+    .pipe(browserify({
+      insertGlobals : true,
+    }))
+    .pipe(gulp.dest('../.tmp'))
+});
+
+gulp.task('minify-bower-js', ['browserify-bower'], function(){
+  return gulp.src(['../.tmp/*.js'])
     .pipe(uglify({mangle: false}))
     .pipe(concat('structured-log.min.js'))
     .pipe(gulp.dest('../structured-log-bower'));
 });
 
 gulp.task('copy-bower-js', [], function(){
-  return gulp.src(['src/core/*.js', 'src/bower/*.js'])
-    .pipe(jshint('.jshintrc'))
-    .pipe(jshint.reporter('default'))
-    .pipe(jshint.reporter('fail'))
+  return gulp.src(['../.tmp/*.js'])
     .pipe(gulp.dest('../structured-log-bower'));
 });
 
@@ -35,11 +43,16 @@ gulp.task('copy-bower-json', [], function(){
 });
 
 gulp.task('copy-bower-readme', [], function(){
+  return gulp.src(['LICENCE'])
+    .pipe(gulp.dest('../structured-log-bower'));
+});
+
+gulp.task('copy-bower-licence', [], function(){
   return gulp.src(['README.MD'])
     .pipe(gulp.dest('../structured-log-bower'));
 });
 
-gulp.task('build-bower', ['minify-bower-js', 'copy-bower-js', 'copy-bower-json', 'copy-bower-readme']);
+gulp.task('build-bower', ['minify-bower-js', 'copy-bower-js', 'copy-bower-json', 'copy-bower-readme', 'copy-bower-licence']);
 
 gulp.task('copy-npm-js', ['clean-npm'], function(){
   return gulp.src(['src/core/*.js', 'src/npm/*.js', 'src/npm/*.json'])

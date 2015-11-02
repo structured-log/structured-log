@@ -1,6 +1,6 @@
 
 var log = structuredLog.configure() 
-    .writeTo(structuredLog.sink.console())
+    .writeTo(structuredLog.consoleSink())
     .create();
 
 log.info('Hello this is some information.');

@@ -1,2 +1,5 @@
 {
+	"globals": {
+		"require": false
+	}
 }
