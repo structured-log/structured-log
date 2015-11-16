@@ -25,41 +25,8 @@
   }
 }(this, function () {
 
-    //
-    // Throws an exception if the passed-in value is not a string.
-    //
-    function expectString(val) {
-        if (!val || typeof val !== 'string') {
-            throw new Error("Expected " + typeof(val) + " to be a string.");
-        }
-    };
-
-    //
-    // Throws an exception if the passed-in value is not a function.
-    //
-    function expectFunction(val) {
-        if (!val || typeof val !== 'function') {
-            throw new Error("Expected " + typeof(val) + " to be a function.");
-        }
-    };
-
-    //
-    // Throws an exception if the passed-in value is not an object.
-    //
-    function expectObject(val) {
-        if (!val || typeof val !== 'object') {
-            throw new Error("Expected " + typeof(val) + " to be an object.");
-        }
-    };
-
-    //
-    // Throws an exception if the passed-in value is not an array.
-    //
-    function expectArray(val) {        
-        if (!val || Object.prototype.toString.call(val) !== '[object Array]') {
-            throw new Error("Expected " + typeof(val) + " to be an array.");
-        }
-    };
+    var expect = require('./expect');
+    var async = require('./async');
 
   function MessageTemplate(messageTemplate) {
     var self = this;
@@ -246,61 +213,21 @@
   };
 
     //
-    // Run several async functions in parallel, invoke a callback when they are done.
-    //
-    var runAsyncParallel = function () {
-
-        var done = arguments[arguments.length-1];
-        expectFunction(done);
-
-        if (arguments.length <= 1) {
-            done();
-            return;
-        }
-
-        var awaitingCompletion = arguments.length-1;
-        var allDone = false;
-
-        //
-        // Fire the final callback if all async fns have completed.
-        //
-        var checkAllDone = function () {
-            if (allDone) {
-                // Already completed all.
-                return;
-            }
-
-            --awaitingCompletion;
-            if (awaitingCompletion <= 0) {
-                allDone = true;
-                done();
-            }
-        };
-
-        for (var i = 0; i < arguments.length-1; ++i) {
-            var fn = arguments[i];
-            expectFunction(fn);
-
-            fn(checkAllDone);
-        }
-    };
-
-    //
     // Represents a stage in the pipeline.
     // Each state controls the flow to the next stage.
     // This stage wraps a user-defined sink.
     //
     var SinkStage = function (sinkName, sinkEmit, sinkFlush, sinkClose, onError) {
-        expectString(sinkName);
-        expectFunction(sinkEmit);
+        expect.string(sinkName);
+        expect.func(sinkEmit);
         if (sinkFlush) {
-            expectFunction(sinkFlush);
+            expect.func(sinkFlush);
         }
         if (sinkClose) {
-            expectFunction(sinkClose);
+            expect.func(sinkClose);
         }
         if (onError) {
-            expectFunction(onError);
+            expect.func(onError);
         }
 
         var self = this;
@@ -315,7 +242,7 @@
     // Set the next pipeline stage.
     //
     SinkStage.prototype.setNextStage = function (nextStage) {
-        expectObject(nextStage);
+        expect.object(nextStage);
 
         var self = this;
         self.nextStage = nextStage;        
@@ -341,8 +268,8 @@
     // The stage itself controls the flow to the next stage.
     //
     SinkStage.prototype.emit = function (logEvts, done) {
-        expectArray(logEvts);
-        expectFunction(done);
+        expect.array(logEvts);
+        expect.func(done);
 
         var self = this;
 
@@ -392,14 +319,14 @@
             }           
         };
 
-        runAsyncParallel(sinkEmit, nextStageEmit, done);
+        async.runParallel(sinkEmit, nextStageEmit, done);
     };
 
     //
     // Flush the log stage.
     //
     SinkStage.prototype.flush = function (done) {
-        expectFunction(done);
+        expect.func(done);
 
         var self = this;
 
@@ -433,14 +360,14 @@
             }
         };
 
-        runAsyncParallel(sinkFlush, nextStageFlush, done);
+        async.runParallel(sinkFlush, nextStageFlush, done);
     };
 
     //
     // Close the log stage.
     //
     SinkStage.prototype.close = function (done) {
-        expectFunction(done);
+        expect.func(done);
 
         var self = this;
 
@@ -481,7 +408,7 @@
                 }
             };
 
-            runAsyncParallel(sinkClose, nextStageClose, done);
+            async.runParallel(sinkClose, nextStageClose, done);
         });
     };
 
@@ -491,7 +418,7 @@
     // This stage batches log events until they are flushed through the system.
     //
     var BatchStage = function (config) {
-        expectObject(config);
+        expect.object(config);
 
         var self = this;
         self.config = config;
@@ -515,7 +442,7 @@
     // Set the next pipeline stage.
     //
     BatchStage.prototype.setNextStage = function (nextStage) {
-        expectObject(nextStage);
+        expect.object(nextStage);
 
         var self = this;
 
@@ -526,7 +453,7 @@
     // Flush batched logs to the next stage in the pipeline.
     //
     BatchStage.prototype.flushBatch = function (done) {        
-        expectFunction(done);
+        expect.func(done);
 
         var self = this;
 
@@ -568,8 +495,8 @@
     // The stage itself controls the flow to the next stage.
     //
     BatchStage.prototype.emit = function (logEvts, done) { //todo: init timeout.
-        expectArray(logEvts);
-        expectFunction(done);
+        expect.array(logEvts);
+        expect.func(done);
 
         var self = this;
 
@@ -598,7 +525,7 @@
     // Flush the log stage.
     //
     BatchStage.prototype.flush = function (done) { //todo: reset timeout
-        expectFunction(done);
+        expect.func(done);
 
         var self = this;
 
@@ -621,7 +548,7 @@
     // Close the log stage.
     //
     BatchStage.prototype.close = function (done) {
-        expectFunction(done);
+        expect.func(done);
 
         var self = this;
 
@@ -641,7 +568,7 @@
     // Each state controls the flow to the next stage.
     //
     var FilterStage = function (filterPredicate) {
-        expectFunction(filterPredicate);
+        expect.func(filterPredicate);
 
         var self = this;
         self.filterPredicate = filterPredicate;
@@ -651,7 +578,7 @@
     // Set the next pipeline stage.
     //
     FilterStage.prototype.setNextStage = function (nextStage) {
-        expectObject(nextStage);
+        expect.object(nextStage);
 
         var self = this;
 
@@ -663,8 +590,8 @@
     // The stage itself controls the flow to the next stage.
     //
     FilterStage.prototype.emit = function (logEvts, done) {
-        expectArray(logEvts);
-        expectFunction(done);
+        expect.array(logEvts);
+        expect.func(done);
 
         var self = this;
         var filteredLogEvts = logEvts.filter(self.filterPredicate);
@@ -679,7 +606,7 @@
     // Flush the log stage.
     //
     FilterStage.prototype.flush = function (done) {
-        expectFunction(done);
+        expect.func(done);
 
         var self = this;
 
@@ -691,7 +618,7 @@
     // Close the log stage.
     //
     FilterStage.prototype.close = function (done) {
-        expectFunction(done);
+        expect.func(done);
 
         var self = this;
 
@@ -711,7 +638,7 @@
     // Each state controls the flow to the next stage.
     //
     var EnrichStage = function (enrichFn, destructure) {
-        expectFunction(enrichFn);
+        expect.func(enrichFn);
 
         var self = this;
 
@@ -723,7 +650,7 @@
     // Set the next pipeline stage.
     //
     EnrichStage.prototype.setNextStage = function (nextStage) {
-        expectObject(nextStage);
+        expect.object(nextStage);
 
         var self = this;
 
@@ -735,8 +662,8 @@
     // The stage itself controls the flow to the next stage.
     //
     EnrichStage.prototype.emit = function (logEvts, done) {
-        expectArray(logEvts);
-        expectFunction(done);
+        expect.array(logEvts);
+        expect.func(done);
 
         var self = this;
 
@@ -750,7 +677,7 @@
     // Flush the log stage.
     //
     EnrichStage.prototype.flush = function (done) {
-        expectFunction(done);
+        expect.func(done);
 
         var self = this;
 
@@ -762,7 +689,7 @@
     // Close the log stage.
     //
     EnrichStage.prototype.close = function (done) {
-        expectFunction(done);
+        expect.func(done);
 
         var self = this;
 
@@ -781,7 +708,7 @@
     // A pipeline stage that passed to another pipeline.
     //
     var SubPipelineStage = function (pipeline) {
-        expectObject(pipeline);
+        expect.object(pipeline);
 
         var self = this;
         
@@ -792,7 +719,7 @@
     // Set the next pipeline stage.
     //
     SubPipelineStage.prototype.setNextStage = function (nextStage) {
-        expectObject(nextStage);
+        expect.object(nextStage);
 
         var self = this;
 
@@ -804,8 +731,8 @@
     // The stage itself controls the flow to the next stage.
     //
     SubPipelineStage.prototype.emit = function (logEvts, done) {
-        expectArray(logEvts);
-        expectFunction(done);
+        expect.array(logEvts);
+        expect.func(done);
 
         var self = this;
 
@@ -828,14 +755,14 @@
             }           
         };
 
-        runAsyncParallel(pipelineEmit, nextStageEmit, done);
+        async.runParallel(pipelineEmit, nextStageEmit, done);
     };
 
     //
     // Flush the log stage.
     //
     SubPipelineStage.prototype.flush = function (done) {
-        expectFunction(done);
+        expect.func(done);
 
         var self = this;
 
@@ -857,14 +784,14 @@
             }
         };
 
-        runAsyncParallel(pipelineFlush, nextStageFlush, done);        
+        async.runParallel(pipelineFlush, nextStageFlush, done);        
     };
 
     //
     // Close the log stage.
     //
     SubPipelineStage.prototype.close = function (done) {
-        expectFunction(done);
+        expect.func(done);
 
         var self = this;
 
@@ -893,13 +820,13 @@
                 }
             };
 
-            runAsyncParallel(pipelineClose, nextStageClose, done);
+            async.runParallel(pipelineClose, nextStageClose, done);
         });
     };    
 
 
     function Pipeline(pipelineStages) {
-        expectArray(pipelineStages);
+        expect.array(pipelineStages);
 
         if (pipelineStages.length < 1) {
             throw new Error("No pipeline stages defined!");
@@ -1038,7 +965,7 @@
         // Add a stage to the pipeline.
         //
         self.addStage = function(pipelineStage) {
-            expectObject(pipelineStage);
+            expect.object(pipelineStage);
             
             pipelineStages.push(pipelineStage);
             return self;
