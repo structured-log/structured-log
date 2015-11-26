@@ -98,23 +98,17 @@ All the logging functions accept a message template and a set of key/value prope
 
 The properties are maintained separately to the template and rendered message which is what makes this a structured logging system.
 
-Here are some examples that have been adapted for Javascript from the [Serilog C# examples](http://serilog.net/):
+Here is an example that has been adapted for Javascript from the [Serilog C# example](http://serilog.net/):
  
+Properties are specified by positional parameters, the same as in Serilog C#: 
+
 	var position = { Latitude: 25, Longitude: 134 };
 	var elapsedMs = 34;
-	
-	log.info("Processed {@Position} in {Elapsed:000} ms.", {
-		Position: position,
-		Elapsed: elapsedMs
-	});
-
-Properties can also be specified by positional parameters, the same as in Serilog C#: 
-
-	log.info("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+	log.info("Processed {@Position} in {Elapsed} ms.", position, elapsedMs);
 
 ## Included Sinks
 
-A *sink* is a plugin that is invoked for each *log event*. Usualy a sink defines an *output method* for logs, such as the ability to output to the [console]( https://developer.mozilla.org/en/docs/Web/API/console).  
+A *sink* is a plugin that is invoked for each *log event*. Usually a sink defines an *output method* for logs, such as the ability to output to the [console]( https://developer.mozilla.org/en/docs/Web/API/console).  
 
 *structured-log* includes a number of built-in sinks.
 
