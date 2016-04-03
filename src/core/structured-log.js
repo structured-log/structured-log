@@ -69,7 +69,7 @@
 	  // otherwise it will throw an error
 	  if (o === null)
 	    return o;
-		
+
       // Could use instanceof Date, but this way will be kinder
       // to values passed from other contexts...
       if (destructure || typeof o.toISOString === 'function') {
@@ -250,7 +250,7 @@
         expect.object(nextStage);
 
         var self = this;
-        self.nextStage = nextStage;        
+        self.nextStage = nextStage;
     };
 
     //
@@ -298,7 +298,7 @@
                 // Emit sink related errors to the next stage.
                 if (typeof self.onError === 'function') {
                     self.onError(err, logEvts, done);
-                } 
+                }
                 else if (self.nextStage) {
                     var errLogEvt = createEvent(errorLevel, 'Failed to write to {sink}: {error}', self.sinkName, errToString(err));
                     errLogEvt.properties.isSelfLog = true;
@@ -321,7 +321,7 @@
             }
             else {
                 done();
-            }           
+            }
         };
 
         async.runParallel(sinkEmit, nextStageEmit, done);
@@ -335,7 +335,7 @@
 
         var self = this;
 
-        // 
+        //
         // Call the sink's flush fn.
         //
         var sinkFlush = function (done) {
@@ -381,7 +381,7 @@
         //
         self.flush(function () {
 
-            // 
+            //
             // Close the sink.
             //
             var sinkClose = function (done) {
@@ -451,13 +451,13 @@
 
         var self = this;
 
-        self.nextStage = nextStage;        
+        self.nextStage = nextStage;
     };
 
     //
     // Flush batched logs to the next stage in the pipeline.
     //
-    BatchStage.prototype.flushBatch = function (done) {        
+    BatchStage.prototype.flushBatch = function (done) {
         expect.func(done);
 
         var self = this;
@@ -471,7 +471,7 @@
     // Start the flush timer .
     //
     BatchStage.prototype.startFlushTimer = function () {
-    
+
         var self = this;
 
         self.batchFlushTimer = setTimeout(function () {
@@ -486,7 +486,7 @@
     //
     BatchStage.prototype.cancelFlushTimer = function () {
 
-        var self = this;   
+        var self = this;
 
         if (self.batchFlushTimer) {
             // Cancel the flush timeout.
@@ -511,7 +511,7 @@
 
         self.batchedLogEvts = self.batchedLogEvts.concat(logEvts);
 
-        var needsFlushNow = 
+        var needsFlushNow =
             self.batchedLogEvts.length >= self.config.batchSize ||
             self.config.timeDuration && (self.curTime - self.lastFlushTime) > self.config.timeDuration;
 
@@ -546,7 +546,7 @@
             // No logs are batched.
             // Flush the next stage.
             self.nextStage.flush(done);
-        }            
+        }
     };
 
     //
@@ -565,8 +565,8 @@
             // Close the next stage.
             //
             self.nextStage.close(done);
-        })
-    };    
+        });
+    };
 
     //
     // Represents a filtering stage in the pipeline.
@@ -587,7 +587,7 @@
 
         var self = this;
 
-        self.nextStage = nextStage;        
+        self.nextStage = nextStage;
     };
 
     //
@@ -636,7 +636,7 @@
             //
             self.nextStage.close(done);
         });
-    };    
+    };
 
     //
     // Represents a stage in the pipeline that adds properties.
@@ -659,7 +659,7 @@
 
         var self = this;
 
-        self.nextStage = nextStage;        
+        self.nextStage = nextStage;
     };
 
     //
@@ -707,7 +707,7 @@
             //
             self.nextStage.close(done);
         });
-    };    
+    };
 
     //
     // A pipeline stage that passed to another pipeline.
@@ -716,7 +716,7 @@
         expect.object(pipeline);
 
         var self = this;
-        
+
         self.pipeline = pipeline;
     };
 
@@ -728,7 +728,7 @@
 
         var self = this;
 
-        self.nextStage = nextStage;        
+        self.nextStage = nextStage;
     };
 
     //
@@ -757,7 +757,7 @@
             }
             else {
                 done();
-            }           
+            }
         };
 
         async.runParallel(pipelineEmit, nextStageEmit, done);
@@ -771,7 +771,7 @@
 
         var self = this;
 
-        // 
+        //
         // Call the pipelines's flush fn.
         //
         var pipelineFlush = function (done) {
@@ -789,7 +789,7 @@
             }
         };
 
-        async.runParallel(pipelineFlush, nextStageFlush, done);        
+        async.runParallel(pipelineFlush, nextStageFlush, done);
     };
 
     //
@@ -805,7 +805,7 @@
         //
         self.flush(function () {
 
-            // 
+            //
             // Close the pipeline.
             //
             var pipelineClose = function (done) {
@@ -827,7 +827,7 @@
 
             async.runParallel(pipelineClose, nextStageClose, done);
         });
-    };    
+    };
 
 
     function Pipeline(pipelineStages) {
@@ -841,14 +841,14 @@
         self.pipelineStages = pipelineStages;
         self.headStage = self.pipelineStages[0];
 
-        // 
+        //
         // Connect the stages of the pipeline.
         //
         for (var stageIndex = 0; stageIndex < self.pipelineStages.length-1; ++stageIndex) {
             var nextStage = self.pipelineStages[stageIndex+1];
             var stage = self.pipelineStages[stageIndex].setNextStage(nextStage);
         }
-    };
+    }
 
     //
     // Emit log events to the pipeline.
@@ -858,7 +858,7 @@
         self.headStage.emit(logEvts, done);
     };
 
-    // 
+    //
     // Flush the pipeline.
     // After completion the queue of batched logs will have been flushed through to all sinks.
     //
@@ -940,7 +940,7 @@
             return createLogger(levelMap, enrichedPipeline);
         };
 
-        // 
+        //
         // Flush the pipeline.
         // After completion the queue of batched logs will have been flushed through to all sinks.
         //
@@ -971,7 +971,7 @@
         //
         self.addStage = function(pipelineStage) {
             expect.object(pipelineStage);
-            
+
             pipelineStages.push(pipelineStage);
             return self;
         };
@@ -999,7 +999,7 @@
                 return self.writeTo(
                     {
                         emit: sinkOrEmit,
-                        toString: function() { 
+                        toString: function() {
                             return "function";
                         }
                     },
@@ -1015,10 +1015,10 @@
                 return self.enrich(function (){
                         return functionOrProperties;
                     }, destructure);
-            } 
+            }
             else if (typeof functionOrProperties === 'function') {
                 return self.addStage(new EnrichStage(functionOrProperties, destructure));
-            } 
+            }
             else {
                 throw new Error('Events can be enriched using either a function, or a hash of properties');
             }
@@ -1063,7 +1063,7 @@
       return function (evts) {
         return evts.filter(function (evt) {
             return !evt.properties.isSelfLog;
-          });        
+          });
       };
     };
 
