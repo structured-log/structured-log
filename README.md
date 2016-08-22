@@ -1,53 +1,39 @@
-#structured-log [![Build Status](https://travis-ci.org/structured-log/structured-log.svg)](https://travis-ci.org/structured-log/structured-log)
+# structured-log [![Build Status](https://travis-ci.org/structured-log/structured-log.svg)](https://travis-ci.org/structured-log/structured-log)
 
-A structured logging framework for Javascript. Based on [Serilog](http://serilog.net/).
-
-**WARNING:** structured-log is a work in progress and will change over time.
+A structured logging framework for JavaScript. Based on [Serilog](http://serilog.net/).
 
 ## Installation
 
-### Server-side ([Node.js](https://nodejs.org/)) via [npm](https://www.npmjs.com/package/structured-log)
+    npm i structured-log --save
 
-  npm install --save structured-log
+## Basic setup and usage
 
-### Client-side (Web Browser) via [Bower](http://bower.io/search/?q=structured-log)
+This section describes the basic steps required to get *structured-log* up and running.
 
-  bower install --save structured-log
- 
-## Basic Setup
+```js
+var structuredLog = require('structured-log');
+var consoleSink = require('structured-log/console-sink');
 
-This section describes the most basic *structured-log* configuration for server and client.
+var log = structuredLog.configure()
+  .writeTo(consoleSink())
+  .create();
 
-### Server-side
-
-In your NodeJS script:
-
-	var structuredLog = require('structured-log');
-	var coloredConsoleSink = require('structured-log/colored-console-sink');
-
-	var log = structuredLog.configure()
-    	.writeTo(coloredConsoleSink())
-	    .create();
-    
-### Client-side
-
-In your HTML file:
-
-```
-  <script type='text/javascript' src='bower_components/structured-log/structured-log.min.js />
+log.info('Hello! This is an informational message');
 ```
 
-In your Javascript code:
+The available log levels are
 
-	var log = structuredLog.configure() 
-    	.writeTo(structuredLog.consoleSink())
-	    .create();
-  
+- `log.error`
+- `log.warn`
+- `log.info`
+- `log.debug`
+- `log.verbose`
+
 ### Multiple sinks
 
 Setup of *structured-log* is via a *fluent API* that configures and creates a logger. One example of this is to specify multilple sinks, eg:
 
-	var log = structuredLog.configure() 
+	var log = structuredLog.configure()
 		.writeTo(consoleSink)
 		.writeTo(httpSink({ url: '<some-url>' }))
 		.create();
@@ -56,56 +42,36 @@ Setup of *structured-log* is via a *fluent API* that configures and creates a lo
 
 A log can easily be piped to another log:
 
-	var someOtherLog = structuredLog.configure()
-		// ... setup ...
-		.create(); 
+```js
+var someOtherLog = structuredLog.configure()
+	// ... setup ...
+	.create();
 
-	var log = structuredLog.configure() 
-		.writeTo(consoleSink)
-		.writeTo(someOtherLog)
-		.create();
-
+var log = structuredLog.configure()
+	.writeTo(consoleSink)
+	.writeTo(someOtherLog)
+	.create();
+```
 
 ## Basic Usage
 
-Debugging:
 
-	log.trace('My debug message!');
-	log.debug('My debug message!');
-	log.verbose('My debug message!');
- 
-Information:
-
-	log.info('Something happened in the application...');
-
-Information alternative:
-
-	log('Something happened in the application...');
-
-Warnings:
-  
-	log.warn('Some not-fatal error happened...');
-
-Errors:
-
-	log.error('Something bad happened...');
-	log.error(exceptionOrErrorObject, 'Something bad happend...');
 
 ## Structured Logging
 
 All the logging functions accept a message template and a set of key/value properties that are used to render the template when constring the log message for display. The properties are maintained separately to the template and rendered message which is what makes this a structured logging system.
 
 Here are some examples that have been adapted for Javascript from the [Serilog C# examples](http://serilog.net/):
- 
+
 	var position = { Latitude: 25, Longitude: 134 };
 	var elapsedMs = 34;
-	
+
 	log.info("Processed {@Position} in {Elapsed:000} ms.", {
 		Position: position,
 		Elapsed: elapsedMs
 	});
 
-Properties can also be specified by positional parameters, the same as how it works in Serilog C#: 
+Properties can also be specified by positional parameters, the same as how it works in Serilog C#:
 
 	log.info("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
 
@@ -140,14 +106,14 @@ All sinks are imported using the Nodejs *require* function as follows:
 
 ## Batching
 
-Some of the sinks are batched. Batched sinks process multiple log events at once usually for increased performance or to reduce timing issues (eg HTTP logs being received out of order). 
+Some of the sinks are batched. Batched sinks process multiple log events at once usually for increased performance or to reduce timing issues (eg HTTP logs being received out of order).
 
 ### Configuring Batched Sinks
 
 All batched sinks (even custom batched sinks) have the same standard configuration options.
 
-	var httpSink = require('structured-log-http-sink'); 
-	
+	var httpSink = require('structured-log-http-sink');
+
 	var log = structuredLog.configure()
 		.batch({
 			batchSize: 1000,          	// Flush the queue every 1000 logs.
@@ -160,7 +126,7 @@ All batched sinks (even custom batched sinks) have the same standard configurati
 
 *batchSize* specifies the amount of logs to include in a batch. When this number of logs are in the queue the queue will be flushed and processed by the sink.
 
-*timeDuration* specifies the amount of time that will pass before the log queue is flushed. This ensure that the queue is periodically flushed even if not enought logs events have been queued to trigger the *batchSize* flush. 
+*timeDuration* specifies the amount of time that will pass before the log queue is flushed. This ensure that the queue is periodically flushed even if not enought logs events have been queued to trigger the *batchSize* flush.
 
 Either of these options can be omitted and be set to default values.
 
@@ -169,7 +135,7 @@ Either of these options can be omitted and be set to default values.
 The queue of batched logs can be flushed at any time by calling the *flush* function.
 
 If it suits your purpose you can simply call flush:
-	
+
 	log.flush();
 
 If you need a callback when the flush has completed you have two options.
@@ -184,7 +150,7 @@ The first option is the standard Javascript-style callback:
 			// The queue was flushed successfully.
 		}
 	});
- 
+
 The second option is to use the promise that is returned by *flush*:
 
 	log.flush()
@@ -235,11 +201,11 @@ Non-batched sinks process each log event individually:
 			}
 		};
 	};
-	
+
 	var customSinkOptions = {
 		// Whatever custom options you need...
 	};
-	
+
 	var log = structuredLog.configure()
 		.writeTo(myCustomSink(customSinkOptions))
 		.create();
@@ -261,11 +227,11 @@ MyCustomSink.js:
 SomewhereElse.js:
 
 	var myCustomSink = require('./MyCustomSink');
-	
+
 	var customSinkOptions = {
 		// Whatever custom options you need...
 	};
-	
+
 	var log = structuredLog.configure()
 		.writeTo(myCustomSink(customSinkOptions))
 		.create();
@@ -298,7 +264,7 @@ Set the minimum log level that is output:
 		.writeTo(consoleSink())
 		.create();
 
-*minimumLevel* applies to subsequent sinks in the configuration, so you can use it to set a different level for each sink: 
+*minimumLevel* applies to subsequent sinks in the configuration, so you can use it to set a different level for each sink:
 
 	var log = structuredLog.configuration()
 		.minLevel('VERBOSE')
@@ -311,7 +277,7 @@ Set the minimum log level that is output:
 
 ### Filtering
 
-Custom filtering can be applied to include/exclude logging based on a predicate function. 
+Custom filtering can be applied to include/exclude logging based on a predicate function.
 
 	var log = structuredLog.configure()
 		.filter(function (logEvent) {
@@ -320,7 +286,7 @@ Custom filtering can be applied to include/exclude logging based on a predicate 
 		.writeTo(consoleSink())
 		.create();
 
-This kind of filtering affects subsequent sinks in the configuration, you can use it in combination with *clearFilter* to provide different filters for different sinks: 
+This kind of filtering affects subsequent sinks in the configuration, you can use it in combination with *clearFilter* to provide different filters for different sinks:
 
 	var log = structuredLog.configure()
 		.filter(function (logEvent) {
@@ -338,7 +304,7 @@ Logs can also be filtered after configuration, this effectively creates a new lo
 	var log2 = log.filter(function (logEvent) {
 		// ... some condition ...
 	});
-	
+
 	log2.info("This log is filtered by the new criteria!");   
 
 
@@ -375,9 +341,9 @@ As with other configuration, the *enrich* only affects subsequent sinks.
 Logs can also be enriched after configuration, this effectively creates a new log with additional properties:
 
 	var log2 = log.enrich({ NewProperty: 'just for log2' };
-	
+
 	log2.info("I've added a new property: {NewProperty}");   
-	
+
 ### Tagging
 
 Logs can be tagged with string values. This is useful to filter and categories logs generated by an application:
@@ -388,8 +354,7 @@ Logs can be tagged with string values. This is useful to filter and categories l
 		.create();
 
 Logs can also be tagged after configuration, this effectively creates a new log that has the desired tag:
-	
+
 	var log2 = log.tag('some-new-tag');
-	
+
 	log2.info("This log is tagged with 'some-new-tag'");
-	
