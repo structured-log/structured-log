@@ -1,4 +1,4 @@
-import LoggerConfiguration from 'loggerConfiguration';
+import LoggerConfiguration from './loggerConfiguration';
 
 class StructuredLog {
   configure = () => new LoggerConfiguration();
