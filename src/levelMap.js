@@ -10,10 +10,13 @@ const levelMap = {
 
 class LevelMap {
   constructor(minLevel = logLevels.INFO) {
-    this.minLevel = levelMap[minLevel];
+    this.minLevel = levelMap[minLevel] || levelMap[logLevels.INFO];
   }
 
-  isEnabled = level => mappedLevel = levelMap[level] && mappedLevel >= this.minLevel;
+  isEnabled = level => {
+    const mappedLevel = levelMap[level];
+    return mappedLevel ? mappedLevel >= this.minLevel : false;
+  }
 }
 
 export default LevelMap;
