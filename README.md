@@ -8,10 +8,10 @@ A structured logging framework for JavaScript, inspired by [Serilog](http://seri
 import structuredLog, { ConsoleSink } from 'structured-log';
 
 const log = structuredLog.configure()
-.writeTo(new ConsoleSink())
-.create();
+  .writeTo(new ConsoleSink())
+  .create();
 
-log.info('Hello {Name}!', 'Fred');
+log.info('Hello {Name}!', 'Greg');
 ```
 
 The above code will print the following to the console:
@@ -68,6 +68,41 @@ A sink is a target for log events going through the pipeline.
 
 ### Filters
 
+You can add filters to the pipeline by using the `filter()` function. It takes
+a single predicate that will be applied to events passing through the filter.
+
+The below example will filter out any log events with template properties, only
+allowing pure text events through to the next pipeline stage.
+
+```js
+  .filter(logEvent => logEvent.properties.length === 0)
+```
+
 ### Log Levels
+
+A minimum level can be set anywhere in the pipeline to only allow events of that
+level or higher through.
+
+There are 5 log levels available. From least to most inclusive:
+- `ERROR`
+- `WARN`
+- `INFO`
+- `DEBUG`
+- `VERBOSE`
+
+Each log level also includes all levels above it. For example, `WARN` will also
+allow events of the `ERROR` level through, but block `INFO`, `DEBUG` and
+`VERBOSE`.
+
+The below example will set the minimum level to `WARN`:
+
+```js
+.minLevel('WARN')
+```
+
+The default minimum level is `INFO`. Note that if a minimum level is set lower
+down the pipeline, and the default minimum level of the pipeline does not
+inlcude the new minimum level, the default minimum level for the pipeline will
+be set to include the new minimum level.
 
 ### Enrichers

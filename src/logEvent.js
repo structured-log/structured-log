@@ -1,8 +1,8 @@
 export default class LogEvent {
-  constructor(timestamp, level, messageTemplate, boundProperties) {
+  constructor(timestamp, level, messageTemplate, properties) {
     this.timestamp = timestamp;
     this.level = level;
     this.messageTemplate = messageTemplate;
-    this.boundProperties = boundProperties;
+    this.properties = properties;
   }
 }

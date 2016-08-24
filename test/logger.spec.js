@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
 import Logger from '../src/logger';
-import LevelMap from '../src/LevelMap';
+import LevelMap from '../src/levelMap';
 import Pipeline from '../src/pipeline';
 import SinkStage from '../src/sinkStage';
 import * as logLevels from '../src/logLevels';

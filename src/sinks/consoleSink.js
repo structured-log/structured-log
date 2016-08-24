@@ -19,11 +19,11 @@ export default class ConsoleSink {
     logEvents.forEach(event => {
       const timestampPrefix = options.timestamp ? `${event.timestamp.toISOString().replace('T', ' ').replace('Z', '')} ` : '';
       const levelPrefix = event.level.slice(0, 3);
-      const formattedMessage = event.messageTemplate.render(event.boundProperties);
+      const formattedMessage = event.messageTemplate.render(event.properties);
 
       const fullMessage = `${timestampPrefix}[${levelPrefix}] ${formattedMessage}`;
 
-      const args = options.complete ? [fullMessage, event.boundProperties] : [fullMessage];
+      const args = options.complete ? [fullMessage, event.properties] : [fullMessage];
       switch (event.level) {
         case logLevels.ERROR:
           _console.error.apply(_console, args);
