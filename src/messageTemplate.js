@@ -1,6 +1,6 @@
 const argRegex = /\{@?\w+}/g;
 
-function capture(o, destructure) {
+const capture = (o, destructure) => {
   if (typeof o === 'function') {
     return o.toString();
   }
@@ -61,7 +61,7 @@ const toText = function(o) {
   return o.toString();
 };
 
-class MessageTemplate {
+export default class MessageTemplate {
   constructor(template) {
     this.raw = template;
     this.tokens = [];
@@ -95,7 +95,7 @@ class MessageTemplate {
     }
   }
 
-  bindProperties = positionalArgs => {
+  bindProperties(positionalArgs) {
     const result = {};
     let nextArg = 0;
     for (var i = 0; i < this.tokens.length && nextArg < positionalArgs.length; ++i) {
@@ -118,7 +118,7 @@ class MessageTemplate {
     return result;
   }
 
-  render = properties => {
+  render(properties) {
     const result = [];
     for (var i = 0; i < this.tokens.length; ++i) {
       const token = this.tokens[i];
@@ -135,5 +135,3 @@ class MessageTemplate {
     return result.join('');
   }
 }
-
-export default MessageTemplate;

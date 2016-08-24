@@ -1,46 +1,60 @@
+import MessageTemplate from './messageTemplate';
+import LogEvent from './logEvent';
 import * as logLevels from './logLevels';
 
+const _levelMap = new WeakMap();
+const _pipeline = new WeakMap();
 
-class Logger {
+export default class Logger {
   constructor(levelMap, pipeline) {
-    this.levelMap = levelMap;
-    this.pipeline = pipeline;
+    _levelMap.set(this, levelMap);
+    _pipeline.set(this, pipeline);
   }
 
-  error = (messageTemplate, ...properties) => {
+  error(messageTemplate, ...properties) {
     this.write.call(this, logLevels.ERROR, messageTemplate, ...properties);
   }
 
-  warn = (messageTemplate, ...properties) => {
+  warn(messageTemplate, ...properties) {
     this.write.call(this, logLevels.WARN, messageTemplate, ...properties);
   }
 
-  info = (messageTemplate, ...properties) => {
+  info(messageTemplate, ...properties) {
     this.write.call(this, logLevels.INFO, messageTemplate, ...properties);
   }
 
-  debug = (messageTemplate, ...properties) => {
+  debug(messageTemplate, ...properties) {
     this.write.call(this, logLevels.DEBUG, messageTemplate, ...properties);
   }
 
-  verbose = (messageTemplate, ...properties) => {
+  verbose(messageTemplate, ...properties) {
     this.write.call(this, logLevels.VERBOSE, messageTemplate, ...properties);
   }
 
-  write = (level, messageTemplate, ...properties) => {
-    // Do stuff
+  write(level, messageTemplate, ...properties) {
+    if (!_levelMap.get(this).isEnabled(level)) {
+      return;
+    }
+
+    const parsedTemplate = new MessageTemplate(messageTemplate);
+    const boundProperties = parsedTemplate.bindProperties(properties);
+
+    const event = new LogEvent(new Date(), level, parsedTemplate, boundProperties);
+    _pipeline.get(this).emit([event]);
   }
 
-  enrich = (properties, destructure) => {
+  enrich(properties, destructure) {
     const enrichedPipeline = new Pipeline([
       // Set stuff
     ]);
-    return new Logger(this.levelMap, enrichedPipeline);
+    return new Logger(_levelMap.get(this), enrichedPipeline);
   }
 
-  flush = done => this.pipeline.flush(done)
+  flush() {
+    return _pipeline.get(this).flush();
+  }
 
-  close = done => this.pipeline.close(done)
+  close() {
+    return _pipeline.get(this).close();
+  }
 }
-
-export default Logger;

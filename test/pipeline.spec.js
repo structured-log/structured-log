@@ -1,6 +1,8 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
 import Pipeline from '../src/pipeline';
+import SinkStage from '../src/sinkStage';
+import WrappedSink from '../src/wrappedSink';
 
 describe('Pipeline', () => {
   it('should throw when it is constructed without a stage array', () => {
@@ -8,12 +10,17 @@ describe('Pipeline', () => {
   });
 
   it('should set the first stage of the array as the head stage', () => {
-    const stage1 = { setNextStage: () => this };
-    const stage2 = { setNextStage: () => this };
-
+    const sinkSpy1 = sinon.spy();
+    const sinkSpy2 = sinon.spy();
+    const stage1 = new SinkStage(new WrappedSink(sinkSpy1));
+    const stage2 = new SinkStage(new WrappedSink(sinkSpy2));
     const pipeline = new Pipeline([stage1, stage2]);
 
-    expect(pipeline.headStage).to.equal(stage1);
+    return pipeline.emit([{}]).then(() => {
+      expect(sinkSpy1.calledOnce).to.be.true;
+      expect(sinkSpy2.calledOnce).to.be.true;
+      expect(sinkSpy1.calledBefore(sinkSpy2)).to.be.true;
+    });
   });
 
   it('should connect the stages', () => {
@@ -29,15 +36,14 @@ describe('Pipeline', () => {
   });
 
   it('should emit events to the head stage', () => {
-    const stage = { emit: (logEvents, done) => null };
+    const stage = { emit: logEvents => null };
     const emitSpy = sinon.spy(stage, 'emit');
 
     const pipeline = new Pipeline([stage]);
     const logEvents = [{}];
-    const done = () => null;
 
-    pipeline.emit(logEvents, done);
+    pipeline.emit(logEvents);
 
-    expect(emitSpy.calledWithExactly(logEvents, done)).to.be.true;
+    expect(emitSpy.calledWithExactly(logEvents)).to.be.true;
   });
 });

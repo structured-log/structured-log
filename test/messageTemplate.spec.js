@@ -20,7 +20,7 @@ describe('MessageTemplate', () => {
   it('should correctly render a message with destructured parameters', () => {
     const mt = new MessageTemplate('Hello, {@person}!');
     const message = mt.render({ person: { firstName: 'Leeroy', lastName: 'Jenkins' } });
-    
+
     expect(message).to.equal('Hello, {"firstName":"Leeroy","lastName":"Jenkins"}!');
   });
 });

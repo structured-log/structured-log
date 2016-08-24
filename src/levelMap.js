@@ -8,15 +8,15 @@ const levelMap = {
   [logLevels.VERBOSE]: 1
 };
 
-class LevelMap {
+const _minLevel = new WeakMap();
+
+export default class LevelMap {
   constructor(minLevel = logLevels.INFO) {
-    this.minLevel = levelMap[minLevel] || levelMap[logLevels.INFO];
+    _minLevel.set(this, levelMap[minLevel] || levelMap[logLevels.INFO]);
   }
 
-  isEnabled = level => {
+  isEnabled(level) {
     const mappedLevel = levelMap[level];
-    return mappedLevel ? mappedLevel >= this.minLevel : false;
+    return mappedLevel ? mappedLevel >= _minLevel.get(this) : false;
   }
 }
-
-export default LevelMap;

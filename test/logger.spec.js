@@ -1,11 +1,14 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
 import Logger from '../src/logger';
+import LevelMap from '../src/LevelMap';
+import Pipeline from '../src/pipeline';
+import SinkStage from '../src/sinkStage';
 import * as logLevels from '../src/logLevels';
 
 describe('Logger', () => {
   it('should call write with the appropriate arguments', () => {
-    const logger = new Logger();
+    const logger = new Logger({ isEnabled: () => true }, { emit: () => null });
     const writeSpy = sinon.spy(logger, 'write');
 
     logger.info('Hello!');
@@ -27,7 +30,7 @@ describe('Logger', () => {
   });
 
   it('should close the pipeline when close is called', () => {
-    const pipeline = { close: () => null };
+    const pipeline = new Pipeline([new SinkStage()]);
     const closeSpy = sinon.spy(pipeline, 'close');
 
     const logger = new Logger(null, pipeline);

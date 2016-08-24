@@ -1,7 +1,14 @@
 import LoggerConfiguration from './loggerConfiguration';
+import ConsoleSink from './sinks/consoleSink';
 
 class StructuredLog {
-  configure = () => new LoggerConfiguration();
+  configure() {
+    return new LoggerConfiguration();
+  }
+}
+
+export {
+  ConsoleSink 
 }
 
 export default new StructuredLog();
