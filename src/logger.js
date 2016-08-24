@@ -36,9 +36,9 @@ export default class Logger {
       return;
     }
     const parsedTemplate = new MessageTemplate(messageTemplate);
-    const properties = parsedTemplate.bindProperties(properties);
+    const boundProperties = parsedTemplate.bindProperties(properties);
 
-    const event = new LogEvent(new Date(), level, parsedTemplate, properties);
+    const event = new LogEvent(new Date(), level, parsedTemplate, boundProperties);
     _pipeline.get(this).emit([event]);
   }
 
