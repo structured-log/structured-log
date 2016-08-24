@@ -12,11 +12,4 @@ describe('StructuredLog', () => {
     expect(configuration2).to.be.instanceof(LoggerConfiguration);
     expect(configuration1).to.not.equal(configuration2);
   });
-
-  it('should be able to log stuff', () => {
-    const logger = StructuredLog.configure()
-      .minLevel('VERBOSE')
-      .writeTo(new ConsoleSink())
-      .create();
-  });
 });

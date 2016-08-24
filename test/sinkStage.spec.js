@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
 import WrappedSink from '../src/wrappedSink';
-import SinkStage from '../src/SinkStage';
+import SinkStage from '../src/sinkStage';
 
 describe('SinkStage', () => {
   it('should call emit on the sink', () => {

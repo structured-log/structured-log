@@ -30,25 +30,34 @@ Or, using Bower:
 
 ## Configuration
 
-Configuring structured-log goes through three steps:
+Configuring structured-log goes through three steps. First, a new pipeline
+configuration is initialized by calling `configure()` on the main
+`structuredLog` object:
 
 ```js
- // 1. This initializes a new pipeline pipeline configuration.
 const log = structuredLog.configure()
+```
 
-// 2. This is the main configuration step. Here you can add new stages to the
-//    logging pipeline using a fluent syntax. Events flow through the pipeline
-//    from top to bottom, so new filters and enrichers can be inserted between
-//    the different sinks to create a highly controllable pipeline.
+The second step is the main configuration step. Configuration of different
+filters and targets is done by chaining methods together in a fluent syntax.
+Events flow through the pipeline from top to bottom, so new filters and
+enrichers can be inserted between the different sinks to build a highly
+controllable pipeline.
+
+```js
   .writeTo(new ConsoleSink())
   .minLevel(logLevels.WARN)
   .writeTo(new HttpSink({ url: 'http://example.com' }))
   .writeTo(...)
+```
 
-// 3. Create a new logger object from the configuration.
+The chain is closed by calling `create()`, which instantiates a new logger
+instance based on the pipeline configuration.
+
+```js
   .create();
 
-// The new logger instance is ready to be used.
+// The logger is ready for use!
 log.verbose(...);
 ```
 
@@ -97,7 +106,7 @@ allow events of the `ERROR` level through, but block `INFO`, `DEBUG` and
 The below example will set the minimum level to `WARN`:
 
 ```js
-.minLevel('WARN')
+  .minLevel('WARN')
 ```
 
 The default minimum level is `INFO`. Note that if a minimum level is set lower

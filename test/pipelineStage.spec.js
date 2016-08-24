@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import PipelineStage from '../src/PipelineStage';
+import PipelineStage from '../src/pipelineStage';
 
 describe('PipelineStage', () => {
   it('should call emit on the next stage', () => {
