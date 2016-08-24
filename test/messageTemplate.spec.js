@@ -6,8 +6,8 @@ describe('MessageTemplate', () => {
     const mt = new MessageTemplate('Happy {age}th birthday, {name}!');
 
     expect(mt.tokens.length).to.equal(5);
-    expect(mt.tokens.find(t => t.name === 'age')).to.not.be.null;
-    expect(mt.tokens.find(t => t.name === 'name')).to.not.be.null;
+    expect(mt.tokens.filter(t => t.name === 'age')).to.not.be.empty;
+    expect(mt.tokens.filter(t => t.name === 'name')).to.not.be.empty;
   });
 
   it('should correctly render a message', () => {
