@@ -1,6 +1,10 @@
 const _nextStage = new WeakMap();
 
 export default class PipelineStage {
+  get nextStage() {
+    return _nextStage.get(this)
+  }
+
   setNextStage(nextStage) {
     _nextStage.set(this, nextStage);
   }
@@ -16,7 +20,9 @@ export default class PipelineStage {
   }
 
   close() {
-    const nextStage = _nextStage.get(this);
-    return nextStage ? nextStage.close() : Promise.resolve();
+    return this.flush().then(() => {
+      const nextStage = _nextStage.get(this);
+      return nextStage ? nextStage.close() : Promise.resolve();
+    });
   }
 }

@@ -119,6 +119,9 @@ export default class MessageTemplate {
   }
 
   render(properties) {
+    if (!this.tokens.length) {
+      return this.raw;
+    }
     const result = [];
     for (var i = 0; i < this.tokens.length; ++i) {
       const token = this.tokens[i];

@@ -35,7 +35,6 @@ export default class Logger {
     if (!_levelMap.get(this).isEnabled(level)) {
       return;
     }
-
     const parsedTemplate = new MessageTemplate(messageTemplate);
     const boundProperties = parsedTemplate.bindProperties(properties);
 

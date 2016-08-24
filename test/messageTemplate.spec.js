@@ -17,6 +17,13 @@ describe('MessageTemplate', () => {
     expect(message).to.equal('Happy 30th birthday, Fred!');
   });
 
+  it('should correctly render a message without any parameters', () => {
+    const mt = new MessageTemplate('Happy 30th birthday, Fred!');
+    const message = mt.render();
+
+    expect(message).to.equal('Happy 30th birthday, Fred!');
+  });
+
   it('should correctly render a message with destructured parameters', () => {
     const mt = new MessageTemplate('Hello, {@person}!');
     const message = mt.render({ person: { firstName: 'Leeroy', lastName: 'Jenkins' } });

@@ -20,6 +20,7 @@ export default class ConsoleSink {
       const timestampPrefix = options.timestamp ? `${event.timestamp.toISOString().replace('T', ' ').replace('Z', '')} ` : '';
       const levelPrefix = event.level.slice(0, 3);
       const formattedMessage = event.messageTemplate.render(event.boundProperties);
+
       const fullMessage = `${timestampPrefix}[${levelPrefix}] ${formattedMessage}`;
 
       const args = options.complete ? [fullMessage, event.boundProperties] : [fullMessage];

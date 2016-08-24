@@ -4,6 +4,7 @@ import 'core-js/fn/array/is-array';
 
 import LoggerConfiguration from './loggerConfiguration';
 import ConsoleSink from './sinks/consoleSink';
+import * as logLevels from './logLevels';
 
 class StructuredLog {
   configure() {
@@ -12,7 +13,8 @@ class StructuredLog {
 }
 
 export {
-  ConsoleSink
+  ConsoleSink,
+  logLevels
 }
 
 export default new StructuredLog();

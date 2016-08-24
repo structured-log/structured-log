@@ -2,6 +2,7 @@ import Logger from './logger';
 import LevelMap from './levelMap';
 import Pipeline from './pipeline';
 import SinkStage from './sinkStage';
+import FilterStage from './filterStage';
 import WrappedSink from './wrappedSink';
 import * as logLevels from './logLevels';
 
@@ -19,6 +20,12 @@ export default class LoggerConfiguration {
   }
 
   minLevel(level) {
+    const levelMap = new LevelMap(level);
+    _pipelineStages.get(this).push(new FilterStage(logEvent => levelMap.isEnabled(logEvent.level)));
+    const minLevelMap = new LevelMap(_minLevel.get(this));
+    if (!minLevelMap.isEnabled(level)) {
+      _minLevel.set(this, level);
+    }
     return this;
   }
 
