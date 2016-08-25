@@ -1,4 +1,4 @@
-import PipelineStage from './PipelineStage';
+import PipelineStage from './pipelineStage';
 
 const _pipeline = new WeakMap();
 

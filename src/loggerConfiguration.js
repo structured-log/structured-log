@@ -3,6 +3,7 @@ import LevelMap from './levelMap';
 import Pipeline from './pipeline';
 import SinkStage from './sinkStage';
 import FilterStage from './filterStage';
+import EnrichStage from './enrichStage';
 import WrappedSink from './wrappedSink';
 import * as logLevels from './logLevels';
 
@@ -29,7 +30,16 @@ export default class LoggerConfiguration {
     return this;
   }
 
-  enrich(functionOrProperties) {
+  enrich(functionOrProperties, destructure) {
+    const enrichFn = typeof functionOrProperties === 'object'
+      ? () => functionOrProperties
+      : functionOrProperties;
+    _pipelineStages.get(this).push(new EnrichStage(enrichFn, destructure));
+    return this;
+  }
+
+  filter(filterFn) {
+    _pipelineStages.get(this).push(new FilterStage(filterFn));
     return this;
   }
 
