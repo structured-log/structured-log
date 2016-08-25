@@ -1,6 +1,6 @@
 const argRegex = /\{@?\w+}/g;
 
-const capture = (o, destructure) => {
+export function capture(o, destructure) {
   if (typeof o === 'function') {
     return o.toString();
   }
@@ -24,7 +24,7 @@ const capture = (o, destructure) => {
   return o;
 }
 
-const toText = function(o) {
+function toText(o) {
   if (typeof o === 'undefined') {
     return 'undefined';
   }

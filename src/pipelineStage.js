@@ -2,7 +2,7 @@ const _nextStage = new WeakMap();
 
 export default class PipelineStage {
   get nextStage() {
-    return _nextStage.get(this)
+    return _nextStage.get(this);
   }
 
   setNextStage(nextStage) {

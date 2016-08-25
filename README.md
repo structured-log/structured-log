@@ -115,3 +115,15 @@ inlcude the new minimum level, the default minimum level for the pipeline will
 be set to include the new minimum level.
 
 ### Enrichers
+
+Log events going through the pipeline can be enriched with additional properties
+by using the `enrich()` function.
+
+```js
+  .enrich({
+    'version': 2,
+    'source': 'Client Application'
+  })
+```
+
+You can also pass a function as the first argument.

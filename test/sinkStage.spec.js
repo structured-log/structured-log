@@ -1,13 +1,12 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import WrappedSink from '../src/wrappedSink';
 import SinkStage from '../src/sinkStage';
+import { createWrappedSinkStage } from './testHelpers';
 
 describe('SinkStage', () => {
   it('should call emit on the sink', () => {
-    const sink = new WrappedSink(() => null);
-    const sinkEmitSpy = sinon.spy(sink, 'emit');
-    const stage = new SinkStage(sink);
+    const sinkEmitSpy = sinon.spy();
+    const stage = createWrappedSinkStage(sinkEmitSpy);
 
     return stage.emit([]).then(() => expect(sinkEmitSpy.calledOnce).to.be.true);
   });
