@@ -28,10 +28,10 @@ function SerilogCompactJsonConsoleSink(options) {
 
       if (evt.level === 'ERROR') {
         outputObject['@l'] = 'Error'
-        console.error(JSON.stringify(outputObject));
+        console.error(outputObject);
       } else if (evt.level === 'WARN') {
           outputObject['@l'] = 'Warning'
-        console.warn(JSON.stringify(outputObject));
+        console.warn(outputObject);
       } else if (evt.level === 'INFO') {
         outputObject['@l'] = 'Information'
         console.info(outputObject);
@@ -40,7 +40,7 @@ function SerilogCompactJsonConsoleSink(options) {
         console.log(outputObject);
       } else {
         outputObject['@l'] = 'Debug'
-        console.log(JSON.stringify(outputObject));
+        console.log(outputObject);
       }
     });
   };
