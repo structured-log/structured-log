@@ -1,13 +1,10 @@
-'use strict'
-
-const serilog = require('../src/core/structured-log.js');
-const serilogCompactSink = require('../src/npm/serilog-compact-console-sink.js');
-const assert = require('assert');
-require('mocha-sinon');
+var serilog = require('../src/core/structured-log.js');
+var serilogCompactSink = require('../src/npm/serilog-compact-console-sink.js');
+var assert = require('assert');
 
 describe('SerilogCompactConsoleSink', function() {
-    const consoleInfoOutput = []
-    const originalConsoleInfo = console.info
+    var consoleInfoOutput = []
+    var originalConsoleInfo = console.info
 
     beforeEach(function() {
         console.info = function() {
@@ -15,17 +12,17 @@ describe('SerilogCompactConsoleSink', function() {
         }
     })
 
-    afterEach(() => {
+    afterEach(function() {
         console.info = originalConsoleInfo
     })
 
-    it('should output logs to console as JSON', (done) => {
-        const log = serilog.configure()
+    it('should output logs to console as JSON', function(done) {
+        var log = serilog.configure()
             .writeTo(serilogCompactSink())
             .create()
         
-        const messageTemplate = 'Hello, {Name}!'
-        const name = 'world'
+        var messageTemplate = 'Hello, {Name}!'
+        var name = 'world'
         
         log.info(messageTemplate, name)
         
