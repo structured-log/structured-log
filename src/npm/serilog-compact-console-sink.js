@@ -27,13 +27,20 @@ function SerilogCompactJsonConsoleSink(options) {
       })
 
       if (evt.level === 'ERROR') {
-        console.error(outputObject);
+        outputObject['@l'] = 'Error'
+        console.error(JSON.stringify(outputObject));
       } else if (evt.level === 'WARN') {
-        console.warn(outputObject);
+          outputObject['@l'] = 'Warning'
+        console.warn(JSON.stringify(outputObject));
       } else if (evt.level === 'INFO') {
+        outputObject['@l'] = 'Information'
         console.info(outputObject);
-      } else {
+      } else if (evt.level === 'VERBOSE') {
+        outputObject['@l'] = 'Verbose'
         console.log(outputObject);
+      } else {
+        outputObject['@l'] = 'Debug'
+        console.log(JSON.stringify(outputObject));
       }
     });
   };
