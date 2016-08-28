@@ -1,5 +1,7 @@
 import MessageTemplate from './messageTemplate';
 import LogEvent from './logEvent';
+import EnrichStage from './enrichStage';
+import SubPipelineStage from './subPipelineStage';
 import * as logLevels from './logLevels';
 
 const _levelMap = new WeakMap();
@@ -44,7 +46,8 @@ export default class Logger {
 
   enrich(properties, destructure) {
     const enrichedPipeline = new Pipeline([
-      // Set stuff
+      new EnrichStage(() => properties, destructure),
+      new SubPipelineStage(_pipeline.get(this))
     ]);
     return new Logger(_levelMap.get(this), enrichedPipeline);
   }

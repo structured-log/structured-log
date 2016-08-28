@@ -126,4 +126,5 @@ by using the `enrich()` function.
   })
 ```
 
-You can also pass a function as the first argument.
+You can also pass a function as the first argument, and return an object with
+the properties to enrich with.

@@ -5,3 +5,4 @@ node_modules/
 serilog.min.js
 dist/
 examples/browser/bower_components/
+npm-debug.log
