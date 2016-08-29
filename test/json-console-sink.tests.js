@@ -1,5 +1,5 @@
 var serilog = require('../src/core/structured-log.js');
-var serilogCompactSink = require('../src/npm/json-console-sink.js');
+var jsonCompactSink = require('../src/npm/json-console-sink.js');
 var assert = require('assert');
 
 describe('JsonConsoleSink', function() {
@@ -18,7 +18,7 @@ describe('JsonConsoleSink', function() {
 
     it('should output logs to console as JSON', function(done) {
         var log = serilog.configure()
-            .writeTo(serilogCompactSink())
+            .writeTo(jsonCompactSink())
             .create()
         
         var messageTemplate = 'Hello, {Name}!'

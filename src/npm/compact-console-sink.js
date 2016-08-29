@@ -24,13 +24,13 @@ function SerilogCompactJsonConsoleSink(options) {
         '@t': evt.timestamp.toISOString(),
         '@l': evt.level, 
         '@mt': evt.messageTemplate.raw,
-      })
+      });
 
       if (evt.level === 'ERROR') {
         outputObject['@l'] = 'Error'
         console.error(outputObject);
       } else if (evt.level === 'WARN') {
-          outputObject['@l'] = 'Warning'
+        outputObject['@l'] = 'Warning'
         console.warn(outputObject);
       } else if (evt.level === 'INFO') {
         outputObject['@l'] = 'Information'
