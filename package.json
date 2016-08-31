@@ -14,7 +14,7 @@
     "semantic"
   ],
   "author": "Serilog Contributors",
-  "license": "Apache 2",
+  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/structured-log/structured-log.js/issues"
   },
