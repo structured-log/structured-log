@@ -291,6 +291,8 @@ The *fluent API* has numerous functions to configure your log.
 
 ### Log Levels
 
+Default minimum log level is set to INFO
+
 Set the minimum log level that is output:
 
 	var log = structuredLog.configure()
