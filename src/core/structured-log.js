@@ -65,6 +65,11 @@
       return o.toString();
     }
     if (typeof o === 'object') {
+	  // null value will be automatically stringified as "null", in properties it will be as null
+	  // otherwise it will throw an error
+	  if (o === null)
+	    return o;
+		
       // Could use instanceof Date, but this way will be kinder
       // to values passed from other contexts...
       if (destructure || typeof o.toISOString === 'function') {
