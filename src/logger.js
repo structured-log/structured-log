@@ -59,4 +59,8 @@ export default class Logger {
   close() {
     return _pipeline.get(this).close();
   }
+
+  isEnabled(level) {
+    return _levelMap.get(this).isEnabled(level);
+  }
 }

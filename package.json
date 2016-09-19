@@ -3,7 +3,7 @@
   "main": "dist/structured-log.js",
   "jsnext:main": "dist/structured-log.es6.js",
   "scripts": {
-    "test": "mocha --compilers js:babel-core/register -r core-js/es6/weak-map -r core-js/es6/promise -r core-js/fn/array/is-array",
+    "test": "mocha --compilers js:babel-core/register -r core-js/es6/weak-map -r core-js/es6/promise -r core-js/fn/array/find -r core-js/fn/array/is-array",
     "build-es5": "rollup -c rollup.config.es5.js",
     "build-es6": "rollup -c rollup.config.es6.js",
     "build": "npm run build-es5 && npm run build-es6"

@@ -7,12 +7,12 @@ import EnrichStage from './enrichStage';
 import WrappedSink from './wrappedSink';
 import * as logLevels from './logLevels';
 
-const _minLevel = new WeakMap();
+const _minLevelMap = new WeakMap();
 const _pipelineStages = new WeakMap();
 
 export default class LoggerConfiguration {
   constructor() {
-    _minLevel.set(this, logLevels.INFO);
+    _minLevelMap.set(this, new LevelMap(logLevels.INFO));
     _pipelineStages.set(this, []);
   }
 
@@ -20,13 +20,22 @@ export default class LoggerConfiguration {
     return 'Logger';
   }
 
-  minLevel(level) {
-    const levelMap = new LevelMap(level);
+  minLevel(levelOrLevelMap) {
+    const levelMap = levelOrLevelMap instanceof LevelMap ? levelOrLevelMap : new LevelMap(levelOrLevelMap);
     _pipelineStages.get(this).push(new FilterStage(logEvent => levelMap.isEnabled(logEvent.level)));
-    const minLevelMap = new LevelMap(_minLevel.get(this));
-    if (!minLevelMap.isEnabled(level)) {
-      _minLevel.set(this, level);
+    let minLevelMap = _minLevelMap.get(this);
+    if (!minLevelMap) {
+      minLevelMap = new LevelMap(levelMap.minLevel);
+      _minLevelMap.set(this, minLevelMap);
     }
+    if (!minLevelMap.isEnabled(levelMap.minLevel)) {
+      minLevelMap.minLevel = levelMap.minLevel;
+    }
+    levelMap.subscribe(newLevel => {
+      if (!minLevelMap.isEnabled(newLevel)) {
+        _minLevelMap.get(this).minLevel = newLevel;
+      }
+    });
     return this;
   }
 
@@ -53,7 +62,7 @@ export default class LoggerConfiguration {
 
   create() {
     return new Logger(
-      new LevelMap(_minLevel.get(this)),
+      _minLevelMap.get(this),
       new Pipeline(_pipelineStages.get(this)));
   }
 }
