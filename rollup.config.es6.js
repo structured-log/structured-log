@@ -1,8 +1,9 @@
-import babel from 'rollup-plugin-babel';
+import typescript from 'rollup-plugin-typescript';
 
 export default {
-  entry: 'src/structuredLog.js',
+  entry: 'src/index.ts',
   dest: 'dist/structured-log.es6.js',
   format: 'es',
-  exports: 'named'
+  plugins: [typescript({ target: 'es6' })],
+  moduleName: 'structuredLog'
 }
