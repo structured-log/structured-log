@@ -5,7 +5,7 @@ A structured logging framework for JavaScript, inspired by [Serilog](http://seri
 ## Basic Example
 
 ```js
-import structuredLog, { ConsoleSink } from 'structured-log';
+const structuredLog = require('structured-log');
 
 const log = structuredLog.configure()
   .writeTo(new ConsoleSink())
@@ -16,7 +16,7 @@ log.info('Hello {Name}!', 'Greg');
 
 The above code will print the following to the console:
 
-    [INF] Hello Greg!
+    [Information] Hello Greg!
 
 ## Installation
 
@@ -46,7 +46,7 @@ controllable pipeline.
 
 ```js
   .writeTo(new ConsoleSink())
-  .minLevel(logLevels.WARN)
+  .minLevel.warning()
   .writeTo(new HttpSink({ url: 'http://example.com' }))
   .writeTo(...)
 ```
@@ -92,27 +92,29 @@ allowing pure text events through to the next pipeline stage.
 A minimum level can be set anywhere in the pipeline to only allow events of that
 level or higher through.
 
-There are 5 log levels available. From least to most inclusive:
-- `ERROR`
-- `WARN`
-- `INFO`
-- `DEBUG`
-- `VERBOSE`
+There are 6 log levels available. From least to most inclusive:
+- `0 - Fatal`
+- `1 - Error`
+- `2 - Warning`
+- `3 - Information`
+- `4 - Debug`
+- `5 - Verbose`
 
-Each log level also includes all levels above it. For example, `WARN` will also
-allow events of the `ERROR` level through, but block `INFO`, `DEBUG` and
-`VERBOSE`.
+Each log level also includes all levels with a lower index. For example, `Warning` will also
+allow events of the `Error` level through, but block `Information`, `Debug` and
+`Verbose`.
 
-The below example will set the minimum level to `WARN`:
+The below examples will both set the minimum level to `Warning`:
 
 ```js
-  .minLevel('WARN')
+  .minLevel.warning()
+// or
+  .minLevel(2)
 ```
 
-The default minimum level is `INFO`. Note that if a minimum level is set lower
-down the pipeline, and the default minimum level of the pipeline does not
-inlcude the new minimum level, the default minimum level for the pipeline will
-be set to include the new minimum level.
+The default minimum level is `Information`. Note that if a restrictive level is set early in the pipeline,
+and a more permissive level is set further down, the events that are filtered out by the more restrictive level
+will never reach the more permissive filter.
 
 ### Enrichers
 
@@ -128,3 +130,16 @@ by using the `enrich()` function.
 
 You can also pass a function as the first argument, and return an object with
 the properties to enrich with.
+
+```js
+function getEnrichersFromState() {
+  return {
+    'user': state.user
+  };
+}
+
+// ...
+
+  .enrich(getEnrichersFromState())
+
+```
