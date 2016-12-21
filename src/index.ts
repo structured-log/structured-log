@@ -1,6 +1,9 @@
-import { Pipeline, PipelineStage, FilterStage, EnrichStage } from './pipeline';
+import { Pipeline } from './pipeline';
+import { FilterStage } from './filterStage';
+import { EnrichStage } from './enrichStage';
 import { Logger } from './logger';
-import { Sink, SinkStage } from './sink';
+import { Sink } from './sink';
+import { SinkStage } from './sinkStage';
 import { LogEventLevel } from './logEvent';
 
 export { ConsoleSink } from './consoleSink';

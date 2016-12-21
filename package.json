@@ -5,7 +5,7 @@
   "main": "dist/structured-log.js",
   "jsnext:main": "dist/structured-log.es6.js",
   "scripts": {
-    "test": "mocha --compilers js:babel-core/register -r core-js/es6/weak-map -r core-js/es6/promise -r core-js/fn/array/find -r core-js/fn/array/is-array",
+    "test": "mocha --compilers js:ts-node/register test/**/*.spec.ts",
     "build-es5": "rollup -c rollup.config.es5.js",
     "build-es6": "rollup -c rollup.config.es6.js",
     "build": "npm run build-es5 && npm run build-es6"
@@ -25,11 +25,14 @@
   "bugs": {
     "url": "https://github.com/structured-log/structured-log/issues"
   },
-  "dependencies": {
-    "core-js": "^2.4.1"
-  },
   "devDependencies": {
+    "@types/chai": "^3.4.34",
+    "@types/mocha": "^2.2.34",
+    "chai": "^3.5.0",
     "rollup": "^0.37.0",
-    "rollup-plugin-typescript": "^0.8.1"
+    "rollup-plugin-typescript": "^0.8.1",
+    "ts-node": "^1.7.2",
+    "typemoq": "^1.0.3",
+    "typescript": "^2.1.4"
   }
 }

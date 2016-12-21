@@ -1,15 +1,28 @@
 import { LogEvent, LogEventLevel } from './logEvent';
 import { Sink } from './sink';
+import MessageTemplate from './messageTemplate';
 
 const consoleProxy = {
-  error: console.error || console.log || function () {},
-  warn: console.warn || console.log || function () {},
-  info: console.info || console.log || function () {},
-  debug: console.debug || console.log || function () {},
-  log: console.log || function () {}
+  error: (typeof console !== 'undefined' && console && (console.error || console.log)) || function () {},
+  warn:  (typeof console !== 'undefined' && console && (console.warn || console.log)) || function () {},
+  info:  (typeof console !== 'undefined' && console && (console.info || console.log)) || function () {},
+  debug: (typeof console !== 'undefined' && console && (console.debug || console.log)) || function () {},
+  log:   (typeof console !== 'undefined' && console && console.log) || function () {}
 };
 
+export interface ConsoleSinkOptions {
+  includeTimestamps?: boolean;
+  includeProperties?: boolean;
+}
+
 export class ConsoleSink extends Sink {
+  private options: ConsoleSinkOptions;
+
+  constructor(options?: ConsoleSinkOptions) {
+    super();
+    this.options = options || {};
+  }
+
   public emit(events: LogEvent[]): Promise<any> {
     if (!events) {
       const error = new Error('Argument "events" cannot be null or undefined.');
@@ -21,30 +34,46 @@ export class ConsoleSink extends Sink {
         const e = events[i];
         switch (e.level) {
           case LogEventLevel.fatal:
-            consoleProxy.error('[Fatal] ' + e.messageTemplate.render());
+            this.writeToConsole(consoleProxy.error, 'Fatal', e);
             break;
 
           case LogEventLevel.error:
-            consoleProxy.error('[Error] ' + e.messageTemplate.render());
+            this.writeToConsole(consoleProxy.error, 'Error', e);
             break;
 
           case LogEventLevel.warning:
-            consoleProxy.warn('[Warning] ' + e.messageTemplate.render());
+            this.writeToConsole(consoleProxy.warn, 'Warning', e);
             break;
-            
+
           case LogEventLevel.information:
-            consoleProxy.info('[Information] ' + e.messageTemplate.render());
+            this.writeToConsole(consoleProxy.info, 'Information', e);
             break;
             
           case LogEventLevel.debug:
-            consoleProxy.debug('[Debug] ' + e.messageTemplate.render());
+            this.writeToConsole(consoleProxy.debug, 'Debug', e);
             break;
-
+            
           case LogEventLevel.verbose:
-            consoleProxy.debug('[Verbose] ' + e.messageTemplate.render());
+            this.writeToConsole(consoleProxy.debug, 'Verbose', e);
             break;
         }
       }
     });
+  }
+
+  private writeToConsole(logMethod: Function, prefix: string, e: LogEvent) {
+    let output = '[' + prefix + '] ' + e.messageTemplate.render(e.properties);
+    if (this.options.includeTimestamps) {
+      output = e.timestamp + ' ' + output;
+    }
+    const values = [];
+    if (this.options.includeProperties) {
+      for (const key in e.properties) {
+        if (e.properties.hasOwnProperty(key)) {
+          values.push(e.properties[key]);
+        }
+      }
+    }
+    logMethod(output, ...values);
   }
 }

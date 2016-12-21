@@ -1,16 +1,49 @@
+/**
+ * Represents a stage in the event pipeline.
+ */
 class PipelineStage {
     constructor() {
+        /**
+         * Points to the next stage in the pipeline.
+         */
         this.next = null;
     }
+    /**
+     * Emits events to this pipeline stage, as well as the next stage in the pipeline (if any).
+     * @param {LogEvent[]} events The events to emit.
+     * @returns {Promise<void>} Promise that will be resolved when all subsequent
+     * pipeline stages have resolved.
+     */
+    emit(events) {
+        return this.next ? this.next.emit(events) : Promise.resolve();
+    }
+    /**
+     * Flushes this pipeline stage, as well as the next stage in the pipeline (if any).
+     */
     flush() {
-        return !!this.next ? this.next.flush() : Promise.resolve();
+        return this.next ? this.next.flush() : Promise.resolve();
     }
 }
+
+/**
+ * Represents the event pipeline.
+ */
 class Pipeline {
+    /**
+     * Creates a new Pipeline instance.
+     */
     constructor() {
+        /**
+         * If set to `true`, errors in the pipeline will not be caught and will be
+         * allowed to propagate out to the execution environment.
+         */
         this.yieldErrors = false;
         this.stages = [];
     }
+    /**
+     * Adds a new stage to the pipeline, and connects it to the previous stage.
+     * @param {PipelineStage} stage The stage to add.
+     */
     addStage(stage) {
         if (!stage || !(stage instanceof PipelineStage)) {
             throw new Error('Argument "stage" must be a valid Stage instance.');
@@ -41,6 +74,7 @@ class Pipeline {
         });
     }
 }
+
 class FilterStage extends PipelineStage {
     constructor(filter) {
         super();
@@ -55,6 +89,7 @@ class FilterStage extends PipelineStage {
             .then(filteredEvents => this.next.emit(filteredEvents));
     }
 }
+
 class EnrichStage extends PipelineStage {
     constructor(enricher) {
         super();
@@ -93,21 +128,6 @@ class Sink {
         return Promise.resolve();
     }
 }
-class SinkStage extends PipelineStage {
-    constructor(sink) {
-        super();
-        if (!sink || !(sink instanceof Sink)) {
-            throw new Error('Argument "sink" must be a valid Sink instance.');
-        }
-        this.sink = sink;
-    }
-    emit(events) {
-        return Promise.all([this.sink.emit(events), this.next ? this.next.emit(events) : Promise.resolve()]);
-    }
-    flush() {
-        return Promise.all([this.sink.flush(), super.flush()]);
-    }
-}
 
 const tokenizer = /\{@?\w+}/g;
 class MessageTemplate {
@@ -116,11 +136,49 @@ class MessageTemplate {
         this.tokens = this.tokenize(messageTemplate);
         this.properties = Object.assign({}, properties);
     }
-    render() {
-        return this.template;
+    render(properties) {
+        if (!this.tokens.length) {
+            return this.template;
+        }
+        const result = [];
+        for (var i = 0; i < this.tokens.length; ++i) {
+            const token = this.tokens[i];
+            if (typeof token.name === 'string') {
+                if (properties.hasOwnProperty(token.name)) {
+                    result.push(this.toText(properties[token.name]));
+                }
+                else {
+                    result.push(token.raw);
+                }
+            }
+            else {
+                result.push(token.text);
+            }
+        }
+        return result.join('');
     }
     enrichWith(properties) {
         Object.assign(this.properties, properties);
+    }
+    bindProperties(positionalArgs) {
+        const result = {};
+        let nextArg = 0;
+        for (var i = 0; i < this.tokens.length && nextArg < positionalArgs.length; ++i) {
+            const token = this.tokens[i];
+            if (typeof token.name === 'string') {
+                let p = positionalArgs[nextArg];
+                result[token.name] = this.capture(p, token.destructure);
+                nextArg++;
+            }
+        }
+        while (nextArg < positionalArgs.length) {
+            const arg = positionalArgs[nextArg];
+            if (typeof arg !== 'undefined') {
+                result['a' + nextArg] = this.capture(arg);
+            }
+            nextArg++;
+        }
+        return result;
     }
     tokenize(template) {
         const tokens = [];
@@ -148,34 +206,103 @@ class MessageTemplate {
         }
         return tokens;
     }
+    toText(property) {
+        if (typeof property === 'undefined') {
+            return 'undefined';
+        }
+        if (property === null) {
+            return 'null';
+        }
+        if (typeof property === 'string') {
+            return property;
+        }
+        if (typeof property === 'number') {
+            return property.toString();
+        }
+        if (typeof property === 'boolean') {
+            return property.toString();
+        }
+        if (typeof property.toISOString === 'function') {
+            return property.toISOString();
+        }
+        if (typeof property === 'object') {
+            let s = JSON.stringify(property);
+            if (s.length > 70) {
+                s = s.slice(0, 67) + '...';
+            }
+            return s;
+        }
+        return property.toString();
+    }
+    ;
+    capture(property, destructure) {
+        if (typeof property === 'function') {
+            return property.toString();
+        }
+        if (typeof property === 'object') {
+            // null value will be automatically stringified as "null", in properties it will be as null
+            // otherwise it will throw an error
+            if (property === null) {
+                return property;
+            }
+            // Could use instanceof Date, but this way will be kinder
+            // to values passed from other contexts...
+            if (destructure || typeof property.toISOString === 'function') {
+                return property;
+            }
+            return property.toString();
+        }
+        return property;
+    }
 }
 
 class Logger extends Sink {
     constructor(pipeline) {
         super();
-        if (!pipeline || !(pipeline instanceof Pipeline)) {
-            throw new Error('Argument "pipeline" must be a valid Pipeline instance.');
+        if (!pipeline) {
+            throw new Error('Argument "pipeline" cannot be null or undefined.');
         }
         this.pipeline = pipeline;
     }
+    /**
+     * Logs a message with the `Fatal` level.
+     */
     fatal(messageTemplate, ...properties) {
         this.write(LogEventLevel.fatal, messageTemplate, properties);
     }
+    /**
+     * Logs a message with the `Error` level.
+     */
     error(messageTemplate, ...properties) {
         this.write(LogEventLevel.error, messageTemplate, properties);
     }
+    /**
+     * Logs a message with the `Warning` level.
+     */
     warn(messageTemplate, ...properties) {
         this.write(LogEventLevel.warning, messageTemplate, properties);
     }
+    /**
+     * Logs a message with the `Information` level.
+     */
     info(messageTemplate, ...properties) {
         this.write(LogEventLevel.information, messageTemplate, properties);
     }
+    /**
+     * Logs a message with the `Debug` level.
+     */
     debug(messageTemplate, ...properties) {
         this.write(LogEventLevel.debug, messageTemplate, properties);
     }
+    /**
+     * Logs a message with the `Verbose` level.
+     */
     verbose(messageTemplate, ...properties) {
         this.write(LogEventLevel.verbose, messageTemplate, properties);
     }
+    /**
+     * @inheritdoc
+     */
     flush() {
         return this.pipeline.flush();
     }
@@ -184,10 +311,13 @@ class Logger extends Sink {
     }
     write(level, rawMessageTemplate, ...properties) {
         try {
-            const messageTemplate = new MessageTemplate(rawMessageTemplate, properties);
+            const messageTemplate = new MessageTemplate(rawMessageTemplate);
+            const eventProperties = messageTemplate.bindProperties(properties);
             const event = {
+                timestamp: new Date().toISOString(),
                 level,
-                messageTemplate
+                messageTemplate,
+                properties: eventProperties
             };
             this.pipeline.emit([event]);
         }
@@ -199,14 +329,46 @@ class Logger extends Sink {
     }
 }
 
+/**
+ * Represents a stage in the pipeline that emits events to a sink.
+ */
+class SinkStage extends PipelineStage {
+    constructor(sink) {
+        super();
+        if (!sink) {
+            throw new Error('Argument "sink" cannot be null or undefined.');
+        }
+        this.sink = sink;
+    }
+    /**
+     * Emits events to the sink, as well as the next stage in the pipeline (if any).
+     * @param {LogEvent[]} events The events to emit.
+     * @returns {Promise<void>} Promise that will be resolved when all subsequent
+     * pipeline stages have resolved.
+     */
+    emit(events) {
+        return Promise.all([this.sink.emit(events), super.emit(events)]);
+    }
+    /**
+     * Flushes the sink, as well as the next stage in the pipeline (if any).
+     */
+    flush() {
+        return Promise.all([this.sink.flush(), super.flush()]);
+    }
+}
+
 const consoleProxy = {
-    error: console.error || console.log || function () { },
-    warn: console.warn || console.log || function () { },
-    info: console.info || console.log || function () { },
-    debug: console.debug || console.log || function () { },
-    log: console.log || function () { }
+    error: (typeof console !== 'undefined' && console && (console.error || console.log)) || function () { },
+    warn: (typeof console !== 'undefined' && console && (console.warn || console.log)) || function () { },
+    info: (typeof console !== 'undefined' && console && (console.info || console.log)) || function () { },
+    debug: (typeof console !== 'undefined' && console && (console.debug || console.log)) || function () { },
+    log: (typeof console !== 'undefined' && console && console.log) || function () { }
 };
 class ConsoleSink extends Sink {
+    constructor(options) {
+        super();
+        this.options = options || {};
+    }
     emit(events) {
         if (!events) {
             const error = new Error('Argument "events" cannot be null or undefined.');
@@ -217,26 +379,41 @@ class ConsoleSink extends Sink {
                 const e = events[i];
                 switch (e.level) {
                     case LogEventLevel.fatal:
-                        consoleProxy.error('[Fatal] ' + e.messageTemplate.render());
+                        this.writeToConsole(consoleProxy.error, 'Fatal', e);
                         break;
                     case LogEventLevel.error:
-                        consoleProxy.error('[Error] ' + e.messageTemplate.render());
+                        this.writeToConsole(consoleProxy.error, 'Error', e);
                         break;
                     case LogEventLevel.warning:
-                        consoleProxy.warn('[Warning] ' + e.messageTemplate.render());
+                        this.writeToConsole(consoleProxy.warn, 'Warning', e);
                         break;
                     case LogEventLevel.information:
-                        consoleProxy.info('[Information] ' + e.messageTemplate.render());
+                        this.writeToConsole(consoleProxy.info, 'Information', e);
                         break;
                     case LogEventLevel.debug:
-                        consoleProxy.debug('[Debug] ' + e.messageTemplate.render());
+                        this.writeToConsole(consoleProxy.debug, 'Debug', e);
                         break;
                     case LogEventLevel.verbose:
-                        consoleProxy.debug('[Verbose] ' + e.messageTemplate.render());
+                        this.writeToConsole(consoleProxy.debug, 'Verbose', e);
                         break;
                 }
             }
         });
+    }
+    writeToConsole(logMethod, prefix, e) {
+        let output = '[' + prefix + '] ' + e.messageTemplate.render(e.properties);
+        if (this.options.includeTimestamps) {
+            output = e.timestamp + ' ' + output;
+        }
+        const values = [];
+        if (this.options.includeProperties) {
+            for (const key in e.properties) {
+                if (e.properties.hasOwnProperty(key)) {
+                    values.push(e.properties[key]);
+                }
+            }
+        }
+        logMethod(output, ...values);
     }
 }
 

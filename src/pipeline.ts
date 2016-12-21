@@ -1,23 +1,31 @@
 import { LogEvent } from './logEvent';
 import { Sink } from './sink';
-import { Predicate } from './utils';
+import { PipelineStage } from './pipelineStage';
 
-export abstract class PipelineStage {
-  public next: PipelineStage = null;
-  public abstract emit(events: LogEvent[]): Promise<void>;
-  public flush(): Promise<any> {
-    return !!this.next ? this.next.flush() : Promise.resolve();
-  }
-}
-
+/**
+ * Represents the event pipeline.
+ */
 export class Pipeline {
+
+  /**
+   * If set to `true`, errors in the pipeline will not be caught and will be
+   * allowed to propagate out to the execution environment.
+   */
   public yieldErrors: boolean = false;
+
   private stages: PipelineStage[];
 
+  /**
+   * Creates a new Pipeline instance.
+   */
   constructor() {
     this.stages = [];
   }
 
+  /**
+   * Adds a new stage to the pipeline, and connects it to the previous stage.
+   * @param {PipelineStage} stage The stage to add.
+   */
   public addStage(stage: PipelineStage) {
     if (!stage || !(stage instanceof PipelineStage)) {
       throw new Error('Argument "stage" must be a valid Stage instance.');
@@ -50,47 +58,5 @@ export class Pipeline {
         throw e;
       }
     });
-  }
-}
-
-export class FilterStage extends PipelineStage {
-  private filter: Predicate<LogEvent>;
-  constructor(filter: Predicate<LogEvent>) {
-    super();
-    this.filter = filter;
-  }
-
-  public emit(events: LogEvent[]): Promise<any> {
-    if (!this.next) {
-      return Promise.resolve();
-    }
-
-    return Promise.resolve()
-      .then(() => events.filter(this.filter))
-      .then(filteredEvents => this.next.emit(filteredEvents));
-  }
-}
-
-export class EnrichStage extends PipelineStage {
-  private enricher: () => Object;
-  constructor(enricher: () => Object) {
-    super();
-    this.enricher = enricher;
-  }
-
-  public emit(events: LogEvent[]): Promise<any> {
-    if (!this.next) {
-      return Promise.resolve();
-    }
-
-    return Promise.resolve()
-      .then(() => {
-        for (var i = 0; i < events.length; ++i) {
-          const e = events[i];
-          e.messageTemplate.enrichWith(this.enricher());
-        }
-        return events;
-      })
-      .then(enrichedEvents => this.next.emit(enrichedEvents));
   }
 }

@@ -10,20 +10,53 @@ function __extends(d, b) {
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 }
 
+/**
+ * Represents a stage in the event pipeline.
+ */
 var PipelineStage = (function () {
     function PipelineStage() {
+        /**
+         * Points to the next stage in the pipeline.
+         */
         this.next = null;
     }
+    /**
+     * Emits events to this pipeline stage, as well as the next stage in the pipeline (if any).
+     * @param {LogEvent[]} events The events to emit.
+     * @returns {Promise<void>} Promise that will be resolved when all subsequent
+     * pipeline stages have resolved.
+     */
+    PipelineStage.prototype.emit = function (events) {
+        return this.next ? this.next.emit(events) : Promise.resolve();
+    };
+    /**
+     * Flushes this pipeline stage, as well as the next stage in the pipeline (if any).
+     */
     PipelineStage.prototype.flush = function () {
-        return !!this.next ? this.next.flush() : Promise.resolve();
+        return this.next ? this.next.flush() : Promise.resolve();
     };
     return PipelineStage;
 }());
+
+/**
+ * Represents the event pipeline.
+ */
 var Pipeline = (function () {
+    /**
+     * Creates a new Pipeline instance.
+     */
     function Pipeline() {
+        /**
+         * If set to `true`, errors in the pipeline will not be caught and will be
+         * allowed to propagate out to the execution environment.
+         */
         this.yieldErrors = false;
         this.stages = [];
     }
+    /**
+     * Adds a new stage to the pipeline, and connects it to the previous stage.
+     * @param {PipelineStage} stage The stage to add.
+     */
     Pipeline.prototype.addStage = function (stage) {
         if (!stage || !(stage instanceof PipelineStage)) {
             throw new Error('Argument "stage" must be a valid Stage instance.');
@@ -57,11 +90,13 @@ var Pipeline = (function () {
     };
     return Pipeline;
 }());
+
 var FilterStage = (function (_super) {
     __extends(FilterStage, _super);
     function FilterStage(filter) {
-        _super.call(this);
-        this.filter = filter;
+        var _this = _super.call(this) || this;
+        _this.filter = filter;
+        return _this;
     }
     FilterStage.prototype.emit = function (events) {
         var _this = this;
@@ -74,11 +109,13 @@ var FilterStage = (function (_super) {
     };
     return FilterStage;
 }(PipelineStage));
+
 var EnrichStage = (function (_super) {
     __extends(EnrichStage, _super);
     function EnrichStage(enricher) {
-        _super.call(this);
-        this.enricher = enricher;
+        var _this = _super.call(this) || this;
+        _this.enricher = enricher;
+        return _this;
     }
     EnrichStage.prototype.emit = function (events) {
         var _this = this;
@@ -118,23 +155,6 @@ var Sink = (function () {
     };
     return Sink;
 }());
-var SinkStage = (function (_super) {
-    __extends(SinkStage, _super);
-    function SinkStage(sink) {
-        _super.call(this);
-        if (!sink || !(sink instanceof Sink)) {
-            throw new Error('Argument "sink" must be a valid Sink instance.');
-        }
-        this.sink = sink;
-    }
-    SinkStage.prototype.emit = function (events) {
-        return Promise.all([this.sink.emit(events), this.next ? this.next.emit(events) : Promise.resolve()]);
-    };
-    SinkStage.prototype.flush = function () {
-        return Promise.all([this.sink.flush(), _super.prototype.flush.call(this)]);
-    };
-    return SinkStage;
-}(PipelineStage));
 
 var tokenizer = /\{@?\w+}/g;
 var MessageTemplate = (function () {
@@ -147,11 +167,49 @@ var MessageTemplate = (function () {
         this.tokens = this.tokenize(messageTemplate);
         this.properties = Object.assign({}, properties);
     }
-    MessageTemplate.prototype.render = function () {
-        return this.template;
+    MessageTemplate.prototype.render = function (properties) {
+        if (!this.tokens.length) {
+            return this.template;
+        }
+        var result = [];
+        for (var i = 0; i < this.tokens.length; ++i) {
+            var token = this.tokens[i];
+            if (typeof token.name === 'string') {
+                if (properties.hasOwnProperty(token.name)) {
+                    result.push(this.toText(properties[token.name]));
+                }
+                else {
+                    result.push(token.raw);
+                }
+            }
+            else {
+                result.push(token.text);
+            }
+        }
+        return result.join('');
     };
     MessageTemplate.prototype.enrichWith = function (properties) {
         Object.assign(this.properties, properties);
+    };
+    MessageTemplate.prototype.bindProperties = function (positionalArgs) {
+        var result = {};
+        var nextArg = 0;
+        for (var i = 0; i < this.tokens.length && nextArg < positionalArgs.length; ++i) {
+            var token = this.tokens[i];
+            if (typeof token.name === 'string') {
+                var p = positionalArgs[nextArg];
+                result[token.name] = this.capture(p, token.destructure);
+                nextArg++;
+            }
+        }
+        while (nextArg < positionalArgs.length) {
+            var arg = positionalArgs[nextArg];
+            if (typeof arg !== 'undefined') {
+                result['a' + nextArg] = this.capture(arg);
+            }
+            nextArg++;
+        }
+        return result;
     };
     MessageTemplate.prototype.tokenize = function (template) {
         var tokens = [];
@@ -169,7 +227,7 @@ var MessageTemplate = (function () {
             }
             tokens.push({
                 name: token,
-                destructure,
+                destructure: destructure,
                 raw: result[0]
             });
             textStart = tokenizer.lastIndex;
@@ -179,18 +237,70 @@ var MessageTemplate = (function () {
         }
         return tokens;
     };
+    MessageTemplate.prototype.toText = function (property) {
+        if (typeof property === 'undefined') {
+            return 'undefined';
+        }
+        if (property === null) {
+            return 'null';
+        }
+        if (typeof property === 'string') {
+            return property;
+        }
+        if (typeof property === 'number') {
+            return property.toString();
+        }
+        if (typeof property === 'boolean') {
+            return property.toString();
+        }
+        if (typeof property.toISOString === 'function') {
+            return property.toISOString();
+        }
+        if (typeof property === 'object') {
+            var s = JSON.stringify(property);
+            if (s.length > 70) {
+                s = s.slice(0, 67) + '...';
+            }
+            return s;
+        }
+        return property.toString();
+    };
+    
+    MessageTemplate.prototype.capture = function (property, destructure) {
+        if (typeof property === 'function') {
+            return property.toString();
+        }
+        if (typeof property === 'object') {
+            // null value will be automatically stringified as "null", in properties it will be as null
+            // otherwise it will throw an error
+            if (property === null) {
+                return property;
+            }
+            // Could use instanceof Date, but this way will be kinder
+            // to values passed from other contexts...
+            if (destructure || typeof property.toISOString === 'function') {
+                return property;
+            }
+            return property.toString();
+        }
+        return property;
+    };
     return MessageTemplate;
 }());
 
 var Logger = (function (_super) {
     __extends(Logger, _super);
     function Logger(pipeline) {
-        _super.call(this);
-        if (!pipeline || !(pipeline instanceof Pipeline)) {
-            throw new Error('Argument "pipeline" must be a valid Pipeline instance.');
+        var _this = _super.call(this) || this;
+        if (!pipeline) {
+            throw new Error('Argument "pipeline" cannot be null or undefined.');
         }
-        this.pipeline = pipeline;
+        _this.pipeline = pipeline;
+        return _this;
     }
+    /**
+     * Logs a message with the `Fatal` level.
+     */
     Logger.prototype.fatal = function (messageTemplate) {
         var properties = [];
         for (var _i = 1; _i < arguments.length; _i++) {
@@ -198,6 +308,9 @@ var Logger = (function (_super) {
         }
         this.write(LogEventLevel.fatal, messageTemplate, properties);
     };
+    /**
+     * Logs a message with the `Error` level.
+     */
     Logger.prototype.error = function (messageTemplate) {
         var properties = [];
         for (var _i = 1; _i < arguments.length; _i++) {
@@ -205,6 +318,9 @@ var Logger = (function (_super) {
         }
         this.write(LogEventLevel.error, messageTemplate, properties);
     };
+    /**
+     * Logs a message with the `Warning` level.
+     */
     Logger.prototype.warn = function (messageTemplate) {
         var properties = [];
         for (var _i = 1; _i < arguments.length; _i++) {
@@ -212,6 +328,9 @@ var Logger = (function (_super) {
         }
         this.write(LogEventLevel.warning, messageTemplate, properties);
     };
+    /**
+     * Logs a message with the `Information` level.
+     */
     Logger.prototype.info = function (messageTemplate) {
         var properties = [];
         for (var _i = 1; _i < arguments.length; _i++) {
@@ -219,6 +338,9 @@ var Logger = (function (_super) {
         }
         this.write(LogEventLevel.information, messageTemplate, properties);
     };
+    /**
+     * Logs a message with the `Debug` level.
+     */
     Logger.prototype.debug = function (messageTemplate) {
         var properties = [];
         for (var _i = 1; _i < arguments.length; _i++) {
@@ -226,6 +348,9 @@ var Logger = (function (_super) {
         }
         this.write(LogEventLevel.debug, messageTemplate, properties);
     };
+    /**
+     * Logs a message with the `Verbose` level.
+     */
     Logger.prototype.verbose = function (messageTemplate) {
         var properties = [];
         for (var _i = 1; _i < arguments.length; _i++) {
@@ -233,6 +358,9 @@ var Logger = (function (_super) {
         }
         this.write(LogEventLevel.verbose, messageTemplate, properties);
     };
+    /**
+     * @inheritdoc
+     */
     Logger.prototype.flush = function () {
         return this.pipeline.flush();
     };
@@ -245,10 +373,13 @@ var Logger = (function (_super) {
             properties[_i - 2] = arguments[_i];
         }
         try {
-            var messageTemplate = new MessageTemplate(rawMessageTemplate, properties);
+            var messageTemplate = new MessageTemplate(rawMessageTemplate);
+            var eventProperties = messageTemplate.bindProperties(properties);
             var event = {
-                level,
-                messageTemplate
+                timestamp: new Date().toISOString(),
+                level: level,
+                messageTemplate: messageTemplate,
+                properties: eventProperties
             };
             this.pipeline.emit([event]);
         }
@@ -261,19 +392,53 @@ var Logger = (function (_super) {
     return Logger;
 }(Sink));
 
+/**
+ * Represents a stage in the pipeline that emits events to a sink.
+ */
+var SinkStage = (function (_super) {
+    __extends(SinkStage, _super);
+    function SinkStage(sink) {
+        var _this = _super.call(this) || this;
+        if (!sink) {
+            throw new Error('Argument "sink" cannot be null or undefined.');
+        }
+        _this.sink = sink;
+        return _this;
+    }
+    /**
+     * Emits events to the sink, as well as the next stage in the pipeline (if any).
+     * @param {LogEvent[]} events The events to emit.
+     * @returns {Promise<void>} Promise that will be resolved when all subsequent
+     * pipeline stages have resolved.
+     */
+    SinkStage.prototype.emit = function (events) {
+        return Promise.all([this.sink.emit(events), _super.prototype.emit.call(this, events)]);
+    };
+    /**
+     * Flushes the sink, as well as the next stage in the pipeline (if any).
+     */
+    SinkStage.prototype.flush = function () {
+        return Promise.all([this.sink.flush(), _super.prototype.flush.call(this)]);
+    };
+    return SinkStage;
+}(PipelineStage));
+
 var consoleProxy = {
-    error: console.error || console.log || function () { },
-    warn: console.warn || console.log || function () { },
-    info: console.info || console.log || function () { },
-    debug: console.debug || console.log || function () { },
-    log: console.log || function () { }
+    error: (typeof console !== 'undefined' && console && (console.error || console.log)) || function () { },
+    warn: (typeof console !== 'undefined' && console && (console.warn || console.log)) || function () { },
+    info: (typeof console !== 'undefined' && console && (console.info || console.log)) || function () { },
+    debug: (typeof console !== 'undefined' && console && (console.debug || console.log)) || function () { },
+    log: (typeof console !== 'undefined' && console && console.log) || function () { }
 };
 var ConsoleSink = (function (_super) {
     __extends(ConsoleSink, _super);
-    function ConsoleSink() {
-        _super.apply(this, arguments);
+    function ConsoleSink(options) {
+        var _this = _super.call(this) || this;
+        _this.options = options || {};
+        return _this;
     }
     ConsoleSink.prototype.emit = function (events) {
+        var _this = this;
         if (!events) {
             var error = new Error('Argument "events" cannot be null or undefined.');
             return Promise.reject(error);
@@ -283,26 +448,41 @@ var ConsoleSink = (function (_super) {
                 var e = events[i];
                 switch (e.level) {
                     case LogEventLevel.fatal:
-                        consoleProxy.error('[Fatal] ' + e.messageTemplate.render());
+                        _this.writeToConsole(consoleProxy.error, 'Fatal', e);
                         break;
                     case LogEventLevel.error:
-                        consoleProxy.error('[Error] ' + e.messageTemplate.render());
+                        _this.writeToConsole(consoleProxy.error, 'Error', e);
                         break;
                     case LogEventLevel.warning:
-                        consoleProxy.warn('[Warning] ' + e.messageTemplate.render());
+                        _this.writeToConsole(consoleProxy.warn, 'Warning', e);
                         break;
                     case LogEventLevel.information:
-                        consoleProxy.info('[Information] ' + e.messageTemplate.render());
+                        _this.writeToConsole(consoleProxy.info, 'Information', e);
                         break;
                     case LogEventLevel.debug:
-                        consoleProxy.debug('[Debug] ' + e.messageTemplate.render());
+                        _this.writeToConsole(consoleProxy.debug, 'Debug', e);
                         break;
                     case LogEventLevel.verbose:
-                        consoleProxy.debug('[Verbose] ' + e.messageTemplate.render());
+                        _this.writeToConsole(consoleProxy.debug, 'Verbose', e);
                         break;
                 }
             }
         });
+    };
+    ConsoleSink.prototype.writeToConsole = function (logMethod, prefix, e) {
+        var output = '[' + prefix + '] ' + e.messageTemplate.render(e.properties);
+        if (this.options.includeTimestamps) {
+            output = e.timestamp + ' ' + output;
+        }
+        var values = [];
+        if (this.options.includeProperties) {
+            for (var key in e.properties) {
+                if (e.properties.hasOwnProperty(key)) {
+                    values.push(e.properties[key]);
+                }
+            }
+        }
+        logMethod.apply(void 0, [output].concat(values));
     };
     return ConsoleSink;
 }(Sink));

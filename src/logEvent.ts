@@ -12,6 +12,8 @@ export enum LogEventLevel {
 }
 
 export interface LogEvent {
+  timestamp: string;
   level: LogEventLevel;
   messageTemplate: MessageTemplate;
+  properties?: Object;
 }
