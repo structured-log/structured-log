@@ -5,7 +5,7 @@
   "main": "dist/structured-log.js",
   "jsnext:main": "dist/structured-log.es6.js",
   "scripts": {
-    "test": "mocha --compilers js:ts-node/register test/**/*.spec.ts",
+    "test": "mocha --compilers js:ts-node/register -r src/polyfill/objectAssign.js test/**/*.spec.ts",
     "build-es5": "rollup -c rollup.config.es5.js",
     "build-es6": "rollup -c rollup.config.es6.js",
     "build": "npm run build-es5 && npm run build-es6"

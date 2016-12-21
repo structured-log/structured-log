@@ -1,3 +1,5 @@
+import './polyfill/objectAssign';
+
 import { Pipeline } from './pipeline';
 import { FilterStage } from './filterStage';
 import { EnrichStage } from './enrichStage';

@@ -20,7 +20,7 @@ The above code will print the following to the console:
 
 ## Installation
 
-structured-log is distributed through [npm](https://www.npmjs.com/package/structured-log) and [Bower](https://bower.io/). Run the following:
+**structured-log** is distributed through [npm](https://www.npmjs.com/package/structured-log) and [Bower](https://bower.io/). Run the following:
 
     npm i --save structured-log
 
@@ -28,17 +28,18 @@ Or, using Bower:
 
     bower install structured-log
 
+> Note: **structured-log** embeds a polyfill for `Object.assign`, but you will need to bring your own `Promise` polyfill to use it in an environment that doesn't support Promises natively.
+
 ## Configuration
 
-Configuring structured-log goes through three steps. First, a new pipeline
-configuration is initialized by calling `configure()` on the main
-`structuredLog` object:
+Configuring **structured-log** is a straightforward process, going through three steps.
+First, we initialize a new logging pipeline configuration by calling `configure()`:
 
 ```js
 const log = structuredLog.configure()
 ```
 
-The second step is the main configuration step. Configuration of different
+The second step is the main step. Configuration of different
 filters and targets is done by chaining methods together in a fluent syntax.
 Events flow through the pipeline from top to bottom, so new filters and
 enrichers can be inserted between the different sinks to build a highly
@@ -58,8 +59,52 @@ instance based on the pipeline configuration.
   .create();
 
 // The logger is ready for use!
-log.verbose(...);
+log.verbose('Hello structured-log!');
 ```
+
+### Log Levels
+
+There are 6 log levels available. From most to least restrictive:
+- `0 - Fatal`
+- `1 - Error`
+- `2 - Warning`
+- `3 - Information`
+- `4 - Debug`
+- `5 - Verbose`
+
+Each log level also includes all levels with a lower value. For example, `Warning` will also
+allow events of the `Error` level through, but block `Information`, `Debug` and
+`Verbose`.
+
+A minimum level can be set anywhere in the pipeline to only allow events matching that level
+level or lower to pass further through the pipeline.
+
+The below examples will all set the minimum level to `Warning`:
+
+```js
+  .minLevel.warning()
+// or
+  .minLevel(2)
+// or
+  .minLevel('Warning')
+```
+
+There is no default minimum level, but a common choice is `Information`. Note that if a restrictive level is set early in the pipeline,
+and a more permissive level is set further down, the events that are filtered out by the more restrictive level
+will never reach the more permissive filter.
+
+The Logger object contains shorthand methods for logging to each level.
+
+```js
+log.fatal('Application startup failed due to a missing configuration file');
+log.error('Could not parse response message');
+log.warn('Execution time of {time} exceeded budget of {budget}ms', actualTime, budgetTime);
+log.info('Started a new session');
+log.debug('Accept-Encoding header value: {acceptEncoding}', response.acceptEncoding);
+log.verbose('Exiting getUsers()');
+```
+
+In addition, `warning()` and `information()` are aliases for `warn()` and `info()`, respectively.
 
 ### Sinks
 
@@ -86,35 +131,6 @@ allowing pure text events through to the next pipeline stage.
 ```js
   .filter(logEvent => logEvent.properties.length === 0)
 ```
-
-### Log Levels
-
-A minimum level can be set anywhere in the pipeline to only allow events of that
-level or higher through.
-
-There are 6 log levels available. From least to most inclusive:
-- `0 - Fatal`
-- `1 - Error`
-- `2 - Warning`
-- `3 - Information`
-- `4 - Debug`
-- `5 - Verbose`
-
-Each log level also includes all levels with a lower index. For example, `Warning` will also
-allow events of the `Error` level through, but block `Information`, `Debug` and
-`Verbose`.
-
-The below examples will both set the minimum level to `Warning`:
-
-```js
-  .minLevel.warning()
-// or
-  .minLevel(2)
-```
-
-The default minimum level is `Information`. Note that if a restrictive level is set early in the pipeline,
-and a more permissive level is set further down, the events that are filtered out by the more restrictive level
-will never reach the more permissive filter.
 
 ### Enrichers
 
