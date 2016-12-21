@@ -1,4 +1,4 @@
-import { LogEvent } from './logEvent';
+import { ILogEvent } from './logEvent';
 import { Sink } from './sink';
 import PipelineStage from './pipelineStage';
 
@@ -42,7 +42,7 @@ export class Pipeline {
    * @returns {Promise<any>} Promise that will be resolved when all
    * pipeline stages have resolved.
    */
-  public emit(events: LogEvent[]): Promise<any> {
+  public emit(events: ILogEvent[]): Promise<any> {
     try {
       if (this.stages.length === 0) {
         return Promise.resolve();

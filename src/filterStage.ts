@@ -1,16 +1,16 @@
-import { LogEvent } from './logEvent';
+import { ILogEvent } from './logEvent';
 import PipelineStage from './pipelineStage';
 
 type Predicate<T> = (T) => boolean;
 
 export class FilterStage extends PipelineStage {
-  private filter: Predicate<LogEvent>;
-  constructor(filter: Predicate<LogEvent>) {
+  private filter: Predicate<ILogEvent>;
+  constructor(filter: Predicate<ILogEvent>) {
     super();
     this.filter = filter;
   }
 
-  public emit(events: LogEvent[]): Promise<any> {
+  public emit(events: ILogEvent[]): Promise<any> {
     if (!this.next) {
       return Promise.resolve();
     }

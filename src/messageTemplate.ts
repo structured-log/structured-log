@@ -10,14 +10,17 @@ interface Token {
 export default class MessageTemplate {
   private template: string;
   private tokens: Token[];
-  private properties: Object;
 
-  constructor(messageTemplate: string, ...properties: any[]) {
+  constructor(messageTemplate: string) {
     this.template = messageTemplate;
     this.tokens = this.tokenize(messageTemplate);
-    this.properties = Object.assign({}, properties);
   }
 
+  /**
+   * Renders this template using the given properties.
+   * @param {Object?} properties Object containing the properties.
+   * @returns Rendered message.
+   */
   public render(properties?: Object): string {
     if (!this.tokens.length) {
       return this.template;
@@ -38,10 +41,11 @@ export default class MessageTemplate {
     return result.join('');
   }
 
-  public enrichWith(properties) {
-    Object.assign(this.properties, properties);
-  }
-
+  /**
+   * Binds the given set of args to their matching tokens.
+   * @param positionalArgs Array of arguments.
+   * @returns Object containing the properties.
+   */
   public bindProperties(positionalArgs): Object {
     const result = {};
     let nextArg = 0;

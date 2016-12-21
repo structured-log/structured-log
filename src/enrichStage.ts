@@ -1,4 +1,4 @@
-import { LogEvent } from './logEvent';
+import { ILogEvent } from './logEvent';
 import PipelineStage from './pipelineStage';
 
 export class EnrichStage extends PipelineStage {
@@ -8,7 +8,7 @@ export class EnrichStage extends PipelineStage {
     this.enricher = enricher;
   }
 
-  public emit(events: LogEvent[]): Promise<any> {
+  public emit(events: ILogEvent[]): Promise<any> {
     if (!this.next) {
       return Promise.resolve();
     }
@@ -17,7 +17,7 @@ export class EnrichStage extends PipelineStage {
       .then(() => {
         for (var i = 0; i < events.length; ++i) {
           const e = events[i];
-          e.messageTemplate.enrichWith(this.enricher());
+          e.properties = Object.assign({}, e.properties, this.enricher());
         }
         return events;
       })

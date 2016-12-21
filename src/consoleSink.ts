@@ -1,4 +1,4 @@
-import { LogEvent, LogEventLevel } from './logEvent';
+import { ILogEvent, LogEventLevel } from './logEvent';
 import { Sink } from './sink';
 import MessageTemplate from './messageTemplate';
 
@@ -10,20 +10,20 @@ const consoleProxy = {
   log:   (typeof console !== 'undefined' && console && console.log) || function () {}
 };
 
-export interface ConsoleSinkOptions {
+export interface IConsoleSinkOptions {
   includeTimestamps?: boolean;
   includeProperties?: boolean;
 }
 
 export class ConsoleSink extends Sink {
-  private options: ConsoleSinkOptions;
+  private options: IConsoleSinkOptions;
 
-  constructor(options?: ConsoleSinkOptions) {
+  constructor(options?: IConsoleSinkOptions) {
     super();
     this.options = options || {};
   }
 
-  public emit(events: LogEvent[]): Promise<any> {
+  public emit(events: ILogEvent[]): Promise<any> {
     return Promise.resolve().then(() => {
       for (let i = 0; i < events.length; ++i) {
         const e = events[i];
@@ -56,7 +56,7 @@ export class ConsoleSink extends Sink {
     });
   }
 
-  private writeToConsole(logMethod: Function, prefix: string, e: LogEvent) {
+  private writeToConsole(logMethod: Function, prefix: string, e: ILogEvent) {
     let output = '[' + prefix + '] ' + e.messageTemplate.render(e.properties);
     if (this.options.includeTimestamps) {
       output = e.timestamp + ' ' + output;

@@ -1,4 +1,4 @@
-import { LogEvent, LogEventLevel } from './logEvent';
+import { ILogEvent, LogEventLevel } from './logEvent';
 import { Pipeline } from './pipeline';
 import { Sink } from './sink';
 import MessageTemplate from './messageTemplate';
@@ -65,7 +65,7 @@ export class Logger extends Sink {
     return this.pipeline.flush();
   }
 
-  public emit(events: LogEvent[]): Promise<any> {
+  public emit(events: ILogEvent[]): Promise<any> {
     return this.pipeline.emit(events);
   }
 
@@ -73,7 +73,7 @@ export class Logger extends Sink {
     try {
       const messageTemplate = new MessageTemplate(rawMessageTemplate);
       const eventProperties = messageTemplate.bindProperties(properties);
-      const event: LogEvent = {
+      const event: ILogEvent = {
         timestamp: new Date().toISOString(),
         level,
         messageTemplate,

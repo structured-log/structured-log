@@ -1,7 +1,7 @@
-import { LogEvent } from './logEvent';
+import { ILogEvent } from './logEvent';
 
 export abstract class Sink {
-  public abstract emit(events: LogEvent[]): Promise<any>;
+  public abstract emit(events: ILogEvent[]): Promise<any>;
 
   public flush(): Promise<any> {
     return Promise.resolve();

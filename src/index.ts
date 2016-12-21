@@ -6,13 +6,13 @@ import { EnrichStage } from './enrichStage';
 import { Logger } from './logger';
 import { Sink } from './sink';
 import { SinkStage } from './sinkStage';
-import { LogEvent, LogEventLevel } from './logEvent';
+import { ILogEvent, LogEventLevel } from './logEvent';
 
 export { ConsoleSink } from './consoleSink';
 
 type Predicate<T> = (T) => boolean;
 
-interface MinLevel {
+interface IMinLevel {
   (level: LogEventLevel): LoggerConfiguration;
   fatal(): LoggerConfiguration;
   error(): LoggerConfiguration;
@@ -34,7 +34,7 @@ export class LoggerConfiguration {
     return this;
   }
 
-  public minLevel: MinLevel = Object.assign((level: LogEventLevel): LoggerConfiguration => {
+  public minLevel: IMinLevel = Object.assign((level: LogEventLevel): LoggerConfiguration => {
     return this.filter(e => e.level <= level);
   }, {
     fatal: () => this.minLevel(LogEventLevel.fatal),
@@ -57,7 +57,7 @@ export class LoggerConfiguration {
     return this;
   }
 
-  public filter(predicate: Predicate<LogEvent>): LoggerConfiguration {
+  public filter(predicate: Predicate<ILogEvent>): LoggerConfiguration {
     if (predicate instanceof Function) {
       this.pipeline.addStage(new FilterStage(predicate));
     } else {

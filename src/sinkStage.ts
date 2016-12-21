@@ -1,4 +1,4 @@
-import { LogEvent } from './logEvent';
+import { ILogEvent } from './logEvent';
 import { Sink } from './sink';
 import PipelineStage from './pipelineStage';
 
@@ -21,7 +21,7 @@ export class SinkStage extends PipelineStage {
    * @returns {Promise<void>} Promise that will be resolved when all subsequent
    * pipeline stages have resolved.
    */
-  public emit(events: LogEvent[]): Promise<any> {
+  public emit(events: ILogEvent[]): Promise<any> {
     return Promise.all([super.emit(events), this.sink.emit(events)]);
   }
 

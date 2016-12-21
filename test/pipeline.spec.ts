@@ -8,7 +8,7 @@ import PipelineStage from '../src/pipelineStage';
 import { Sink } from '../src/sink';
 import { SinkStage } from '../src/sinkStage';
 import MessageTemplate from '../src/messageTemplate';
-import { LogEvent, LogEventLevel } from '../src/logEvent';
+import { ILogEvent, LogEventLevel } from '../src/logEvent';
 
 describe('Pipeline', () => {
 
@@ -20,7 +20,7 @@ describe('Pipeline', () => {
           super();
           this.emitCallback = emitCallback;
         }
-        public emit(events: LogEvent[]): Promise<void> {
+        public emit(events: ILogEvent[]): Promise<void> {
           this.emitCallback();
           return super.emit(events);
         }
@@ -61,7 +61,7 @@ describe('Pipeline', () => {
     let pipeline: Pipeline;
     let stage: SinkStage;
     let sink: TypeMoq.IMock<Sink>;
-    let events: LogEvent[];
+    let events: ILogEvent[];
 
     beforeEach(() => {
       pipeline = new Pipeline();

@@ -3,14 +3,14 @@
 import * as TypeMoq from 'typemoq';
 import { expect } from 'chai';
 import { FilterStage } from '../src/filterStage';
-import { LogEvent } from '../src/logEvent';
+import { ILogEvent } from '../src/logEvent';
 import PipelineStage from '../src/pipelineStage';
 import MessageTemplate from '../src/messageTemplate';
 
 describe('FilterStage', () => {
   describe('emit()', () => {
     it('filters events based on the predicate', () => {
-      let filteredEvents: LogEvent[];
+      let filteredEvents: ILogEvent[];
 
       const mockStage = TypeMoq.Mock.ofType<PipelineStage>();
       mockStage.setup(m => m.emit(TypeMoq.It.isAny()))
@@ -18,7 +18,7 @@ describe('FilterStage', () => {
       const filterStage = new FilterStage(e => e.messageTemplate.render().indexOf('B') !== 0);
       filterStage.next = mockStage.object;
 
-      const rawEvents: LogEvent[] = [{
+      const rawEvents: ILogEvent[] = [{
         timestamp: new Date().toISOString(),
         level: 1,
         messageTemplate: new MessageTemplate('A is the first letter')

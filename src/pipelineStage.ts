@@ -1,4 +1,4 @@
-import { LogEvent } from './logEvent';
+import { ILogEvent } from './logEvent';
 
 /**
  * Represents a stage in the event pipeline.
@@ -16,7 +16,7 @@ export default class PipelineStage {
    * @returns {Promise<any>} Promise that will be resolved when all subsequent
    * pipeline stages have resolved.
    */
-  public emit(events: LogEvent[]): Promise<any> {
+  public emit(events: ILogEvent[]): Promise<any> {
     return this.next ? this.next.emit(events) : Promise.resolve();
   }
 

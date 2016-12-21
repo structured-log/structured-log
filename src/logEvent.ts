@@ -11,7 +11,7 @@ export enum LogEventLevel {
   verbose
 }
 
-export interface LogEvent {
+export interface ILogEvent {
   timestamp: string;
   level: LogEventLevel;
   messageTemplate: MessageTemplate;
