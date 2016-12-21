@@ -163,7 +163,7 @@ class EnrichStage extends PipelineStage {
             .then(() => {
             for (var i = 0; i < events.length; ++i) {
                 const e = events[i];
-                e.messageTemplate.enrichWith(this.enricher());
+                e.properties = Object.assign({}, e.properties, this.enricher());
             }
             return events;
         })
@@ -191,11 +191,15 @@ class Sink {
 
 const tokenizer = /\{@?\w+}/g;
 class MessageTemplate {
-    constructor(messageTemplate, ...properties) {
+    constructor(messageTemplate) {
         this.template = messageTemplate;
         this.tokens = this.tokenize(messageTemplate);
-        this.properties = Object.assign({}, properties);
     }
+    /**
+     * Renders this template using the given properties.
+     * @param {Object?} properties Object containing the properties.
+     * @returns Rendered message.
+     */
     render(properties) {
         if (!this.tokens.length) {
             return this.template;
@@ -217,9 +221,11 @@ class MessageTemplate {
         }
         return result.join('');
     }
-    enrichWith(properties) {
-        Object.assign(this.properties, properties);
-    }
+    /**
+     * Binds the given set of args to their matching tokens.
+     * @param positionalArgs Array of arguments.
+     * @returns Object containing the properties.
+     */
     bindProperties(positionalArgs) {
         const result = {};
         let nextArg = 0;

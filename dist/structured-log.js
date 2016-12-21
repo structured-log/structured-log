@@ -186,7 +186,7 @@ var EnrichStage = (function (_super) {
             .then(function () {
             for (var i = 0; i < events.length; ++i) {
                 var e = events[i];
-                e.messageTemplate.enrichWith(_this.enricher());
+                e.properties = Object.assign({}, e.properties, _this.enricher());
             }
             return events;
         })
@@ -219,14 +219,14 @@ var Sink = (function () {
 var tokenizer = /\{@?\w+}/g;
 var MessageTemplate = (function () {
     function MessageTemplate(messageTemplate) {
-        var properties = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            properties[_i - 1] = arguments[_i];
-        }
         this.template = messageTemplate;
         this.tokens = this.tokenize(messageTemplate);
-        this.properties = Object.assign({}, properties);
     }
+    /**
+     * Renders this template using the given properties.
+     * @param {Object?} properties Object containing the properties.
+     * @returns Rendered message.
+     */
     MessageTemplate.prototype.render = function (properties) {
         if (!this.tokens.length) {
             return this.template;
@@ -248,9 +248,11 @@ var MessageTemplate = (function () {
         }
         return result.join('');
     };
-    MessageTemplate.prototype.enrichWith = function (properties) {
-        Object.assign(this.properties, properties);
-    };
+    /**
+     * Binds the given set of args to their matching tokens.
+     * @param positionalArgs Array of arguments.
+     * @returns Object containing the properties.
+     */
     MessageTemplate.prototype.bindProperties = function (positionalArgs) {
         var result = {};
         var nextArg = 0;
