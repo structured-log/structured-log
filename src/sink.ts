@@ -1,10 +1,8 @@
-import { ILogEvent } from './logEvent';
+import { LogEvent } from './logEvent';
 import { PipelineStage } from './pipeline';
 
 export abstract class Sink {
-  public emit(events: ILogEvent[]): Promise<any> {
-    return Promise.resolve();
-  }
+  public abstract emit(events: LogEvent[]): Promise<any>;
 
   public flush(): Promise<any> {
     return Promise.resolve();
@@ -21,11 +19,11 @@ export class SinkStage extends PipelineStage {
     this.sink = sink;
   }
 
-  emit(events: ILogEvent[]): Promise<any> {
+  public emit(events: LogEvent[]): Promise<any> {
     return Promise.all([this.sink.emit(events), this.next ? this.next.emit(events) : Promise.resolve()]);
   }
 
-  flush(): Promise<any> {
+  public flush(): Promise<any> {
     return Promise.all([this.sink.flush(), super.flush()]);
   }
 }

@@ -11,6 +11,7 @@ export abstract class PipelineStage {
 }
 
 export class Pipeline {
+  public yieldErrors: boolean = false;
   private stages: PipelineStage[];
 
   constructor() {
@@ -27,20 +28,28 @@ export class Pipeline {
     }
   }
 
-  emit(events: LogEvent[]): Promise<any> {
+  public emit(events: LogEvent[]): Promise<any> {
     if (this.stages.length === 0) {
       return Promise.resolve();
     }
 
-    return this.stages[0].emit(events);
+    return this.stages[0].emit(events).catch(e => {
+      if (this.yieldErrors) {
+        throw e;
+      }
+    });
   }
 
-  flush(): Promise<any> {
+  public flush(): Promise<any> {
     if (this.stages.length === 0) {
       return Promise.resolve();
     }
 
-    return this.stages[0].flush();
+    return this.stages[0].flush().catch(e => {
+      if (this.yieldErrors) {
+        throw e;
+      }
+    });
   }
 }
 
@@ -78,7 +87,7 @@ export class EnrichStage extends PipelineStage {
       .then(() => {
         for (var i = 0; i < events.length; ++i) {
           const e = events[i];
-          e.messageTemplate.properties = Object.assign({}, e.messageTemplate.properties, this.enricher());
+          e.messageTemplate.enrichWith(this.enricher());
         }
         return events;
       })

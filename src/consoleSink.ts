@@ -1,6 +1,14 @@
 import { LogEvent, LogEventLevel } from './logEvent';
 import { Sink } from './sink';
 
+const consoleProxy = {
+  error: console.error || console.log || function () {},
+  warn: console.warn || console.log || function () {},
+  info: console.info || console.log || function () {},
+  debug: console.debug || console.log || function () {},
+  log: console.log || function () {}
+};
+
 export class ConsoleSink extends Sink {
   public emit(events: LogEvent[]): Promise<any> {
     if (!events) {
@@ -12,22 +20,28 @@ export class ConsoleSink extends Sink {
       for (let i = 0; i < events.length; ++i) {
         const e = events[i];
         switch (e.level) {
-          case LogEventLevel.Fatal:
-          case LogEventLevel.Error:
-            console.error(`[${LogEventLevel[e.level]}] ${e.messageTemplate.render()}`);
+          case LogEventLevel.fatal:
+            consoleProxy.error('[Fatal] ' + e.messageTemplate.render());
             break;
 
-          case LogEventLevel.Warning:
-            console.warn(`[${LogEventLevel[e.level]}] ${e.messageTemplate.render()}`);
+          case LogEventLevel.error:
+            consoleProxy.error('[Error] ' + e.messageTemplate.render());
             break;
 
-          case LogEventLevel.Information:
-            console.info(`[${LogEventLevel[e.level]}] ${e.messageTemplate.render()}`);
+          case LogEventLevel.warning:
+            consoleProxy.warn('[Warning] ' + e.messageTemplate.render());
+            break;
+            
+          case LogEventLevel.information:
+            consoleProxy.info('[Information] ' + e.messageTemplate.render());
+            break;
+            
+          case LogEventLevel.debug:
+            consoleProxy.debug('[Debug] ' + e.messageTemplate.render());
             break;
 
-          case LogEventLevel.Debug:
-          case LogEventLevel.Verbose:
-            console.log(`[${LogEventLevel[e.level]}] ${e.messageTemplate.render()}`);
+          case LogEventLevel.verbose:
+            consoleProxy.debug('[Verbose] ' + e.messageTemplate.render());
             break;
         }
       }

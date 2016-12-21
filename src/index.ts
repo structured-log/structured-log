@@ -5,6 +5,16 @@ import { LogEventLevel } from './logEvent';
 
 export { ConsoleSink } from './consoleSink';
 
+interface MinLevel {
+  (level: LogEventLevel): LoggerConfiguration;
+  fatal(): LoggerConfiguration;
+  error(): LoggerConfiguration;
+  warning(): LoggerConfiguration;
+  information(): LoggerConfiguration;
+  debug(): LoggerConfiguration;
+  verbose(): LoggerConfiguration;
+}
+
 export class LoggerConfiguration {
   private pipeline: Pipeline = null;
 
@@ -17,10 +27,17 @@ export class LoggerConfiguration {
     return this;
   }
 
-  public minLevel(level: LogEventLevel): LoggerConfiguration {
+  public minLevel: MinLevel = Object.assign((level: LogEventLevel): LoggerConfiguration => {
     this.pipeline.addStage(new FilterStage(e => e.level <= level));
     return this;
-  }
+  }, {
+    fatal: () => this.minLevel(LogEventLevel.fatal),
+    error: () => this.minLevel(LogEventLevel.error),
+    warning: () => this.minLevel(LogEventLevel.warning),
+    information: () => this.minLevel(LogEventLevel.information),
+    debug: () => this.minLevel(LogEventLevel.debug),
+    verbose: () => this.minLevel(LogEventLevel.verbose)
+  });
 
   public enrich(enricher: any): LoggerConfiguration {
     if (enricher instanceof Function) {
@@ -34,10 +51,12 @@ export class LoggerConfiguration {
     return this;
   }
 
-  public create(): Logger {
+  public create(yieldErrors: boolean = false): Logger {
     if (!this.pipeline) {
       throw new Error('The logger for this configuration has already been created.');
     }
+
+    this.pipeline.yieldErrors = yieldErrors;
 
     return new Logger(this.pipeline);
   }
