@@ -9,10 +9,11 @@ logger.info('You should see this in the console!');
 logger.verbose('But you shouldn\'t see this.');
 
 const secondLogger = structuredLog.configure()
-  .minLevel.verbose()
+  .minLevel.debug()
   .writeTo(new structuredLog.ConsoleSink())
   .writeTo(logger)
   .create(true);
 
-secondLogger.verbose('And you should see this too, but only {times}.', 'once');
+secondLogger.debug('This should also be visible, but only {times} time.', 1);
+secondLogger.verbose('But not this.');
 secondLogger.info('However, this should show up twice in the console!');

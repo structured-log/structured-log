@@ -26,33 +26,6 @@ if (typeof Object.assign != 'function') {
 }
 
 /**
- * Represents a stage in the event pipeline.
- */
-class PipelineStage {
-    constructor() {
-        /**
-         * Points to the next stage in the pipeline.
-         */
-        this.next = null;
-    }
-    /**
-     * Emits events to this pipeline stage, as well as the next stage in the pipeline (if any).
-     * @param {LogEvent[]} events The events to emit.
-     * @returns {Promise<void>} Promise that will be resolved when all subsequent
-     * pipeline stages have resolved.
-     */
-    emit(events) {
-        return this.next ? this.next.emit(events) : Promise.resolve();
-    }
-    /**
-     * Flushes this pipeline stage, as well as the next stage in the pipeline (if any).
-     */
-    flush() {
-        return this.next ? this.next.flush() : Promise.resolve();
-    }
-}
-
-/**
  * Represents the event pipeline.
  */
 class Pipeline {
@@ -72,33 +45,93 @@ class Pipeline {
      * @param {PipelineStage} stage The stage to add.
      */
     addStage(stage) {
-        if (!stage || !(stage instanceof PipelineStage)) {
-            throw new Error('Argument "stage" must be a valid Stage instance.');
+        if (typeof stage === 'undefined' || !stage) {
+            throw new Error('Argument "stage" cannot be undefined or null.');
         }
         this.stages.push(stage);
         if (this.stages.length > 1) {
             this.stages[this.stages.length - 2].next = this.stages[this.stages.length - 1];
         }
     }
+    /**
+     * Emits events through the pipeline.
+     * @param {LogEvent[]} events The events to emit.
+     * @returns {Promise<any>} Promise that will be resolved when all
+     * pipeline stages have resolved.
+     */
     emit(events) {
-        if (this.stages.length === 0) {
-            return Promise.resolve();
+        try {
+            if (this.stages.length === 0) {
+                return Promise.resolve();
+            }
+            return this.stages[0].emit(events).catch(e => {
+                if (this.yieldErrors) {
+                    throw e;
+                }
+            });
         }
-        return this.stages[0].emit(events).catch(e => {
-            if (this.yieldErrors) {
+        catch (e) {
+            if (!this.yieldErrors) {
+                return Promise.resolve();
+            }
+            else {
                 throw e;
             }
-        });
+        }
     }
+    /**
+     * Flushes any events through the pipeline
+     * @returns {Promise<any>} Promise that will be resolved when all
+     * pipeline stages have been flushed.
+     */
     flush() {
-        if (this.stages.length === 0) {
-            return Promise.resolve();
+        try {
+            if (this.stages.length === 0) {
+                return Promise.resolve();
+            }
+            return this.stages[0].flush().catch(e => {
+                if (this.yieldErrors) {
+                    throw e;
+                }
+            });
         }
-        return this.stages[0].flush().catch(e => {
-            if (this.yieldErrors) {
+        catch (e) {
+            if (!this.yieldErrors) {
+                return Promise.resolve();
+            }
+            else {
                 throw e;
             }
-        });
+        }
+    }
+}
+
+/**
+ * Represents a stage in the event pipeline.
+ */
+class PipelineStage {
+    constructor() {
+        /**
+         * Points to the next stage in the pipeline.
+         */
+        this.next = null;
+    }
+    /**
+     * Emits events to this pipeline stage, as well as the next stage in the pipeline (if any).
+     * @param {LogEvent[]} events The events to emit.
+     * @returns {Promise<any>} Promise that will be resolved when all subsequent
+     * pipeline stages have resolved.
+     */
+    emit(events) {
+        return this.next ? this.next.emit(events) : Promise.resolve();
+    }
+    /**
+     * Flushes this pipeline stage, as well as the next stage in the pipeline (if any).
+     * @returns {Promise<any>} Promise that will be resolved when all subsequent
+     * pipeline stages have been flushed.
+     */
+    flush() {
+        return this.next ? this.next.flush() : Promise.resolve();
     }
 }
 
@@ -336,7 +369,7 @@ class Logger extends Sink {
     emit(events) {
         return this.pipeline.emit(events);
     }
-    write(level, rawMessageTemplate, ...properties) {
+    write(level, rawMessageTemplate, properties) {
         try {
             const messageTemplate = new MessageTemplate(rawMessageTemplate);
             const eventProperties = messageTemplate.bindProperties(properties);
@@ -362,8 +395,8 @@ class Logger extends Sink {
 class SinkStage extends PipelineStage {
     constructor(sink) {
         super();
-        if (!sink) {
-            throw new Error('Argument "sink" cannot be null or undefined.');
+        if (typeof sink === 'undefined' || !sink) {
+            throw new Error('Argument "sink" cannot be undefined or null.');
         }
         this.sink = sink;
     }
@@ -374,13 +407,13 @@ class SinkStage extends PipelineStage {
      * pipeline stages have resolved.
      */
     emit(events) {
-        return Promise.all([this.sink.emit(events), super.emit(events)]);
+        return Promise.all([super.emit(events), this.sink.emit(events)]);
     }
     /**
      * Flushes the sink, as well as the next stage in the pipeline (if any).
      */
     flush() {
-        return Promise.all([this.sink.flush(), super.flush()]);
+        return Promise.all([super.flush(), this.sink.flush()]);
     }
 }
 
@@ -397,10 +430,6 @@ class ConsoleSink extends Sink {
         this.options = options || {};
     }
     emit(events) {
-        if (!events) {
-            const error = new Error('Argument "events" cannot be null or undefined.');
-            return Promise.reject(error);
-        }
         return Promise.resolve().then(() => {
             for (let i = 0; i < events.length; ++i) {
                 const e = events[i];
@@ -448,8 +477,7 @@ class LoggerConfiguration {
     constructor() {
         this.pipeline = null;
         this.minLevel = Object.assign((level) => {
-            this.pipeline.addStage(new FilterStage(e => e.level <= level));
-            return this;
+            return this.filter(e => e.level <= level);
         }, {
             fatal: () => this.minLevel(LogEventLevel.fatal),
             error: () => this.minLevel(LogEventLevel.error),
@@ -473,6 +501,15 @@ class LoggerConfiguration {
         }
         else {
             throw new Error('Argument "enricher" must be either a function or an object.');
+        }
+        return this;
+    }
+    filter(predicate) {
+        if (predicate instanceof Function) {
+            this.pipeline.addStage(new FilterStage(predicate));
+        }
+        else {
+            throw new Error('Argument "predicate" must be a function.');
         }
         return this;
     }

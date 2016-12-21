@@ -69,7 +69,7 @@ export class Logger extends Sink {
     return this.pipeline.emit(events);
   }
 
-  private write(level: LogEventLevel, rawMessageTemplate: string, ...properties: any[]) {
+  private write(level: LogEventLevel, rawMessageTemplate: string, properties: any[]) {
     try {
       const messageTemplate = new MessageTemplate(rawMessageTemplate);
       const eventProperties = messageTemplate.bindProperties(properties);

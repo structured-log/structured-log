@@ -3,7 +3,7 @@
 import * as TypeMoq from 'typemoq';
 import { expect } from 'chai';
 import { EnrichStage } from '../src/enrichStage';
-import { PipelineStage } from '../src/pipelineStage';
+import PipelineStage from '../src/pipelineStage';
 import MessageTemplate from '../src/messageTemplate';
 
 describe('EnrichStage', () => {

@@ -4,7 +4,7 @@ import * as TypeMoq from 'typemoq';
 import { expect } from 'chai';
 import { Sink } from '../src/sink';
 import { SinkStage } from '../src/sinkStage';
-import { PipelineStage } from '../src/pipelineStage';
+import PipelineStage from '../src/pipelineStage';
 import MessageTemplate from '../src/messageTemplate';
 
 describe('SinkStage', () => {

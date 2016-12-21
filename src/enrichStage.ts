@@ -1,5 +1,5 @@
 import { LogEvent } from './logEvent';
-import { PipelineStage } from './pipelineStage';
+import PipelineStage from './pipelineStage';
 
 export class EnrichStage extends PipelineStage {
   private enricher: () => Object;

@@ -4,7 +4,7 @@ import * as TypeMoq from 'typemoq';
 import { expect } from 'chai';
 import { FilterStage } from '../src/filterStage';
 import { LogEvent } from '../src/logEvent';
-import { PipelineStage } from '../src/pipelineStage';
+import PipelineStage from '../src/pipelineStage';
 import MessageTemplate from '../src/messageTemplate';
 
 describe('FilterStage', () => {

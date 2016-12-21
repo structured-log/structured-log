@@ -6,9 +6,11 @@ import { EnrichStage } from './enrichStage';
 import { Logger } from './logger';
 import { Sink } from './sink';
 import { SinkStage } from './sinkStage';
-import { LogEventLevel } from './logEvent';
+import { LogEvent, LogEventLevel } from './logEvent';
 
 export { ConsoleSink } from './consoleSink';
+
+type Predicate<T> = (T) => boolean;
 
 interface MinLevel {
   (level: LogEventLevel): LoggerConfiguration;
@@ -33,8 +35,7 @@ export class LoggerConfiguration {
   }
 
   public minLevel: MinLevel = Object.assign((level: LogEventLevel): LoggerConfiguration => {
-    this.pipeline.addStage(new FilterStage(e => e.level <= level));
-    return this;
+    return this.filter(e => e.level <= level);
   }, {
     fatal: () => this.minLevel(LogEventLevel.fatal),
     error: () => this.minLevel(LogEventLevel.error),
@@ -51,6 +52,16 @@ export class LoggerConfiguration {
       this.pipeline.addStage(new EnrichStage(() => enricher));
     } else {
       throw new Error('Argument "enricher" must be either a function or an object.');
+    }
+
+    return this;
+  }
+
+  public filter(predicate: Predicate<LogEvent>): LoggerConfiguration {
+    if (predicate instanceof Function) {
+      this.pipeline.addStage(new FilterStage(predicate));
+    } else {
+      throw new Error('Argument "predicate" must be a function.');
     }
 
     return this;

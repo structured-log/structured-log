@@ -1,5 +1,5 @@
 import { LogEvent } from './logEvent';
-import { PipelineStage } from './pipelineStage';
+import PipelineStage from './pipelineStage';
 
 type Predicate<T> = (T) => boolean;
 

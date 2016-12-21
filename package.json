@@ -1,6 +1,6 @@
 {
   "name": "structured-log",
-  "version": "0.19.0",
+  "version": "0.1.0",
   "description": "A structured logging framework for JavaScript, inspired by Serilog.",
   "main": "dist/structured-log.js",
   "jsnext:main": "dist/structured-log.es6.js",

@@ -8,7 +8,7 @@ A structured logging framework for JavaScript, inspired by [Serilog](http://seri
 const structuredLog = require('structured-log');
 
 const log = structuredLog.configure()
-  .writeTo(new ConsoleSink())
+  .writeTo(new structuredLog.ConsoleSink())
   .create();
 
 log.info('Hello {Name}!', 'Greg');

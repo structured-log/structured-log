@@ -1,6 +1,6 @@
 import { LogEvent } from './logEvent';
 import { Sink } from './sink';
-import { PipelineStage } from './pipelineStage';
+import PipelineStage from './pipelineStage';
 
 /**
  * Represents the event pipeline.
@@ -27,8 +27,8 @@ export class Pipeline {
    * @param {PipelineStage} stage The stage to add.
    */
   public addStage(stage: PipelineStage) {
-    if (!stage || !(stage instanceof PipelineStage)) {
-      throw new Error('Argument "stage" must be a valid Stage instance.');
+    if (typeof stage === 'undefined' || !stage) {
+      throw new Error('Argument "stage" cannot be undefined or null.');
     }
     this.stages.push(stage);
     if (this.stages.length > 1) {
@@ -36,27 +36,54 @@ export class Pipeline {
     }
   }
 
+  /**
+   * Emits events through the pipeline.
+   * @param {LogEvent[]} events The events to emit.
+   * @returns {Promise<any>} Promise that will be resolved when all
+   * pipeline stages have resolved.
+   */
   public emit(events: LogEvent[]): Promise<any> {
-    if (this.stages.length === 0) {
-      return Promise.resolve();
-    }
-
-    return this.stages[0].emit(events).catch(e => {
-      if (this.yieldErrors) {
-        throw e;
+    try {
+      if (this.stages.length === 0) {
+        return Promise.resolve();
       }
-    });
+
+      return this.stages[0].emit(events).catch(e => {
+        if (this.yieldErrors) {
+          throw e;
+        }
+      });
+    } catch (e) {
+      if (!this.yieldErrors) {
+        return Promise.resolve();
+      } else {
+          throw e;
+      }
+    }
   }
 
+  /**
+   * Flushes any events through the pipeline
+   * @returns {Promise<any>} Promise that will be resolved when all
+   * pipeline stages have been flushed.
+   */
   public flush(): Promise<any> {
-    if (this.stages.length === 0) {
-      return Promise.resolve();
-    }
-
-    return this.stages[0].flush().catch(e => {
-      if (this.yieldErrors) {
-        throw e;
+    try {
+      if (this.stages.length === 0) {
+        return Promise.resolve();
       }
-    });
+
+      return this.stages[0].flush().catch(e => {
+        if (this.yieldErrors) {
+          throw e;
+        }
+      });
+    } catch (e) {
+      if (!this.yieldErrors) {
+        return Promise.resolve();
+      } else {
+          throw e;
+      }
+    }
   }
 }

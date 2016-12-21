@@ -24,11 +24,6 @@ export class ConsoleSink extends Sink {
   }
 
   public emit(events: LogEvent[]): Promise<any> {
-    if (!events) {
-      const error = new Error('Argument "events" cannot be null or undefined.');
-      return Promise.reject(error);
-    }
-
     return Promise.resolve().then(() => {
       for (let i = 0; i < events.length; ++i) {
         const e = events[i];

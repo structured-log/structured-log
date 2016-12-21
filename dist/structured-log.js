@@ -38,34 +38,6 @@ function __extends(d, b) {
 }
 
 /**
- * Represents a stage in the event pipeline.
- */
-var PipelineStage = (function () {
-    function PipelineStage() {
-        /**
-         * Points to the next stage in the pipeline.
-         */
-        this.next = null;
-    }
-    /**
-     * Emits events to this pipeline stage, as well as the next stage in the pipeline (if any).
-     * @param {LogEvent[]} events The events to emit.
-     * @returns {Promise<void>} Promise that will be resolved when all subsequent
-     * pipeline stages have resolved.
-     */
-    PipelineStage.prototype.emit = function (events) {
-        return this.next ? this.next.emit(events) : Promise.resolve();
-    };
-    /**
-     * Flushes this pipeline stage, as well as the next stage in the pipeline (if any).
-     */
-    PipelineStage.prototype.flush = function () {
-        return this.next ? this.next.flush() : Promise.resolve();
-    };
-    return PipelineStage;
-}());
-
-/**
  * Represents the event pipeline.
  */
 var Pipeline = (function () {
@@ -85,37 +57,98 @@ var Pipeline = (function () {
      * @param {PipelineStage} stage The stage to add.
      */
     Pipeline.prototype.addStage = function (stage) {
-        if (!stage || !(stage instanceof PipelineStage)) {
-            throw new Error('Argument "stage" must be a valid Stage instance.');
+        if (typeof stage === 'undefined' || !stage) {
+            throw new Error('Argument "stage" cannot be undefined or null.');
         }
         this.stages.push(stage);
         if (this.stages.length > 1) {
             this.stages[this.stages.length - 2].next = this.stages[this.stages.length - 1];
         }
     };
+    /**
+     * Emits events through the pipeline.
+     * @param {LogEvent[]} events The events to emit.
+     * @returns {Promise<any>} Promise that will be resolved when all
+     * pipeline stages have resolved.
+     */
     Pipeline.prototype.emit = function (events) {
         var _this = this;
-        if (this.stages.length === 0) {
-            return Promise.resolve();
+        try {
+            if (this.stages.length === 0) {
+                return Promise.resolve();
+            }
+            return this.stages[0].emit(events).catch(function (e) {
+                if (_this.yieldErrors) {
+                    throw e;
+                }
+            });
         }
-        return this.stages[0].emit(events).catch(function (e) {
-            if (_this.yieldErrors) {
+        catch (e) {
+            if (!this.yieldErrors) {
+                return Promise.resolve();
+            }
+            else {
                 throw e;
             }
-        });
+        }
     };
+    /**
+     * Flushes any events through the pipeline
+     * @returns {Promise<any>} Promise that will be resolved when all
+     * pipeline stages have been flushed.
+     */
     Pipeline.prototype.flush = function () {
         var _this = this;
-        if (this.stages.length === 0) {
-            return Promise.resolve();
+        try {
+            if (this.stages.length === 0) {
+                return Promise.resolve();
+            }
+            return this.stages[0].flush().catch(function (e) {
+                if (_this.yieldErrors) {
+                    throw e;
+                }
+            });
         }
-        return this.stages[0].flush().catch(function (e) {
-            if (_this.yieldErrors) {
+        catch (e) {
+            if (!this.yieldErrors) {
+                return Promise.resolve();
+            }
+            else {
                 throw e;
             }
-        });
+        }
     };
     return Pipeline;
+}());
+
+/**
+ * Represents a stage in the event pipeline.
+ */
+var PipelineStage = (function () {
+    function PipelineStage() {
+        /**
+         * Points to the next stage in the pipeline.
+         */
+        this.next = null;
+    }
+    /**
+     * Emits events to this pipeline stage, as well as the next stage in the pipeline (if any).
+     * @param {LogEvent[]} events The events to emit.
+     * @returns {Promise<any>} Promise that will be resolved when all subsequent
+     * pipeline stages have resolved.
+     */
+    PipelineStage.prototype.emit = function (events) {
+        return this.next ? this.next.emit(events) : Promise.resolve();
+    };
+    /**
+     * Flushes this pipeline stage, as well as the next stage in the pipeline (if any).
+     * @returns {Promise<any>} Promise that will be resolved when all subsequent
+     * pipeline stages have been flushed.
+     */
+    PipelineStage.prototype.flush = function () {
+        return this.next ? this.next.flush() : Promise.resolve();
+    };
+    return PipelineStage;
 }());
 
 var FilterStage = (function (_super) {
@@ -394,11 +427,7 @@ var Logger = (function (_super) {
     Logger.prototype.emit = function (events) {
         return this.pipeline.emit(events);
     };
-    Logger.prototype.write = function (level, rawMessageTemplate) {
-        var properties = [];
-        for (var _i = 2; _i < arguments.length; _i++) {
-            properties[_i - 2] = arguments[_i];
-        }
+    Logger.prototype.write = function (level, rawMessageTemplate, properties) {
         try {
             var messageTemplate = new MessageTemplate(rawMessageTemplate);
             var eventProperties = messageTemplate.bindProperties(properties);
@@ -426,8 +455,8 @@ var SinkStage = (function (_super) {
     __extends(SinkStage, _super);
     function SinkStage(sink) {
         var _this = _super.call(this) || this;
-        if (!sink) {
-            throw new Error('Argument "sink" cannot be null or undefined.');
+        if (typeof sink === 'undefined' || !sink) {
+            throw new Error('Argument "sink" cannot be undefined or null.');
         }
         _this.sink = sink;
         return _this;
@@ -439,13 +468,13 @@ var SinkStage = (function (_super) {
      * pipeline stages have resolved.
      */
     SinkStage.prototype.emit = function (events) {
-        return Promise.all([this.sink.emit(events), _super.prototype.emit.call(this, events)]);
+        return Promise.all([_super.prototype.emit.call(this, events), this.sink.emit(events)]);
     };
     /**
      * Flushes the sink, as well as the next stage in the pipeline (if any).
      */
     SinkStage.prototype.flush = function () {
-        return Promise.all([this.sink.flush(), _super.prototype.flush.call(this)]);
+        return Promise.all([_super.prototype.flush.call(this), this.sink.flush()]);
     };
     return SinkStage;
 }(PipelineStage));
@@ -466,10 +495,6 @@ var ConsoleSink = (function (_super) {
     }
     ConsoleSink.prototype.emit = function (events) {
         var _this = this;
-        if (!events) {
-            var error = new Error('Argument "events" cannot be null or undefined.');
-            return Promise.reject(error);
-        }
         return Promise.resolve().then(function () {
             for (var i = 0; i < events.length; ++i) {
                 var e = events[i];
@@ -519,8 +544,7 @@ var LoggerConfiguration = (function () {
         var _this = this;
         this.pipeline = null;
         this.minLevel = Object.assign(function (level) {
-            _this.pipeline.addStage(new FilterStage(function (e) { return e.level <= level; }));
-            return _this;
+            return _this.filter(function (e) { return e.level <= level; });
         }, {
             fatal: function () { return _this.minLevel(LogEventLevel.fatal); },
             error: function () { return _this.minLevel(LogEventLevel.error); },
@@ -544,6 +568,15 @@ var LoggerConfiguration = (function () {
         }
         else {
             throw new Error('Argument "enricher" must be either a function or an object.');
+        }
+        return this;
+    };
+    LoggerConfiguration.prototype.filter = function (predicate) {
+        if (predicate instanceof Function) {
+            this.pipeline.addStage(new FilterStage(predicate));
+        }
+        else {
+            throw new Error('Argument "predicate" must be a function.');
         }
         return this;
     };
