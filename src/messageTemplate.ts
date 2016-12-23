@@ -8,11 +8,14 @@ interface Token {
 }
 
 export default class MessageTemplate {
-  private template: string;
+  public get raw() {
+    return this._raw;
+  }
+  private _raw: string;
   private tokens: Token[];
 
   constructor(messageTemplate: string) {
-    this.template = messageTemplate;
+    this._raw = messageTemplate;
     this.tokens = this.tokenize(messageTemplate);
   }
 
@@ -23,7 +26,7 @@ export default class MessageTemplate {
    */
   public render(properties?: Object): string {
     if (!this.tokens.length) {
-      return this.template;
+      return this._raw;
     }
     const result = [];
     for (var i = 0; i < this.tokens.length; ++i) {

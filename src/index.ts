@@ -12,7 +12,7 @@ export { ConsoleSink } from './consoleSink';
 
 type Predicate<T> = (T) => boolean;
 
-interface IMinLevel {
+export interface IMinLevel {
   (level: LogEventLevel): LoggerConfiguration;
   fatal(): LoggerConfiguration;
   error(): LoggerConfiguration;

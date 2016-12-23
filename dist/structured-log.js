@@ -219,9 +219,16 @@ var Sink = (function () {
 var tokenizer = /\{@?\w+}/g;
 var MessageTemplate = (function () {
     function MessageTemplate(messageTemplate) {
-        this.template = messageTemplate;
+        this._raw = messageTemplate;
         this.tokens = this.tokenize(messageTemplate);
     }
+    Object.defineProperty(MessageTemplate.prototype, "raw", {
+        get: function () {
+            return this._raw;
+        },
+        enumerable: true,
+        configurable: true
+    });
     /**
      * Renders this template using the given properties.
      * @param {Object?} properties Object containing the properties.
@@ -229,7 +236,7 @@ var MessageTemplate = (function () {
      */
     MessageTemplate.prototype.render = function (properties) {
         if (!this.tokens.length) {
-            return this.template;
+            return this._raw;
         }
         var result = [];
         for (var i = 0; i < this.tokens.length; ++i) {

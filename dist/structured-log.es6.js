@@ -191,8 +191,11 @@ class Sink {
 
 const tokenizer = /\{@?\w+}/g;
 class MessageTemplate {
+    get raw() {
+        return this._raw;
+    }
     constructor(messageTemplate) {
-        this.template = messageTemplate;
+        this._raw = messageTemplate;
         this.tokens = this.tokenize(messageTemplate);
     }
     /**
@@ -202,7 +205,7 @@ class MessageTemplate {
      */
     render(properties) {
         if (!this.tokens.length) {
-            return this.template;
+            return this._raw;
         }
         const result = [];
         for (var i = 0; i < this.tokens.length; ++i) {
