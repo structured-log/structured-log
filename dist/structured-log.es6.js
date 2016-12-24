@@ -426,6 +426,55 @@ class SinkStage extends PipelineStage {
     }
 }
 
+class LoggerConfiguration {
+    constructor() {
+        this.pipeline = null;
+        this.minLevel = Object.assign((level) => {
+            return this.filter(e => e.level <= level);
+        }, {
+            fatal: () => this.minLevel(LogEventLevel.fatal),
+            error: () => this.minLevel(LogEventLevel.error),
+            warning: () => this.minLevel(LogEventLevel.warning),
+            information: () => this.minLevel(LogEventLevel.information),
+            debug: () => this.minLevel(LogEventLevel.debug),
+            verbose: () => this.minLevel(LogEventLevel.verbose)
+        });
+        this.pipeline = new Pipeline();
+    }
+    writeTo(sink) {
+        this.pipeline.addStage(new SinkStage(sink));
+        return this;
+    }
+    enrich(enricher) {
+        if (enricher instanceof Function) {
+            this.pipeline.addStage(new EnrichStage(enricher));
+        }
+        else if (enricher instanceof Object) {
+            this.pipeline.addStage(new EnrichStage(() => enricher));
+        }
+        else {
+            throw new Error('Argument "enricher" must be either a function or an object.');
+        }
+        return this;
+    }
+    filter(predicate) {
+        if (predicate instanceof Function) {
+            this.pipeline.addStage(new FilterStage(predicate));
+        }
+        else {
+            throw new Error('Argument "predicate" must be a function.');
+        }
+        return this;
+    }
+    create(yieldErrors = false) {
+        if (!this.pipeline) {
+            throw new Error('The logger for this configuration has already been created.');
+        }
+        this.pipeline.yieldErrors = yieldErrors;
+        return new Logger(this.pipeline);
+    }
+}
+
 const consoleProxy = {
     error: (typeof console !== 'undefined' && console && (console.error || console.log)) || function () { },
     warn: (typeof console !== 'undefined' && console && (console.warn || console.log)) || function () { },
@@ -482,56 +531,8 @@ class ConsoleSink extends Sink {
     }
 }
 
-class LoggerConfiguration {
-    constructor() {
-        this.pipeline = null;
-        this.minLevel = Object.assign((level) => {
-            return this.filter(e => e.level <= level);
-        }, {
-            fatal: () => this.minLevel(LogEventLevel.fatal),
-            error: () => this.minLevel(LogEventLevel.error),
-            warning: () => this.minLevel(LogEventLevel.warning),
-            information: () => this.minLevel(LogEventLevel.information),
-            debug: () => this.minLevel(LogEventLevel.debug),
-            verbose: () => this.minLevel(LogEventLevel.verbose)
-        });
-        this.pipeline = new Pipeline();
-    }
-    writeTo(sink) {
-        this.pipeline.addStage(new SinkStage(sink));
-        return this;
-    }
-    enrich(enricher) {
-        if (enricher instanceof Function) {
-            this.pipeline.addStage(new EnrichStage(enricher));
-        }
-        else if (enricher instanceof Object) {
-            this.pipeline.addStage(new EnrichStage(() => enricher));
-        }
-        else {
-            throw new Error('Argument "enricher" must be either a function or an object.');
-        }
-        return this;
-    }
-    filter(predicate) {
-        if (predicate instanceof Function) {
-            this.pipeline.addStage(new FilterStage(predicate));
-        }
-        else {
-            throw new Error('Argument "predicate" must be a function.');
-        }
-        return this;
-    }
-    create(yieldErrors = false) {
-        if (!this.pipeline) {
-            throw new Error('The logger for this configuration has already been created.');
-        }
-        this.pipeline.yieldErrors = yieldErrors;
-        return new Logger(this.pipeline);
-    }
-}
 function configure() {
     return new LoggerConfiguration();
 }
 
-export { configure, LoggerConfiguration, ConsoleSink };
+export { LoggerConfiguration, configure, ConsoleSink };
