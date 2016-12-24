@@ -12,7 +12,7 @@ import { ILogEvent, LogEventLevel } from '../src/logEvent';
 
 describe('Pipeline', () => {
 
-  describe('addStage', () => {
+  describe('addStage()', () => {
     it('connects stages to the pipeline in the correct order', () => {
       class PassThroughStage extends PipelineStage {
         private emitCallback: Function;

@@ -51,16 +51,4 @@ describe('EnrichStage', () => {
         });
     });
   });
-
-  describe('flush()', () => {
-    it('calls flush on the next stage', () => {
-      const mockStage = TypeMoq.Mock.ofType<PipelineStage>();
-      mockStage.setup(m => m.flush()).returns(() => Promise.resolve());
-      const enrichStage = new EnrichStage(() => ({}));
-      enrichStage.next = mockStage.object;
-
-      return enrichStage.flush()
-        .then(() => mockStage.verify(m => m.flush(), TypeMoq.Times.once()));
-    });
-  });
 });

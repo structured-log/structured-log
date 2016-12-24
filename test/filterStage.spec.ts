@@ -50,16 +50,4 @@ describe('FilterStage', () => {
         .then(() => mockStage.verify(m => m.emit(TypeMoq.It.isAny()), TypeMoq.Times.once()));
     });
   });
-
-  describe('flush()', () => {
-    it('calls flush on the next stage', () => {
-      const mockStage = TypeMoq.Mock.ofType<PipelineStage>();
-      mockStage.setup(m => m.flush()).returns(() => Promise.resolve());
-      const filterStage = new FilterStage(() => true);
-      filterStage.next = mockStage.object;
-
-      return filterStage.flush()
-        .then(() => mockStage.verify(m => m.flush(), TypeMoq.Times.once()));
-    });
-  });
 });
