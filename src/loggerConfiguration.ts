@@ -7,17 +7,13 @@ import { Logger } from './logger';
 import { Sink } from './sink';
 import { SinkStage } from './sinkStage';
 import { ILogEvent, LogEventLevel } from './logEvent';
+import { ILogEventLevelSwitch, LogEventLevelSwitch } from './logEventLevelSwitch';
 
 type Predicate<T> = (T) => boolean;
+type ObjectFactory = () => Object;
 
-export interface IMinLevel {
-  (level: LogEventLevel): LoggerConfiguration;
-  fatal(): LoggerConfiguration;
-  error(): LoggerConfiguration;
-  warning(): LoggerConfiguration;
-  information(): LoggerConfiguration;
-  debug(): LoggerConfiguration;
-  verbose(): LoggerConfiguration;
+export interface IMinLevel<T> extends ILogEventLevelSwitch<T> {
+  (level: LogEventLevel): T;
 }
 
 export class LoggerConfiguration {
@@ -32,8 +28,10 @@ export class LoggerConfiguration {
     return this;
   }
 
-  public minLevel: IMinLevel = Object.assign((level: LogEventLevel): LoggerConfiguration => {
-    return this.filter(e => e.level <= level);
+  public minLevel: IMinLevel<LoggerConfiguration> = Object.assign((levelOrLevelSwitch: LogEventLevel | LogEventLevelSwitch): LoggerConfiguration => {
+    return levelOrLevelSwitch instanceof LogEventLevelSwitch
+      ? this.filter(levelOrLevelSwitch.filter.bind(levelOrLevelSwitch))
+      : this.filter(e => e.level <= levelOrLevelSwitch);
   }, {
     fatal: () => this.minLevel(LogEventLevel.fatal),
     error: () => this.minLevel(LogEventLevel.error),
@@ -43,7 +41,7 @@ export class LoggerConfiguration {
     verbose: () => this.minLevel(LogEventLevel.verbose)
   });
 
-  public enrich(enricher: any): LoggerConfiguration {
+  public enrich(enricher: Object | ObjectFactory): LoggerConfiguration {
     if (enricher instanceof Function) {
       this.pipeline.addStage(new EnrichStage(enricher));
     } else if (enricher instanceof Object) {

@@ -115,6 +115,7 @@ class PipelineStage {
          * Points to the next stage in the pipeline.
          */
         this.next = null;
+        this.deterministicEmit = Promise.resolve();
     }
     /**
      * Emits events to this pipeline stage, as well as the next stage in the pipeline (if any).
@@ -123,7 +124,7 @@ class PipelineStage {
      * pipeline stages have resolved.
      */
     emit(events) {
-        return this.next ? this.next.emit(events) : Promise.resolve();
+        return this.deterministicEmit = this.deterministicEmit.then(() => this.next ? this.next.emit(events) : Promise.resolve());
     }
     /**
      * Flushes this pipeline stage, as well as the next stage in the pipeline (if any).
@@ -131,7 +132,7 @@ class PipelineStage {
      * pipeline stages have been flushed.
      */
     flush() {
-        return this.next ? this.next.flush() : Promise.resolve();
+        return Promise.all([this.deterministicEmit, this.next ? this.next.flush() : Promise.resolve()]);
     }
 }
 
@@ -416,21 +417,77 @@ class SinkStage extends PipelineStage {
      * pipeline stages have resolved.
      */
     emit(events) {
-        return Promise.all([super.emit(events), this.sink.emit(events)]);
+        return Promise.all([this.sink.emit(events), super.emit(events)]);
     }
     /**
      * Flushes the sink, as well as the next stage in the pipeline (if any).
      */
     flush() {
-        return Promise.all([super.flush(), this.sink.flush()]);
+        return Promise.all([this.sink.flush(), super.flush()]);
+    }
+}
+
+/**
+ * Dynamically filters events based on a minimum log level.
+ */
+class LogEventLevelSwitch {
+    constructor(initialLevel) {
+        /**
+         * Returns true if an event is at or below the minimum level of this switch.
+         */
+        this.filter = (event) => this.isEnabled(event.level);
+        this.currentLevel = initialLevel || LogEventLevel.verbose;
+    }
+    /**
+     * Sets the minimum level for events passing through this switch to Fatal.
+     */
+    fatal() {
+        this.currentLevel = LogEventLevel.fatal;
+    }
+    /**
+     * Sets the minimum level for events passing through this switch to Error.
+     */
+    error() {
+        this.currentLevel = LogEventLevel.error;
+    }
+    /**
+     * Sets the minimum level for events passing through this switch to Warning.
+     */
+    warning() {
+        this.currentLevel = LogEventLevel.warning;
+    }
+    /**
+     * Sets the minimum level for events passing through this switch to Information.
+     */
+    information() {
+        this.currentLevel = LogEventLevel.information;
+    }
+    /**
+   * Sets the minimum level for events passing through this switch to Debug.
+   */
+    debug() {
+        this.currentLevel = LogEventLevel.debug;
+    }
+    /**
+   * Sets the minimum level for events passing through this switch to Verbose.
+   */
+    verbose() {
+        this.currentLevel = LogEventLevel.verbose;
+    }
+    /**
+     * Returns true if a level is at or below the minimum level of this switch.
+     */
+    isEnabled(level) {
+        return level <= this.currentLevel;
     }
 }
 
 class LoggerConfiguration {
-    constructor() {
-        this.pipeline = null;
-        this.minLevel = Object.assign((level) => {
-            return this.filter(e => e.level <= level);
+    constructor(pipeline) {
+        this.minLevel = Object.assign((levelOrLevelSwitch) => {
+            return levelOrLevelSwitch instanceof LogEventLevelSwitch
+                ? this.filter(levelOrLevelSwitch.filter.bind(levelOrLevelSwitch))
+                : this.filter(e => e.level <= levelOrLevelSwitch);
         }, {
             fatal: () => this.minLevel(LogEventLevel.fatal),
             error: () => this.minLevel(LogEventLevel.error),
@@ -439,7 +496,7 @@ class LoggerConfiguration {
             debug: () => this.minLevel(LogEventLevel.debug),
             verbose: () => this.minLevel(LogEventLevel.verbose)
         });
-        this.pipeline = new Pipeline();
+        this.pipeline = pipeline || new Pipeline();
     }
     writeTo(sink) {
         this.pipeline.addStage(new SinkStage(sink));
@@ -471,7 +528,9 @@ class LoggerConfiguration {
             throw new Error('The logger for this configuration has already been created.');
         }
         this.pipeline.yieldErrors = yieldErrors;
-        return new Logger(this.pipeline);
+        const pipeline = this.pipeline;
+        this.pipeline = null;
+        return new Logger(pipeline);
     }
 }
 
@@ -535,4 +594,5 @@ function configure() {
     return new LoggerConfiguration();
 }
 
-export { LoggerConfiguration, configure, ConsoleSink };
+export { LoggerConfiguration, configure, ConsoleSink, LogEventLevelSwitch };
+//# sourceMappingURL=structured-log.es6.js.map

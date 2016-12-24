@@ -8,5 +8,6 @@ export default {
     target: 'es6',
     typescript: require('typescript')
   })],
-  moduleName: 'structuredLog'
+  moduleName: 'structuredLog',
+  sourceMap: true
 }
