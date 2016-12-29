@@ -115,7 +115,7 @@ class PipelineStage {
          * Points to the next stage in the pipeline.
          */
         this.next = null;
-        this.deterministicEmit = Promise.resolve();
+        this.chain = Promise.resolve();
     }
     /**
      * Emits events to this pipeline stage, as well as the next stage in the pipeline (if any).
@@ -124,7 +124,7 @@ class PipelineStage {
      * pipeline stages have resolved.
      */
     emit(events) {
-        return this.deterministicEmit = this.deterministicEmit.then(() => this.next ? this.next.emit(events) : Promise.resolve());
+        return this.chain = this.chain.then(() => this.next ? this.next.emit(events) : Promise.resolve());
     }
     /**
      * Flushes this pipeline stage, as well as the next stage in the pipeline (if any).
@@ -132,7 +132,7 @@ class PipelineStage {
      * pipeline stages have been flushed.
      */
     flush() {
-        return Promise.all([this.deterministicEmit, this.next ? this.next.flush() : Promise.resolve()]);
+        return this.chain = this.chain.then(() => this.next ? this.next.flush() : Promise.resolve());
     }
 }
 
@@ -147,7 +147,7 @@ class FilterStage extends PipelineStage {
         }
         return Promise.resolve()
             .then(() => events.filter(this.filter))
-            .then(filteredEvents => this.next.emit(filteredEvents));
+            .then(filteredEvents => super.emit(filteredEvents));
     }
 }
 
@@ -168,7 +168,7 @@ class EnrichStage extends PipelineStage {
             }
             return events;
         })
-            .then(enrichedEvents => this.next.emit(enrichedEvents));
+            .then(enrichedEvents => super.emit(enrichedEvents));
     }
 }
 
@@ -417,13 +417,13 @@ class SinkStage extends PipelineStage {
      * pipeline stages have resolved.
      */
     emit(events) {
-        return Promise.all([this.sink.emit(events), super.emit(events)]);
+        return Promise.all([super.emit(events), this.sink.emit(events)]);
     }
     /**
      * Flushes the sink, as well as the next stage in the pipeline (if any).
      */
     flush() {
-        return Promise.all([this.sink.flush(), super.flush()]);
+        return Promise.all([super.flush(), this.sink.flush()]);
     }
 }
 
@@ -432,6 +432,7 @@ class SinkStage extends PipelineStage {
  */
 class LogEventLevelSwitch {
     constructor(initialLevel) {
+        this.flushCallback = () => Promise.resolve();
         /**
          * Returns true if an event is at or below the minimum level of this switch.
          */
@@ -442,37 +443,37 @@ class LogEventLevelSwitch {
      * Sets the minimum level for events passing through this switch to Fatal.
      */
     fatal() {
-        this.currentLevel = LogEventLevel.fatal;
+        return this.setLevel(LogEventLevel.fatal);
     }
     /**
      * Sets the minimum level for events passing through this switch to Error.
      */
     error() {
-        this.currentLevel = LogEventLevel.error;
+        return this.setLevel(LogEventLevel.error);
     }
     /**
      * Sets the minimum level for events passing through this switch to Warning.
      */
     warning() {
-        this.currentLevel = LogEventLevel.warning;
+        return this.setLevel(LogEventLevel.warning);
     }
     /**
      * Sets the minimum level for events passing through this switch to Information.
      */
     information() {
-        this.currentLevel = LogEventLevel.information;
+        return this.setLevel(LogEventLevel.information);
     }
     /**
    * Sets the minimum level for events passing through this switch to Debug.
    */
     debug() {
-        this.currentLevel = LogEventLevel.debug;
+        return this.setLevel(LogEventLevel.debug);
     }
     /**
    * Sets the minimum level for events passing through this switch to Verbose.
    */
     verbose() {
-        this.currentLevel = LogEventLevel.verbose;
+        return this.setLevel(LogEventLevel.verbose);
     }
     /**
      * Returns true if a level is at or below the minimum level of this switch.
@@ -480,13 +481,22 @@ class LogEventLevelSwitch {
     isEnabled(level) {
         return level <= this.currentLevel;
     }
+    /**
+     * Sets a callback to flush events already in the pipeline before changing the current level.
+     */
+    setFlushCallback(flushCallback) {
+        this.flushCallback = flushCallback;
+    }
+    setLevel(level) {
+        return this.flushCallback().then(() => this.currentLevel = level);
+    }
 }
 
 class LoggerConfiguration {
     constructor(pipeline) {
         this.minLevel = Object.assign((levelOrLevelSwitch) => {
             return levelOrLevelSwitch instanceof LogEventLevelSwitch
-                ? this.filter(levelOrLevelSwitch.filter.bind(levelOrLevelSwitch))
+                ? this.filter(levelOrLevelSwitch.filter.bind(levelOrLevelSwitch), levelOrLevelSwitch.setFlushCallback.bind(levelOrLevelSwitch))
                 : this.filter(e => e.level <= levelOrLevelSwitch);
         }, {
             fatal: () => this.minLevel(LogEventLevel.fatal),
@@ -514,9 +524,13 @@ class LoggerConfiguration {
         }
         return this;
     }
-    filter(predicate) {
+    filter(predicate, setFlushCallback) {
         if (predicate instanceof Function) {
-            this.pipeline.addStage(new FilterStage(predicate));
+            const filterStage = new FilterStage(predicate);
+            if (!!setFlushCallback && setFlushCallback instanceof Function) {
+                setFlushCallback(filterStage.flush.bind(filterStage));
+            }
+            this.pipeline.addStage(filterStage);
         }
         else {
             throw new Error('Argument "predicate" must be a function.');

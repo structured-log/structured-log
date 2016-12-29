@@ -14,6 +14,7 @@ export interface ILogEventLevelSwitch<T> {
  */
 export class LogEventLevelSwitch implements ILogEventLevelSwitch<void> {
   private currentLevel: LogEventLevel;
+  private flushCallback = () => Promise.resolve();
   constructor(initialLevel?: LogEventLevel) {
     this.currentLevel = initialLevel || LogEventLevel.verbose;
   }
@@ -22,42 +23,42 @@ export class LogEventLevelSwitch implements ILogEventLevelSwitch<void> {
    * Sets the minimum level for events passing through this switch to Fatal.
    */
   public fatal() {
-    this.currentLevel = LogEventLevel.fatal;
+    return this.setLevel(LogEventLevel.fatal);
   }
 
   /**
    * Sets the minimum level for events passing through this switch to Error.
    */
   public error() {
-    this.currentLevel = LogEventLevel.error;
+    return this.setLevel(LogEventLevel.error);
   }
 
   /**
    * Sets the minimum level for events passing through this switch to Warning.
    */
   public warning() {
-    this.currentLevel = LogEventLevel.warning;
+    return this.setLevel(LogEventLevel.warning);
   }
 
   /**
    * Sets the minimum level for events passing through this switch to Information.
    */
   public information() {
-    this.currentLevel = LogEventLevel.information;
+    return this.setLevel(LogEventLevel.information);
   }
   
     /**
    * Sets the minimum level for events passing through this switch to Debug.
    */
   public debug() {
-    this.currentLevel = LogEventLevel.debug;
+    return this.setLevel(LogEventLevel.debug);
   }
   
     /**
    * Sets the minimum level for events passing through this switch to Verbose.
    */
   public verbose() {
-    this.currentLevel = LogEventLevel.verbose;
+    return this.setLevel(LogEventLevel.verbose);
   }
 
   /**
@@ -70,5 +71,16 @@ export class LogEventLevelSwitch implements ILogEventLevelSwitch<void> {
    */
   public isEnabled(level: LogEventLevel): boolean {
     return level <= this.currentLevel;
+  }
+
+  /**
+   * Sets a callback to flush events already in the pipeline before changing the current level.
+   */
+  public setFlushCallback(flushCallback: () => Promise<any>) {
+    this.flushCallback = flushCallback;
+  }
+
+  private setLevel(level: LogEventLevel): Promise<any> {
+    return this.flushCallback().then(() => this.currentLevel = level);
   }
 }

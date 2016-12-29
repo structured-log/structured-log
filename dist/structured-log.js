@@ -130,7 +130,7 @@ var PipelineStage = (function () {
          * Points to the next stage in the pipeline.
          */
         this.next = null;
-        this.deterministicEmit = Promise.resolve();
+        this.chain = Promise.resolve();
     }
     /**
      * Emits events to this pipeline stage, as well as the next stage in the pipeline (if any).
@@ -140,7 +140,7 @@ var PipelineStage = (function () {
      */
     PipelineStage.prototype.emit = function (events) {
         var _this = this;
-        return this.deterministicEmit = this.deterministicEmit.then(function () { return _this.next ? _this.next.emit(events) : Promise.resolve(); });
+        return this.chain = this.chain.then(function () { return _this.next ? _this.next.emit(events) : Promise.resolve(); });
     };
     /**
      * Flushes this pipeline stage, as well as the next stage in the pipeline (if any).
@@ -148,7 +148,8 @@ var PipelineStage = (function () {
      * pipeline stages have been flushed.
      */
     PipelineStage.prototype.flush = function () {
-        return Promise.all([this.deterministicEmit, this.next ? this.next.flush() : Promise.resolve()]);
+        var _this = this;
+        return this.chain = this.chain.then(function () { return _this.next ? _this.next.flush() : Promise.resolve(); });
     };
     return PipelineStage;
 }());
@@ -167,7 +168,7 @@ var FilterStage = (function (_super) {
         }
         return Promise.resolve()
             .then(function () { return events.filter(_this.filter); })
-            .then(function (filteredEvents) { return _this.next.emit(filteredEvents); });
+            .then(function (filteredEvents) { return _super.prototype.emit.call(_this, filteredEvents); });
     };
     return FilterStage;
 }(PipelineStage));
@@ -192,7 +193,7 @@ var EnrichStage = (function (_super) {
             }
             return events;
         })
-            .then(function (enrichedEvents) { return _this.next.emit(enrichedEvents); });
+            .then(function (enrichedEvents) { return _super.prototype.emit.call(_this, enrichedEvents); });
     };
     return EnrichStage;
 }(PipelineStage));
@@ -479,13 +480,13 @@ var SinkStage = (function (_super) {
      * pipeline stages have resolved.
      */
     SinkStage.prototype.emit = function (events) {
-        return Promise.all([this.sink.emit(events), _super.prototype.emit.call(this, events)]);
+        return Promise.all([_super.prototype.emit.call(this, events), this.sink.emit(events)]);
     };
     /**
      * Flushes the sink, as well as the next stage in the pipeline (if any).
      */
     SinkStage.prototype.flush = function () {
-        return Promise.all([this.sink.flush(), _super.prototype.flush.call(this)]);
+        return Promise.all([_super.prototype.flush.call(this), this.sink.flush()]);
     };
     return SinkStage;
 }(PipelineStage));
@@ -496,6 +497,7 @@ var SinkStage = (function (_super) {
 var LogEventLevelSwitch = (function () {
     function LogEventLevelSwitch(initialLevel) {
         var _this = this;
+        this.flushCallback = function () { return Promise.resolve(); };
         /**
          * Returns true if an event is at or below the minimum level of this switch.
          */
@@ -506,43 +508,53 @@ var LogEventLevelSwitch = (function () {
      * Sets the minimum level for events passing through this switch to Fatal.
      */
     LogEventLevelSwitch.prototype.fatal = function () {
-        this.currentLevel = LogEventLevel.fatal;
+        return this.setLevel(LogEventLevel.fatal);
     };
     /**
      * Sets the minimum level for events passing through this switch to Error.
      */
     LogEventLevelSwitch.prototype.error = function () {
-        this.currentLevel = LogEventLevel.error;
+        return this.setLevel(LogEventLevel.error);
     };
     /**
      * Sets the minimum level for events passing through this switch to Warning.
      */
     LogEventLevelSwitch.prototype.warning = function () {
-        this.currentLevel = LogEventLevel.warning;
+        return this.setLevel(LogEventLevel.warning);
     };
     /**
      * Sets the minimum level for events passing through this switch to Information.
      */
     LogEventLevelSwitch.prototype.information = function () {
-        this.currentLevel = LogEventLevel.information;
+        return this.setLevel(LogEventLevel.information);
     };
     /**
    * Sets the minimum level for events passing through this switch to Debug.
    */
     LogEventLevelSwitch.prototype.debug = function () {
-        this.currentLevel = LogEventLevel.debug;
+        return this.setLevel(LogEventLevel.debug);
     };
     /**
    * Sets the minimum level for events passing through this switch to Verbose.
    */
     LogEventLevelSwitch.prototype.verbose = function () {
-        this.currentLevel = LogEventLevel.verbose;
+        return this.setLevel(LogEventLevel.verbose);
     };
     /**
      * Returns true if a level is at or below the minimum level of this switch.
      */
     LogEventLevelSwitch.prototype.isEnabled = function (level) {
         return level <= this.currentLevel;
+    };
+    /**
+     * Sets a callback to flush events already in the pipeline before changing the current level.
+     */
+    LogEventLevelSwitch.prototype.setFlushCallback = function (flushCallback) {
+        this.flushCallback = flushCallback;
+    };
+    LogEventLevelSwitch.prototype.setLevel = function (level) {
+        var _this = this;
+        return this.flushCallback().then(function () { return _this.currentLevel = level; });
     };
     return LogEventLevelSwitch;
 }());
@@ -552,7 +564,7 @@ var LoggerConfiguration = (function () {
         var _this = this;
         this.minLevel = Object.assign(function (levelOrLevelSwitch) {
             return levelOrLevelSwitch instanceof LogEventLevelSwitch
-                ? _this.filter(levelOrLevelSwitch.filter.bind(levelOrLevelSwitch))
+                ? _this.filter(levelOrLevelSwitch.filter.bind(levelOrLevelSwitch), levelOrLevelSwitch.setFlushCallback.bind(levelOrLevelSwitch))
                 : _this.filter(function (e) { return e.level <= levelOrLevelSwitch; });
         }, {
             fatal: function () { return _this.minLevel(LogEventLevel.fatal); },
@@ -580,9 +592,13 @@ var LoggerConfiguration = (function () {
         }
         return this;
     };
-    LoggerConfiguration.prototype.filter = function (predicate) {
+    LoggerConfiguration.prototype.filter = function (predicate, setFlushCallback) {
         if (predicate instanceof Function) {
-            this.pipeline.addStage(new FilterStage(predicate));
+            var filterStage = new FilterStage(predicate);
+            if (!!setFlushCallback && setFlushCallback instanceof Function) {
+                setFlushCallback(filterStage.flush.bind(filterStage));
+            }
+            this.pipeline.addStage(filterStage);
         }
         else {
             throw new Error('Argument "predicate" must be a function.');

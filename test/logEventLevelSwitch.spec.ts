@@ -12,31 +12,72 @@ import { LogEventLevelSwitch } from '../src/logEventLevelSwitch';
 
 describe('LogEventLevelSwitch', () => {
   describe('debug()', () => {
-    it('sets the minimum level to Fatal for the switch', () => {
+    it('sets the minimum level to Debug for the switch', () => {
       var levelSwitch = new LogEventLevelSwitch();
-      levelSwitch.debug();
-      expect(levelSwitch.isEnabled(LogEventLevel.debug)).to.be.true;
-      expect(levelSwitch.isEnabled(LogEventLevel.verbose)).to.be.false;
-    })
+      return levelSwitch.debug()
+        .then(() => {
+          expect(levelSwitch.isEnabled(LogEventLevel.debug)).to.be.true;
+          expect(levelSwitch.isEnabled(LogEventLevel.verbose)).to.be.false;
+        });
+    });
+
+    it('calls the injected flush function', () => {
+      var flushWasCalled = false;
+      var flush = () => new Promise(resolve => {
+        flushWasCalled = true;
+        resolve();
+      });
+      var levelSwitch = new LogEventLevelSwitch();
+      levelSwitch.setFlushCallback(flush);
+      return levelSwitch.debug()
+        .then(() => expect(flushWasCalled).to.be.true);
+    });
   });
 
   describe('error()', () => {
     it('sets the minimum level to Error for the switch', () => {
       var levelSwitch = new LogEventLevelSwitch();
-      levelSwitch.error();
-      expect(levelSwitch.isEnabled(LogEventLevel.error)).to.be.true;
-      expect(levelSwitch.isEnabled(LogEventLevel.warning)).to.be.false;
-    })
-  });
+      return levelSwitch.error()
+        .then(() => {
+          expect(levelSwitch.isEnabled(LogEventLevel.error)).to.be.true;
+          expect(levelSwitch.isEnabled(LogEventLevel.warning)).to.be.false;
+        });
+    });
 
+    it('calls the injected flush function', () => {
+      var flushWasCalled = false;
+      var flush = () => new Promise(resolve => {
+        flushWasCalled = true;
+        resolve();
+      });
+      var levelSwitch = new LogEventLevelSwitch();
+      levelSwitch.setFlushCallback(flush);
+      return levelSwitch.error()
+        .then(() => expect(flushWasCalled).to.be.true);
+    });
+  });
 
   describe('fatal()', () => {
     it('sets the minimum level to Fatal for the switch', () => {
       var levelSwitch = new LogEventLevelSwitch();
-      levelSwitch.fatal();
-      expect(levelSwitch.isEnabled(LogEventLevel.fatal)).to.be.true;
-      expect(levelSwitch.isEnabled(LogEventLevel.error)).to.be.false;
-    })
+      return levelSwitch.fatal()
+        .then(() => {
+          expect(levelSwitch.isEnabled(LogEventLevel.fatal)).to.be.true;
+          expect(levelSwitch.isEnabled(LogEventLevel.error)).to.be.false;
+        });
+    });
+
+    it('calls the injected flush function', () => {
+      var flushWasCalled = false;
+      var flush = () => new Promise(resolve => {
+        flushWasCalled = true;
+        resolve();
+      });
+      var levelSwitch = new LogEventLevelSwitch();
+      levelSwitch.setFlushCallback(flush);
+      return levelSwitch.fatal()
+        .then(() => expect(flushWasCalled).to.be.true);
+    });
   });
 
   describe('filter()', () => {
@@ -89,28 +130,68 @@ describe('LogEventLevelSwitch', () => {
   describe('information()', () => {
     it('sets the minimum level to Information for the switch', () => {
       var levelSwitch = new LogEventLevelSwitch();
-      levelSwitch.information();
-      expect(levelSwitch.isEnabled(LogEventLevel.information)).to.be.true;
-      expect(levelSwitch.isEnabled(LogEventLevel.debug)).to.be.false;
-    })
+      return levelSwitch.information()
+        .then(() => {
+          expect(levelSwitch.isEnabled(LogEventLevel.information)).to.be.true;
+          expect(levelSwitch.isEnabled(LogEventLevel.debug)).to.be.false;
+        });
+    });
+
+    it('calls the injected flush function', () => {
+      var flushWasCalled = false;
+      var flush = () => new Promise(resolve => {
+        flushWasCalled = true;
+        resolve();
+      });
+      var levelSwitch = new LogEventLevelSwitch();
+      levelSwitch.setFlushCallback(flush);
+      return levelSwitch.information()
+        .then(() => expect(flushWasCalled).to.be.true);
+    });
   });
 
   describe('verbose()', () => {
     it('sets the minimum level to Verbose for the switch', () => {
       var levelSwitch = new LogEventLevelSwitch();
-      levelSwitch.debug();
-      expect(levelSwitch.isEnabled(LogEventLevel.verbose)).to.be.false;
-      levelSwitch.verbose();
-      expect(levelSwitch.isEnabled(LogEventLevel.verbose)).to.be.true;
-    })
+      return levelSwitch.debug()
+        .then(() => expect(levelSwitch.isEnabled(LogEventLevel.verbose)).to.be.false)
+        .then(() => levelSwitch.verbose())
+        .then(() => expect(levelSwitch.isEnabled(LogEventLevel.verbose)).to.be.true);
+    });
+
+    it('calls the injected flush function', () => {
+      var flushWasCalled = false;
+      var flush = () => new Promise(resolve => {
+        flushWasCalled = true;
+        resolve();
+      });
+      var levelSwitch = new LogEventLevelSwitch();
+      levelSwitch.setFlushCallback(flush);
+      return levelSwitch.verbose()
+        .then(() => expect(flushWasCalled).to.be.true);
+    });
   });
 
   describe('warning()', () => {
     it('sets the minimum level to Warning for the switch', () => {
       var levelSwitch = new LogEventLevelSwitch();
-      levelSwitch.warning();
-      expect(levelSwitch.isEnabled(LogEventLevel.warning)).to.be.true;
-      expect(levelSwitch.isEnabled(LogEventLevel.information)).to.be.false;
-    })
+      return levelSwitch.warning()
+        .then(() => {
+          expect(levelSwitch.isEnabled(LogEventLevel.warning)).to.be.true;
+          expect(levelSwitch.isEnabled(LogEventLevel.information)).to.be.false;
+        });
+    });
+
+    it('calls the injected flush function', () => {
+      var flushWasCalled = false;
+      var flush = () => new Promise(resolve => {
+        flushWasCalled = true;
+        resolve();
+      });
+      var levelSwitch = new LogEventLevelSwitch();
+      levelSwitch.setFlushCallback(flush);
+      return levelSwitch.warning()
+        .then(() => expect(flushWasCalled).to.be.true);
+    });
   });
 });

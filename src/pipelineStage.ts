@@ -10,6 +10,8 @@ export default class PipelineStage {
    */
   public next: PipelineStage = null;
 
+  private chain: Promise<any> = Promise.resolve();
+
   /**
    * Emits events to this pipeline stage, as well as the next stage in the pipeline (if any).
    * @param {LogEvent[]} events The events to emit.
@@ -17,7 +19,7 @@ export default class PipelineStage {
    * pipeline stages have resolved.
    */
   public emit(events: ILogEvent[]): Promise<any> {
-    return this.next ? this.next.emit(events) : Promise.resolve();
+    return this.chain = this.chain.then(() => this.next ? this.next.emit(events) : Promise.resolve());
   }
 
   /**
@@ -26,6 +28,6 @@ export default class PipelineStage {
    * pipeline stages have been flushed.
    */
   public flush(): Promise<any> {
-    return this.next ? this.next.flush() : Promise.resolve();
+    return this.chain = this.chain.then(() => this.next ? this.next.flush() : Promise.resolve());
   }
 }

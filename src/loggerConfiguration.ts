@@ -30,7 +30,7 @@ export class LoggerConfiguration {
 
   public minLevel: IMinLevel<LoggerConfiguration> = Object.assign((levelOrLevelSwitch: LogEventLevel | LogEventLevelSwitch): LoggerConfiguration => {
     return levelOrLevelSwitch instanceof LogEventLevelSwitch
-      ? this.filter(levelOrLevelSwitch.filter.bind(levelOrLevelSwitch))
+      ? this.filter(levelOrLevelSwitch.filter.bind(levelOrLevelSwitch), levelOrLevelSwitch.setFlushCallback.bind(levelOrLevelSwitch))
       : this.filter(e => e.level <= levelOrLevelSwitch);
   }, {
     fatal: () => this.minLevel(LogEventLevel.fatal),
@@ -53,9 +53,13 @@ export class LoggerConfiguration {
     return this;
   }
 
-  public filter(predicate: Predicate<ILogEvent>): LoggerConfiguration {
+  public filter(predicate: Predicate<ILogEvent>, setFlushCallback?: Function): LoggerConfiguration {
     if (predicate instanceof Function) {
-      this.pipeline.addStage(new FilterStage(predicate));
+      const filterStage = new FilterStage(predicate);
+      if (!!setFlushCallback && setFlushCallback instanceof Function) {
+        setFlushCallback(filterStage.flush.bind(filterStage));
+      }
+      this.pipeline.addStage(filterStage);
     } else {
       throw new Error('Argument "predicate" must be a function.');
     }

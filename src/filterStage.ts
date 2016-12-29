@@ -17,6 +17,6 @@ export class FilterStage extends PipelineStage {
 
     return Promise.resolve()
       .then(() => events.filter(this.filter))
-      .then(filteredEvents => this.next.emit(filteredEvents));
+      .then(filteredEvents => super.emit(filteredEvents));
   }
 }

@@ -21,6 +21,6 @@ export class EnrichStage extends PipelineStage {
         }
         return events;
       })
-      .then(enrichedEvents => this.next.emit(enrichedEvents));
+      .then(enrichedEvents => super.emit(enrichedEvents));
   }
 }
