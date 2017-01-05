@@ -216,7 +216,7 @@ class Logger {
         this.pipeline = pipeline;
     }
     /**
-     * Logs an event with the {@link LogEventLevel.fatal} severity.
+     * Logs an event with the {LogEventLevel.fatal} severity.
      * @param {string} messageTemplate Message template for the log event.
      * @param {any[]} properties Properties that can be used to render the message template.
      */
@@ -224,7 +224,7 @@ class Logger {
         this.write(LogEventLevel.fatal, messageTemplate, properties);
     }
     /**
-     * Logs an event with the {@link LogEventLevel.error} severity.
+     * Logs an event with the {LogEventLevel.error} severity.
      * @param {string} messageTemplate Message template for the log event.
      * @param {any[]} properties Properties that can be used to render the message template.
      */
@@ -232,7 +232,7 @@ class Logger {
         this.write(LogEventLevel.error, messageTemplate, properties);
     }
     /**
-     * Logs an event with the {@link LogEventLevel.warning} severity.
+     * Logs an event with the {LogEventLevel.warning} severity.
      * @param {string} messageTemplate Message template for the log event.
      * @param {any[]} properties Properties that can be used to render the message template.
      */
@@ -240,7 +240,7 @@ class Logger {
         this.write(LogEventLevel.warning, messageTemplate, properties);
     }
     /**
-     * Logs an event with the {@link LogEventLevel.information} severity.
+     * Logs an event with the {LogEventLevel.information} severity.
      * @param {string} messageTemplate Message template for the log event.
      * @param {any[]} properties Properties that can be used to render the message template.
      */
@@ -248,7 +248,7 @@ class Logger {
         this.write(LogEventLevel.information, messageTemplate, properties);
     }
     /**
-     * Logs an event with the {@link LogEventLevel.debug} severity.
+     * Logs an event with the {LogEventLevel.debug} severity.
      * @param {string} messageTemplate Message template for the log event.
      * @param {any[]} properties Properties that can be used to render the message template.
      */
@@ -256,7 +256,7 @@ class Logger {
         this.write(LogEventLevel.debug, messageTemplate, properties);
     }
     /**
-     * Logs an event with the {@link LogEventLevel.verbose} severity.
+     * Logs an event with the {LogEventLevel.verbose} severity.
      * @param {string} messageTemplate Message template for the log event.
      * @param {any[]} properties Properties that can be used to render the message template.
      */
@@ -344,6 +344,65 @@ class ConsoleSink {
     }
 }
 
+class FilterStage {
+    constructor(predicate) {
+        this.predicate = predicate;
+    }
+    emit(events) {
+        return events.filter(this.predicate);
+    }
+    flush() {
+        return Promise.resolve();
+    }
+}
+
+/**
+ * Allows dynamic control of the logging level.
+ */
+class DynamicLevelSwitch {
+    constructor() {
+        this.minLevel = null;
+        /**
+         * Gets or sets a delegate that can be called when the pipeline needs to be flushed.
+         * This should generally not be modified, as it will be provided by the pipeline stage.
+         */
+        this.flushDelegate = () => Promise.resolve();
+    }
+    fatal() {
+        return this.flushDelegate().then(() => this.minLevel = LogEventLevel.fatal);
+    }
+    error() {
+        return this.flushDelegate().then(() => this.minLevel = LogEventLevel.error);
+    }
+    warning() {
+        return this.flushDelegate().then(() => this.minLevel = LogEventLevel.warning);
+    }
+    information() {
+        return this.flushDelegate().then(() => this.minLevel = LogEventLevel.information);
+    }
+    debug() {
+        return this.flushDelegate().then(() => this.minLevel = LogEventLevel.debug);
+    }
+    verbose() {
+        return this.flushDelegate().then(() => this.minLevel = LogEventLevel.verbose);
+    }
+    isEnabled(level) {
+        return this.minLevel === null || isEnabled(this.minLevel, level);
+    }
+}
+class DynamicLevelSwitchStage extends FilterStage {
+    /**
+     * Sets a delegate that can be called when the pipeline needs to be flushed.
+     */
+    setFlushDelegate(flushDelegate) {
+        this.dynamicLevelSwitch.flushDelegate = flushDelegate;
+    }
+    constructor(dynamicLevelSwitch) {
+        super(e => dynamicLevelSwitch.isEnabled(e.level));
+        this.dynamicLevelSwitch = dynamicLevelSwitch;
+    }
+}
+
 class Pipeline {
     constructor() {
         this.stages = [];
@@ -407,18 +466,6 @@ class Pipeline {
     }
 }
 
-class FilterStage {
-    constructor(predicate) {
-        this.predicate = predicate;
-    }
-    emit(events) {
-        return events.filter(this.predicate);
-    }
-    flush() {
-        return Promise.resolve();
-    }
-}
-
 class SinkStage {
     constructor(sink) {
         this.sink = sink;
@@ -448,13 +495,35 @@ class EnrichStage {
     }
 }
 
+/**
+ * Configures pipelines for new logger instances.
+ */
 class LoggerConfiguration {
     constructor() {
         /**
          * Sets the minimum level for any subsequent stages in the pipeline.
          */
-        this.minLevel = Object.assign((level) => {
-            return this.filter(e => isEnabled(level, e.level));
+        this.minLevel = Object.assign((levelOrSwitch) => {
+            if (typeof levelOrSwitch === 'undefined' || levelOrSwitch === null) {
+                throw new TypeError('Argument "levelOrSwitch" is not a valid LogEventLevel value or DynamicLevelSwitch instance.');
+            }
+            else if (levelOrSwitch instanceof DynamicLevelSwitch) {
+                const switchStage = new DynamicLevelSwitchStage(levelOrSwitch);
+                const flush = this.pipeline.flush;
+                switchStage.setFlushDelegate(() => this.pipeline.flush());
+                this.pipeline.addStage(switchStage);
+                return this;
+            }
+            else if (typeof levelOrSwitch === 'string') {
+                const level = LogEventLevel[levelOrSwitch.toLowerCase()];
+                if (typeof level === 'undefined') {
+                    throw new TypeError('Argument "levelOrSwitch" is not a valid LogEventLevel value.');
+                }
+                return this.filter(e => isEnabled(level, e.level));
+            }
+            else {
+                return this.filter(e => isEnabled(levelOrSwitch, e.level));
+            }
         }, {
             fatal: () => this.minLevel(LogEventLevel.fatal),
             error: () => this.minLevel(LogEventLevel.error),
@@ -482,7 +551,7 @@ class LoggerConfiguration {
             this.pipeline.addStage(new FilterStage(predicate));
         }
         else {
-            throw new Error('Argument "predicate" must be a function.');
+            throw new TypeError('Argument "predicate" must be a function.');
         }
         return this;
     }
@@ -494,7 +563,7 @@ class LoggerConfiguration {
             this.pipeline.addStage(new EnrichStage(enricher));
         }
         else {
-            throw new Error('Argument "enricher" must be either a function or an object.');
+            throw new TypeError('Argument "enricher" must be either a function or an object.');
         }
         return this;
     }
@@ -510,5 +579,5 @@ function configure() {
     return new LoggerConfiguration();
 }
 
-export { configure, LoggerConfiguration, LogEventLevel, Logger, ConsoleSink };
+export { configure, LoggerConfiguration, LogEventLevel, Logger, ConsoleSink, DynamicLevelSwitch };
 //# sourceMappingURL=structured-log.es6.js.map

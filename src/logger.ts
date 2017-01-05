@@ -17,7 +17,7 @@ export class Logger implements Sink {
   }
 
   /**
-   * Logs an event with the {@link LogEventLevel.fatal} severity.
+   * Logs an event with the {LogEventLevel.fatal} severity.
    * @param {string} messageTemplate Message template for the log event.
    * @param {any[]} properties Properties that can be used to render the message template.
    */
@@ -26,7 +26,7 @@ export class Logger implements Sink {
   }
   
   /**
-   * Logs an event with the {@link LogEventLevel.error} severity.
+   * Logs an event with the {LogEventLevel.error} severity.
    * @param {string} messageTemplate Message template for the log event.
    * @param {any[]} properties Properties that can be used to render the message template.
    */
@@ -35,7 +35,7 @@ export class Logger implements Sink {
   }
   
   /**
-   * Logs an event with the {@link LogEventLevel.warning} severity.
+   * Logs an event with the {LogEventLevel.warning} severity.
    * @param {string} messageTemplate Message template for the log event.
    * @param {any[]} properties Properties that can be used to render the message template.
    */
@@ -44,7 +44,7 @@ export class Logger implements Sink {
   }
   
   /**
-   * Logs an event with the {@link LogEventLevel.information} severity.
+   * Logs an event with the {LogEventLevel.information} severity.
    * @param {string} messageTemplate Message template for the log event.
    * @param {any[]} properties Properties that can be used to render the message template.
    */
@@ -53,7 +53,7 @@ export class Logger implements Sink {
   }
   
   /**
-   * Logs an event with the {@link LogEventLevel.debug} severity.
+   * Logs an event with the {LogEventLevel.debug} severity.
    * @param {string} messageTemplate Message template for the log event.
    * @param {any[]} properties Properties that can be used to render the message template.
    */
@@ -62,7 +62,7 @@ export class Logger implements Sink {
   }
   
   /**
-   * Logs an event with the {@link LogEventLevel.verbose} severity.
+   * Logs an event with the {LogEventLevel.verbose} severity.
    * @param {string} messageTemplate Message template for the log event.
    * @param {any[]} properties Properties that can be used to render the message template.
    */

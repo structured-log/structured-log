@@ -1,20 +1,18 @@
 import { Pipeline } from './pipeline';
 import { Logger } from './logger';
-import { LogEvent, LogEventLevel, isEnabled } from './logEvent';
+import { LogEvent, LogEventLevel, isEnabled, LogEventLevelSwitch } from './logEvent';
+import { DynamicLevelSwitch, DynamicLevelSwitchStage } from './dynamicLevelSwitch';
 import { FilterStage } from './filterStage';
 import { Sink, SinkStage } from './sink';
 import { EnrichStage, ObjectFactory } from './enrichStage';
 
-export interface LogEventLevelSwitch<T> {
-  (level: LogEventLevel): T;
-  fatal(): T;
-  error(): T;
-  warning(): T;
-  information(): T;
-  debug(): T;
-  verbose(): T;
+interface MinLevel extends LogEventLevelSwitch<LoggerConfiguration> {
+  (levelOrSwitch: LogEventLevel | string | number | DynamicLevelSwitch): LoggerConfiguration;
 }
 
+/**
+ * Configures pipelines for new logger instances.
+ */
 export class LoggerConfiguration {
   private pipeline: Pipeline;
 
@@ -34,8 +32,24 @@ export class LoggerConfiguration {
   /**
    * Sets the minimum level for any subsequent stages in the pipeline.
    */
-  minLevel: LogEventLevelSwitch<LoggerConfiguration> = Object.assign((level: LogEventLevel): LoggerConfiguration => {
-    return this.filter(e => isEnabled(level, e.level));
+  minLevel: MinLevel = Object.assign((levelOrSwitch: LogEventLevel | string | number | DynamicLevelSwitch): LoggerConfiguration => {
+    if (typeof levelOrSwitch === 'undefined' || levelOrSwitch === null) {
+      throw new TypeError('Argument "levelOrSwitch" is not a valid LogEventLevel value or DynamicLevelSwitch instance.');
+    } else if (levelOrSwitch instanceof DynamicLevelSwitch) {
+      const switchStage = new DynamicLevelSwitchStage(levelOrSwitch);
+      const flush = this.pipeline.flush;
+      switchStage.setFlushDelegate(() => this.pipeline.flush());
+      this.pipeline.addStage(switchStage);
+      return this;
+    } else if (typeof levelOrSwitch === 'string') {
+      const level = <LogEventLevel>LogEventLevel[levelOrSwitch.toLowerCase()];
+      if (typeof level === 'undefined') {
+        throw new TypeError('Argument "levelOrSwitch" is not a valid LogEventLevel value.');
+      }
+      return this.filter(e => isEnabled(level, e.level));
+    } else {
+      return this.filter(e => isEnabled(levelOrSwitch, e.level));
+    }
   }, {
     fatal: () =>        this.minLevel(LogEventLevel.fatal),
     error: () =>        this.minLevel(LogEventLevel.error),
@@ -53,7 +67,7 @@ export class LoggerConfiguration {
     if (predicate instanceof Function) {
       this.pipeline.addStage(new FilterStage(predicate));
     } else {
-      throw new Error('Argument "predicate" must be a function.');
+      throw new TypeError('Argument "predicate" must be a function.');
     }
     return this;
   }
@@ -65,7 +79,7 @@ export class LoggerConfiguration {
     if (enricher instanceof Function || enricher instanceof Object) {
       this.pipeline.addStage(new EnrichStage(enricher));
     } else {
-      throw new Error('Argument "enricher" must be either a function or an object.');
+      throw new TypeError('Argument "enricher" must be either a function or an object.');
     }
 
     return this;

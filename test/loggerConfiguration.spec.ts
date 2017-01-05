@@ -9,6 +9,7 @@ import { Logger } from '../src/logger';
 import { LogEventLevel } from '../src/logEvent';
 import { Pipeline, PipelineStage } from '../src/pipeline';
 import { Sink, SinkStage } from '../src/sink';
+import { DynamicLevelSwitch } from '../src/dynamicLevelSwitch';
 
 describe('LoggerConfiguration', () => {
   describe('create()', () => {
@@ -64,7 +65,13 @@ describe('LoggerConfiguration', () => {
   });
 
   describe('minLevel()', () => {
-    it('sets the specified minimum level', () => {
+    it('throws if no level or switch is provided', () => {
+      const loggerConfiguration = new LoggerConfiguration();
+      expect(() => loggerConfiguration.minLevel(undefined)).to.throw();
+      expect(() => loggerConfiguration.minLevel(null)).to.throw();
+    });
+
+    it('sets the minimum level', () => {
       let emittedEvents = [];
       const sink = TypeMoq.Mock.ofType<Sink>();
       sink.setup(m => m.emit(TypeMoq.It.isAny())).callback(events => emittedEvents = emittedEvents.concat(events));
@@ -83,6 +90,82 @@ describe('LoggerConfiguration', () => {
         expect(emittedEvents[0]).to.have.deep.property('messageTemplate.raw', 'A is the first letter');
         expect(emittedEvents[1]).to.have.deep.property('messageTemplate.raw', 'C is the third letter');
       });
+    });
+
+    it('sets the minimum by bit flags', () => {
+      let emittedEvents = [];
+      const sink = TypeMoq.Mock.ofType<Sink>();
+      sink.setup(m => m.emit(TypeMoq.It.isAny())).callback(events => emittedEvents = emittedEvents.concat(events));
+
+      const logger = new LoggerConfiguration()
+        .minLevel(23)
+        .writeTo(sink.object)
+        .create();
+
+      logger.error('A is the first letter');
+      logger.info('B is the second letter');
+      logger.debug('C is the third letter');
+      logger.warn('D is the fourth letter');
+
+      return logger.flush().then(() => {
+        expect(emittedEvents).to.have.length(2);
+        expect(emittedEvents[0]).to.have.deep.property('messageTemplate.raw', 'A is the first letter');
+        expect(emittedEvents[1]).to.have.deep.property('messageTemplate.raw', 'D is the fourth letter');
+      });
+    });
+
+    it('sets the minimum level by label (case-insensitive)', () => {
+      let emittedEvents = [];
+      const sink = TypeMoq.Mock.ofType<Sink>();
+      sink.setup(m => m.emit(TypeMoq.It.isAny())).callback(events => emittedEvents = emittedEvents.concat(events));
+
+      const logger = new LoggerConfiguration()
+        .minLevel('WaRninG')
+        .writeTo(sink.object)
+        .create();
+
+      logger.fatal('A is the first letter');
+      logger.warn('B is the second letter');
+      logger.info('C is the third letter');
+
+      return logger.flush().then(() => {
+        expect(emittedEvents).to.have.length(2);
+        expect(emittedEvents[0]).to.have.deep.property('messageTemplate.raw', 'A is the first letter');
+        expect(emittedEvents[1]).to.have.deep.property('messageTemplate.raw', 'B is the second letter');
+      });
+    });
+
+    it('throws if an invalid label is provided', () => {
+      const loggerConfiguration = new LoggerConfiguration();
+      expect(() => loggerConfiguration.minLevel('oogabooga')).to.throw();
+    });
+
+    it('sets the specified dynamic switch', () => {
+      let emittedEvents = [];
+      const sink = TypeMoq.Mock.ofType<Sink>();
+      sink.setup(m => m.emit(TypeMoq.It.isAny())).callback(events => emittedEvents = emittedEvents.concat(events));
+
+      const dynamicLevelSwitch = new DynamicLevelSwitch();
+      const logger = new LoggerConfiguration()
+        .minLevel(dynamicLevelSwitch)
+        .writeTo(sink.object)
+        .create();
+
+      logger.fatal('A is the first letter');
+      logger.verbose('B is the second letter');
+
+      return dynamicLevelSwitch.information()
+        .then(() => {
+          logger.verbose('C is the third letter');
+          logger.info('D is the fourth letter');
+        })
+        .then(() => logger.flush())
+        .then(() => {
+          expect(emittedEvents).to.have.length(3);
+          expect(emittedEvents[0]).to.have.deep.property('messageTemplate.raw', 'A is the first letter');
+          expect(emittedEvents[1]).to.have.deep.property('messageTemplate.raw', 'B is the second letter');
+          expect(emittedEvents[2]).to.have.deep.property('messageTemplate.raw', 'D is the fourth letter');
+        });
     });
     
     it('sets minimum level through the fatal() alias', () => {

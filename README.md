@@ -64,32 +64,36 @@ log.verbose('Hello structured-log!');
 
 ### Log Levels
 
-There are 6 log levels available. From most to least restrictive:
-- `0 - Fatal`
-- `1 - Error`
-- `2 - Warning`
-- `3 - Information`
-- `4 - Debug`
-- `5 - Verbose`
+There are 6 log levels available by default, in addition to a setting to disable logging completely.
+In decreasing order of severity (borrowing descriptions from [Seq](https://github.com/serilog/serilog/wiki/Writing-Log-Events)):
+|Label|Bitfield|Description|
+|---|---|---|
+|Off|0|Nothing|
+|fatal|1|Critical errors causing complete failure of the application|
+|error|3|Indicates failures within the application or connected systems|
+|warning|7|Indicators of possible issues or service/functionality degradatio|
+|information|15|Events of interest or that have relevance to outside observers|
+|debug|31|Internal control flow and diagnostic state dumps to facilitate pinpointing of recognised problems|
+|verbose|63|Tracing information and debugging minutiae; generally only switched on in unusual situations|
 
-Each log level also includes all levels with a lower value. For example, `Warning` will also
-allow events of the `Error` level through, but block `Information`, `Debug` and
-`Verbose`.
+The log levels can also be represented as bitfields, and each log level also includes any levels of higher severity.
+For example, `warning` will also allow events of the `error` level through, but block `information`,
+`debug` and `verbose`.
 
 A minimum level can be set anywhere in the pipeline to only allow events matching that level
 level or lower to pass further through the pipeline.
 
-The below examples will all set the minimum level to `Warning`:
+The below examples will all set the minimum level to `warning`:
 
 ```js
   .minLevel.warning()
 // or
-  .minLevel(2)
+  .minLevel(7)
 // or
-  .minLevel('Warning')
+  .minLevel('warning')
 ```
 
-There is no default minimum level, but a common choice is `Information`. Note that if a restrictive level is set early in the pipeline,
+There is no minimum level set by default, but a common choice is `Information`. Note that if a restrictive level is set early in the pipeline,
 and a more permissive level is set further down, the events that are filtered out by the more restrictive level
 will never reach the more permissive filter.
 
@@ -104,7 +108,24 @@ log.debug('Accept-Encoding header value: {acceptEncoding}', response.acceptEncod
 log.verbose('Exiting getUsers()');
 ```
 
-In addition, `warning()` and `information()` are aliases for `warn()` and `info()`, respectively.
+#### Dynamically controlling the minimum level
+
+You can also control the minimum level dynamically using the `DynamicLevelSwitch` class. Pass an instance to the `minLevel()` function:
+```js
+var dynamicLevelSwitch = new DynamicLevelSwitch();
+
+// ...
+  .minLevel(dynamicLevelSwitch)
+```
+
+You can then call the same shorthand methods as those present on the `minLevel` object (`error()`, `debug()` etc.) to dynamically change
+the minimum level for the subsequent stages in the pipeline.
+
+```js
+logger.debug('This message will be logged');
+dynamicLevelSwitch.warning();
+logger.debug('This message won\'t');
+```
 
 ### Sinks
 

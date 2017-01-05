@@ -50,4 +50,14 @@ describe('isEnabled()', () => {
     expect(isEnabled(customLogEventLevel, LogEventLevel.verbose)).to.be.false;
     expect(isEnabled(customLogEventLevel, customLogEventLevel)).to.be.true;
   });
+  
+  it('supports bitfield log levels', () => {
+    const customLogEventLevel = 23;
+    expect(isEnabled(customLogEventLevel, LogEventLevel.fatal)).to.be.true;
+    expect(isEnabled(customLogEventLevel, LogEventLevel.error)).to.be.true;
+    expect(isEnabled(customLogEventLevel, LogEventLevel.warning)).to.be.true;
+    expect(isEnabled(customLogEventLevel, LogEventLevel.information)).to.be.false;
+    expect(isEnabled(customLogEventLevel, LogEventLevel.debug)).to.be.false;
+    expect(isEnabled(customLogEventLevel, LogEventLevel.verbose)).to.be.false;
+  });
 });

@@ -1,4 +1,5 @@
 import { MessageTemplate } from './messageTemplate';
+import { FilterStage } from './filterStage';
 
 /**
  * Represents the severity level of a log event.
@@ -11,6 +12,18 @@ export enum LogEventLevel {
   information = warning     | 1 << 3,
   debug =       information | 1 << 4,
   verbose =     debug       | 1 << 5
+}
+
+/**
+ * Represents an object that can switch between log levels.
+ */
+export interface LogEventLevelSwitch<T> {
+  fatal(): T;
+  error(): T;
+  warning(): T;
+  information(): T;
+  debug(): T;
+  verbose(): T;
 }
 
 /**

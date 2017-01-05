@@ -31,6 +31,12 @@ if (typeof Object.assign != 'function') {
   };
 }
 
+function __extends(d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+}
+
 /**
  * Represents the severity level of a log event.
  */
@@ -224,7 +230,7 @@ var Logger = (function () {
         this.pipeline = pipeline;
     }
     /**
-     * Logs an event with the {@link LogEventLevel.fatal} severity.
+     * Logs an event with the {LogEventLevel.fatal} severity.
      * @param {string} messageTemplate Message template for the log event.
      * @param {any[]} properties Properties that can be used to render the message template.
      */
@@ -236,7 +242,7 @@ var Logger = (function () {
         this.write(exports.LogEventLevel.fatal, messageTemplate, properties);
     };
     /**
-     * Logs an event with the {@link LogEventLevel.error} severity.
+     * Logs an event with the {LogEventLevel.error} severity.
      * @param {string} messageTemplate Message template for the log event.
      * @param {any[]} properties Properties that can be used to render the message template.
      */
@@ -248,7 +254,7 @@ var Logger = (function () {
         this.write(exports.LogEventLevel.error, messageTemplate, properties);
     };
     /**
-     * Logs an event with the {@link LogEventLevel.warning} severity.
+     * Logs an event with the {LogEventLevel.warning} severity.
      * @param {string} messageTemplate Message template for the log event.
      * @param {any[]} properties Properties that can be used to render the message template.
      */
@@ -260,7 +266,7 @@ var Logger = (function () {
         this.write(exports.LogEventLevel.warning, messageTemplate, properties);
     };
     /**
-     * Logs an event with the {@link LogEventLevel.information} severity.
+     * Logs an event with the {LogEventLevel.information} severity.
      * @param {string} messageTemplate Message template for the log event.
      * @param {any[]} properties Properties that can be used to render the message template.
      */
@@ -272,7 +278,7 @@ var Logger = (function () {
         this.write(exports.LogEventLevel.information, messageTemplate, properties);
     };
     /**
-     * Logs an event with the {@link LogEventLevel.debug} severity.
+     * Logs an event with the {LogEventLevel.debug} severity.
      * @param {string} messageTemplate Message template for the log event.
      * @param {any[]} properties Properties that can be used to render the message template.
      */
@@ -284,7 +290,7 @@ var Logger = (function () {
         this.write(exports.LogEventLevel.debug, messageTemplate, properties);
     };
     /**
-     * Logs an event with the {@link LogEventLevel.verbose} severity.
+     * Logs an event with the {LogEventLevel.verbose} severity.
      * @param {string} messageTemplate Message template for the log event.
      * @param {any[]} properties Properties that can be used to render the message template.
      */
@@ -382,6 +388,76 @@ var ConsoleSink = (function () {
     return ConsoleSink;
 }());
 
+var FilterStage = (function () {
+    function FilterStage(predicate) {
+        this.predicate = predicate;
+    }
+    FilterStage.prototype.emit = function (events) {
+        return events.filter(this.predicate);
+    };
+    FilterStage.prototype.flush = function () {
+        return Promise.resolve();
+    };
+    return FilterStage;
+}());
+
+/**
+ * Allows dynamic control of the logging level.
+ */
+var DynamicLevelSwitch = (function () {
+    function DynamicLevelSwitch() {
+        this.minLevel = null;
+        /**
+         * Gets or sets a delegate that can be called when the pipeline needs to be flushed.
+         * This should generally not be modified, as it will be provided by the pipeline stage.
+         */
+        this.flushDelegate = function () { return Promise.resolve(); };
+    }
+    DynamicLevelSwitch.prototype.fatal = function () {
+        var _this = this;
+        return this.flushDelegate().then(function () { return _this.minLevel = exports.LogEventLevel.fatal; });
+    };
+    DynamicLevelSwitch.prototype.error = function () {
+        var _this = this;
+        return this.flushDelegate().then(function () { return _this.minLevel = exports.LogEventLevel.error; });
+    };
+    DynamicLevelSwitch.prototype.warning = function () {
+        var _this = this;
+        return this.flushDelegate().then(function () { return _this.minLevel = exports.LogEventLevel.warning; });
+    };
+    DynamicLevelSwitch.prototype.information = function () {
+        var _this = this;
+        return this.flushDelegate().then(function () { return _this.minLevel = exports.LogEventLevel.information; });
+    };
+    DynamicLevelSwitch.prototype.debug = function () {
+        var _this = this;
+        return this.flushDelegate().then(function () { return _this.minLevel = exports.LogEventLevel.debug; });
+    };
+    DynamicLevelSwitch.prototype.verbose = function () {
+        var _this = this;
+        return this.flushDelegate().then(function () { return _this.minLevel = exports.LogEventLevel.verbose; });
+    };
+    DynamicLevelSwitch.prototype.isEnabled = function (level) {
+        return this.minLevel === null || isEnabled(this.minLevel, level);
+    };
+    return DynamicLevelSwitch;
+}());
+var DynamicLevelSwitchStage = (function (_super) {
+    __extends(DynamicLevelSwitchStage, _super);
+    function DynamicLevelSwitchStage(dynamicLevelSwitch) {
+        var _this = _super.call(this, function (e) { return dynamicLevelSwitch.isEnabled(e.level); }) || this;
+        _this.dynamicLevelSwitch = dynamicLevelSwitch;
+        return _this;
+    }
+    /**
+     * Sets a delegate that can be called when the pipeline needs to be flushed.
+     */
+    DynamicLevelSwitchStage.prototype.setFlushDelegate = function (flushDelegate) {
+        this.dynamicLevelSwitch.flushDelegate = flushDelegate;
+    };
+    return DynamicLevelSwitchStage;
+}(FilterStage));
+
 var Pipeline = (function () {
     function Pipeline() {
         this.stages = [];
@@ -454,19 +530,6 @@ var Pipeline = (function () {
     return Pipeline;
 }());
 
-var FilterStage = (function () {
-    function FilterStage(predicate) {
-        this.predicate = predicate;
-    }
-    FilterStage.prototype.emit = function (events) {
-        return events.filter(this.predicate);
-    };
-    FilterStage.prototype.flush = function () {
-        return Promise.resolve();
-    };
-    return FilterStage;
-}());
-
 var SinkStage = (function () {
     function SinkStage(sink) {
         this.sink = sink;
@@ -498,14 +561,36 @@ var EnrichStage = (function () {
     return EnrichStage;
 }());
 
+/**
+ * Configures pipelines for new logger instances.
+ */
 var LoggerConfiguration = (function () {
     function LoggerConfiguration() {
         var _this = this;
         /**
          * Sets the minimum level for any subsequent stages in the pipeline.
          */
-        this.minLevel = Object.assign(function (level) {
-            return _this.filter(function (e) { return isEnabled(level, e.level); });
+        this.minLevel = Object.assign(function (levelOrSwitch) {
+            if (typeof levelOrSwitch === 'undefined' || levelOrSwitch === null) {
+                throw new TypeError('Argument "levelOrSwitch" is not a valid LogEventLevel value or DynamicLevelSwitch instance.');
+            }
+            else if (levelOrSwitch instanceof DynamicLevelSwitch) {
+                var switchStage = new DynamicLevelSwitchStage(levelOrSwitch);
+                var flush = _this.pipeline.flush;
+                switchStage.setFlushDelegate(function () { return _this.pipeline.flush(); });
+                _this.pipeline.addStage(switchStage);
+                return _this;
+            }
+            else if (typeof levelOrSwitch === 'string') {
+                var level_1 = exports.LogEventLevel[levelOrSwitch.toLowerCase()];
+                if (typeof level_1 === 'undefined') {
+                    throw new TypeError('Argument "levelOrSwitch" is not a valid LogEventLevel value.');
+                }
+                return _this.filter(function (e) { return isEnabled(level_1, e.level); });
+            }
+            else {
+                return _this.filter(function (e) { return isEnabled(levelOrSwitch, e.level); });
+            }
         }, {
             fatal: function () { return _this.minLevel(exports.LogEventLevel.fatal); },
             error: function () { return _this.minLevel(exports.LogEventLevel.error); },
@@ -533,7 +618,7 @@ var LoggerConfiguration = (function () {
             this.pipeline.addStage(new FilterStage(predicate));
         }
         else {
-            throw new Error('Argument "predicate" must be a function.');
+            throw new TypeError('Argument "predicate" must be a function.');
         }
         return this;
     };
@@ -545,7 +630,7 @@ var LoggerConfiguration = (function () {
             this.pipeline.addStage(new EnrichStage(enricher));
         }
         else {
-            throw new Error('Argument "enricher" must be either a function or an object.');
+            throw new TypeError('Argument "enricher" must be either a function or an object.');
         }
         return this;
     };
@@ -566,6 +651,7 @@ exports.configure = configure;
 exports.LoggerConfiguration = LoggerConfiguration;
 exports.Logger = Logger;
 exports.ConsoleSink = ConsoleSink;
+exports.DynamicLevelSwitch = DynamicLevelSwitch;
 
 Object.defineProperty(exports, '__esModule', { value: true });
 

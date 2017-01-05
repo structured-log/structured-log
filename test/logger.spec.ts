@@ -7,6 +7,7 @@ import * as TypeMoq from 'typemoq';
 import { Logger } from '../src/logger';
 import { LogEvent, LogEventLevel } from '../src/logEvent';
 import { Pipeline } from '../src/pipeline';
+import { MessageTemplate } from '../src/messageTemplate';
 
 function verifyLevel(level: LogEventLevel) {
   return (events: LogEvent[]) => events.length && events[0].level === level;
@@ -59,6 +60,16 @@ describe('Logger', () => {
     const logger = new Logger(mockPipeline.object);
     logger.verbose('Test');
     mockPipeline.verify(m => m.emit(TypeMoq.It.is(verifyLevel(LogEventLevel.verbose))), TypeMoq.Times.once());
+  });
+
+  describe('emit()', () => {
+    it('emits events to the pipeline', () => {
+      const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+      mockPipeline.setup(m => m.emit(TypeMoq.It.isAny()));
+      const logger = new Logger(mockPipeline.object);
+      logger.emit([new LogEvent('', LogEventLevel.information, new MessageTemplate('Test'))]);
+      mockPipeline.verify(m => m.emit(TypeMoq.It.isAny()), TypeMoq.Times.once());
+    });
   });
 
   describe('flush()', () => {
