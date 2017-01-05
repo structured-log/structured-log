@@ -1,7 +1,7 @@
 import { PipelineStage } from './pipeline';
 import { LogEvent } from './logEvent';
 
-type ObjectFactory = () => Object;
+export type ObjectFactory = () => Object;
 
 export class EnrichStage implements PipelineStage {
   private enricher: Object | ObjectFactory;

@@ -1,11 +1,12 @@
 import { LogEventLevel, LogEvent } from './logEvent';
 import { MessageTemplate } from './messageTemplate';
 import { Pipeline } from './pipeline';
+import { Sink } from './sink';
 
 /**
  * Logs events.
  */
-export class Logger {
+export class Logger implements Sink {
   private pipeline: Pipeline;
 
   /**
@@ -75,6 +76,14 @@ export class Logger {
    */
   flush(): Promise<any> {
     return this.pipeline.flush();
+  }
+
+  /**
+   * Emits events through this logger's pipeline.
+   */
+  emit(events: LogEvent[]): LogEvent[] {
+    this.pipeline.emit(events);
+    return events;
   }
 
   private write(level: LogEventLevel, rawMessageTemplate: string, ...unboundProperties: any[]) {

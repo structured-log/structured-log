@@ -44,7 +44,9 @@ var LogEventLevel;
  * @param {LogEventLevel} target The target level.
  * @returns True if the checked level contains the target level.
  */
-
+function isEnabled(level, target) {
+    return (level & target) === target;
+}
 /**
  * Represents a log event.
  */
@@ -268,6 +270,13 @@ class Logger {
     flush() {
         return this.pipeline.flush();
     }
+    /**
+     * Emits events through this logger's pipeline.
+     */
+    emit(events) {
+        this.pipeline.emit(events);
+        return events;
+    }
     write(level, rawMessageTemplate, ...unboundProperties) {
         const messageTemplate = new MessageTemplate(rawMessageTemplate);
         const properties = messageTemplate.bindProperties(unboundProperties);
@@ -335,7 +344,166 @@ class ConsoleSink {
     }
 }
 
+class Pipeline {
+    constructor() {
+        this.stages = [];
+        this.eventQueue = [];
+        this.flushInProgress = false;
+    }
+    /**
+     * Adds a stage to the end of the pipeline.
+     * @param {PipelineStage} stage The pipeline stage to add.
+     */
+    addStage(stage) {
+        this.stages.push(stage);
+    }
+    /**
+     * Emits events through the pipeline. If a flush is currently in progress, the events will be queued and will been
+     * sent through the pipeline once the flush is complete.
+     * @param {LogEvent[]} events The events to emit.
+     */
+    emit(events) {
+        if (this.flushInProgress) {
+            this.eventQueue = this.eventQueue.concat(events);
+            return this.flushPromise;
+        }
+        else {
+            if (!this.stages.length || !events || !events.length) {
+                return Promise.resolve();
+            }
+            let promise = Promise.resolve(this.stages[0].emit(events));
+            for (let i = 1; i < this.stages.length; ++i) {
+                promise = promise.then(events => this.stages[i].emit(events));
+            }
+            return promise;
+        }
+    }
+    /**
+     * Flushes events through the pipeline.
+     * @returns A {Promise<any>} that resolves when all events have been flushed and the pipeline can accept new events.
+     */
+    flush() {
+        if (this.flushInProgress) {
+            return this.flushPromise;
+        }
+        this.flushInProgress = true;
+        return this.flushPromise = Promise.resolve()
+            .then(() => {
+            if (this.stages.length === 0) {
+                return;
+            }
+            let promise = this.stages[0].flush();
+            for (let i = 1; i < this.stages.length; ++i) {
+                promise = promise.then(() => this.stages[i].flush());
+            }
+            return promise;
+        })
+            .then(() => {
+            this.flushInProgress = false;
+            const queuedEvents = this.eventQueue.slice();
+            this.eventQueue = [];
+            return this.emit(queuedEvents);
+        });
+    }
+}
+
+class FilterStage {
+    constructor(predicate) {
+        this.predicate = predicate;
+    }
+    emit(events) {
+        return events.filter(this.predicate);
+    }
+    flush() {
+        return Promise.resolve();
+    }
+}
+
+class SinkStage {
+    constructor(sink) {
+        this.sink = sink;
+    }
+    emit(events) {
+        this.sink.emit(events);
+        return events;
+    }
+    flush() {
+        return this.sink.flush();
+    }
+}
+
+class EnrichStage {
+    constructor(enricher) {
+        this.enricher = enricher;
+    }
+    emit(events) {
+        const extraProperties = this.enricher instanceof Function ? this.enricher() : this.enricher;
+        for (let i = 0; i < events.length; ++i) {
+            Object.assign(events[i].properties, extraProperties);
+        }
+        return events;
+    }
+    flush() {
+        return Promise.resolve();
+    }
+}
+
 class LoggerConfiguration {
+    constructor() {
+        /**
+         * Sets the minimum level for any subsequent stages in the pipeline.
+         */
+        this.minLevel = Object.assign((level) => {
+            return this.filter(e => isEnabled(level, e.level));
+        }, {
+            fatal: () => this.minLevel(LogEventLevel.fatal),
+            error: () => this.minLevel(LogEventLevel.error),
+            warning: () => this.minLevel(LogEventLevel.warning),
+            information: () => this.minLevel(LogEventLevel.information),
+            debug: () => this.minLevel(LogEventLevel.debug),
+            verbose: () => this.minLevel(LogEventLevel.verbose)
+        });
+        this.pipeline = new Pipeline();
+    }
+    /**
+     * Adds a sink to the pipeline.
+     * @param {Sink} sink The sink to add.
+     */
+    writeTo(sink) {
+        this.pipeline.addStage(new SinkStage(sink));
+        return this;
+    }
+    /**
+     * Adds a filter to the pipeline.
+     * @param {(e: LogEvent) => boolean} predicate Filter predicate to use.
+     */
+    filter(predicate) {
+        if (predicate instanceof Function) {
+            this.pipeline.addStage(new FilterStage(predicate));
+        }
+        else {
+            throw new Error('Argument "predicate" must be a function.');
+        }
+        return this;
+    }
+    /**
+     * Adds an enricher to the pipeline.
+     */
+    enrich(enricher) {
+        if (enricher instanceof Function || enricher instanceof Object) {
+            this.pipeline.addStage(new EnrichStage(enricher));
+        }
+        else {
+            throw new Error('Argument "enricher" must be either a function or an object.');
+        }
+        return this;
+    }
+    /**
+     * Creates a new logger instance based on this configuration.
+     */
+    create() {
+        return new Logger(this.pipeline);
+    }
 }
 
 function configure() {

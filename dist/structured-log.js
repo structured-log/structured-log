@@ -50,7 +50,9 @@ if (typeof Object.assign != 'function') {
  * @param {LogEventLevel} target The target level.
  * @returns True if the checked level contains the target level.
  */
-
+function isEnabled(level, target) {
+    return (level & target) === target;
+}
 /**
  * Represents a log event.
  */
@@ -300,6 +302,13 @@ var Logger = (function () {
     Logger.prototype.flush = function () {
         return this.pipeline.flush();
     };
+    /**
+     * Emits events through this logger's pipeline.
+     */
+    Logger.prototype.emit = function (events) {
+        this.pipeline.emit(events);
+        return events;
+    };
     Logger.prototype.write = function (level, rawMessageTemplate) {
         var unboundProperties = [];
         for (var _i = 2; _i < arguments.length; _i++) {
@@ -373,9 +382,179 @@ var ConsoleSink = (function () {
     return ConsoleSink;
 }());
 
+var Pipeline = (function () {
+    function Pipeline() {
+        this.stages = [];
+        this.eventQueue = [];
+        this.flushInProgress = false;
+    }
+    /**
+     * Adds a stage to the end of the pipeline.
+     * @param {PipelineStage} stage The pipeline stage to add.
+     */
+    Pipeline.prototype.addStage = function (stage) {
+        this.stages.push(stage);
+    };
+    /**
+     * Emits events through the pipeline. If a flush is currently in progress, the events will be queued and will been
+     * sent through the pipeline once the flush is complete.
+     * @param {LogEvent[]} events The events to emit.
+     */
+    Pipeline.prototype.emit = function (events) {
+        var _this = this;
+        if (this.flushInProgress) {
+            this.eventQueue = this.eventQueue.concat(events);
+            return this.flushPromise;
+        }
+        else {
+            if (!this.stages.length || !events || !events.length) {
+                return Promise.resolve();
+            }
+            var promise = Promise.resolve(this.stages[0].emit(events));
+            var _loop_1 = function (i) {
+                promise = promise.then(function (events) { return _this.stages[i].emit(events); });
+            };
+            for (var i = 1; i < this.stages.length; ++i) {
+                _loop_1(i);
+            }
+            return promise;
+        }
+    };
+    /**
+     * Flushes events through the pipeline.
+     * @returns A {Promise<any>} that resolves when all events have been flushed and the pipeline can accept new events.
+     */
+    Pipeline.prototype.flush = function () {
+        var _this = this;
+        if (this.flushInProgress) {
+            return this.flushPromise;
+        }
+        this.flushInProgress = true;
+        return this.flushPromise = Promise.resolve()
+            .then(function () {
+            if (_this.stages.length === 0) {
+                return;
+            }
+            var promise = _this.stages[0].flush();
+            var _loop_2 = function (i) {
+                promise = promise.then(function () { return _this.stages[i].flush(); });
+            };
+            for (var i = 1; i < _this.stages.length; ++i) {
+                _loop_2(i);
+            }
+            return promise;
+        })
+            .then(function () {
+            _this.flushInProgress = false;
+            var queuedEvents = _this.eventQueue.slice();
+            _this.eventQueue = [];
+            return _this.emit(queuedEvents);
+        });
+    };
+    return Pipeline;
+}());
+
+var FilterStage = (function () {
+    function FilterStage(predicate) {
+        this.predicate = predicate;
+    }
+    FilterStage.prototype.emit = function (events) {
+        return events.filter(this.predicate);
+    };
+    FilterStage.prototype.flush = function () {
+        return Promise.resolve();
+    };
+    return FilterStage;
+}());
+
+var SinkStage = (function () {
+    function SinkStage(sink) {
+        this.sink = sink;
+    }
+    SinkStage.prototype.emit = function (events) {
+        this.sink.emit(events);
+        return events;
+    };
+    SinkStage.prototype.flush = function () {
+        return this.sink.flush();
+    };
+    return SinkStage;
+}());
+
+var EnrichStage = (function () {
+    function EnrichStage(enricher) {
+        this.enricher = enricher;
+    }
+    EnrichStage.prototype.emit = function (events) {
+        var extraProperties = this.enricher instanceof Function ? this.enricher() : this.enricher;
+        for (var i = 0; i < events.length; ++i) {
+            Object.assign(events[i].properties, extraProperties);
+        }
+        return events;
+    };
+    EnrichStage.prototype.flush = function () {
+        return Promise.resolve();
+    };
+    return EnrichStage;
+}());
+
 var LoggerConfiguration = (function () {
     function LoggerConfiguration() {
+        var _this = this;
+        /**
+         * Sets the minimum level for any subsequent stages in the pipeline.
+         */
+        this.minLevel = Object.assign(function (level) {
+            return _this.filter(function (e) { return isEnabled(level, e.level); });
+        }, {
+            fatal: function () { return _this.minLevel(exports.LogEventLevel.fatal); },
+            error: function () { return _this.minLevel(exports.LogEventLevel.error); },
+            warning: function () { return _this.minLevel(exports.LogEventLevel.warning); },
+            information: function () { return _this.minLevel(exports.LogEventLevel.information); },
+            debug: function () { return _this.minLevel(exports.LogEventLevel.debug); },
+            verbose: function () { return _this.minLevel(exports.LogEventLevel.verbose); }
+        });
+        this.pipeline = new Pipeline();
     }
+    /**
+     * Adds a sink to the pipeline.
+     * @param {Sink} sink The sink to add.
+     */
+    LoggerConfiguration.prototype.writeTo = function (sink) {
+        this.pipeline.addStage(new SinkStage(sink));
+        return this;
+    };
+    /**
+     * Adds a filter to the pipeline.
+     * @param {(e: LogEvent) => boolean} predicate Filter predicate to use.
+     */
+    LoggerConfiguration.prototype.filter = function (predicate) {
+        if (predicate instanceof Function) {
+            this.pipeline.addStage(new FilterStage(predicate));
+        }
+        else {
+            throw new Error('Argument "predicate" must be a function.');
+        }
+        return this;
+    };
+    /**
+     * Adds an enricher to the pipeline.
+     */
+    LoggerConfiguration.prototype.enrich = function (enricher) {
+        if (enricher instanceof Function || enricher instanceof Object) {
+            this.pipeline.addStage(new EnrichStage(enricher));
+        }
+        else {
+            throw new Error('Argument "enricher" must be either a function or an object.');
+        }
+        return this;
+    };
+    /**
+     * Creates a new logger instance based on this configuration.
+     */
+    LoggerConfiguration.prototype.create = function () {
+        return new Logger(this.pipeline);
+    };
     return LoggerConfiguration;
 }());
 
