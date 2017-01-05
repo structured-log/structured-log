@@ -1,53 +1,28 @@
+/// <reference path="../node_modules/@types/node/index.d.ts" />
 /// <reference path="../node_modules/@types/mocha/index.d.ts" />
 
-import * as TypeMoq from 'typemoq';
 import { expect } from 'chai';
+import { LogEvent, LogEventLevel } from '../src/logEvent';
+import { MessageTemplate } from '../src/messageTemplate';
 import { FilterStage } from '../src/filterStage';
-import { ILogEvent } from '../src/logEvent';
-import PipelineStage from '../src/pipelineStage';
-import MessageTemplate from '../src/messageTemplate';
 
 describe('FilterStage', () => {
-  describe('emit()', () => {
-    it('filters events based on the predicate', () => {
-      let filteredEvents: ILogEvent[];
+  it('filters events according to the filter predicate', () => {
+    const predicate = (e: LogEvent) => e.messageTemplate.raw.indexOf('B') === 0;
+    const filterStage = new FilterStage(predicate);
+    const events = [
+      new LogEvent('', LogEventLevel.information, new MessageTemplate('A Message 1'), {}),
+      new LogEvent('', LogEventLevel.information, new MessageTemplate('B Message 1'), {}),
+      new LogEvent('', LogEventLevel.information, new MessageTemplate('B Message 2'), {}),
+      new LogEvent('', LogEventLevel.information, new MessageTemplate('C Message 1'), {})
+    ];
+    const filteredEvents = filterStage.emit(events);
+    expect(filteredEvents).to.have.length(2);
+    expect(filteredEvents[0]).to.have.deep.property('messageTemplate.raw', 'B Message 1');
+    expect(filteredEvents[1]).to.have.deep.property('messageTemplate.raw', 'B Message 2');
+  });
 
-      const mockStage = TypeMoq.Mock.ofType<PipelineStage>();
-      mockStage.setup(m => m.emit(TypeMoq.It.isAny()))
-        .callback(events => filteredEvents = events);
-      const filterStage = new FilterStage(e => e.messageTemplate.render().indexOf('B') !== 0);
-      filterStage.next = mockStage.object;
-
-      const rawEvents: ILogEvent[] = [{
-        timestamp: new Date().toISOString(),
-        level: 1,
-        messageTemplate: new MessageTemplate('A is the first letter')
-      }, {
-        timestamp: new Date().toISOString(),
-        level: 2,
-        messageTemplate: new MessageTemplate('B is the first letter')
-      }, {
-        timestamp: new Date().toISOString(),
-        level: 3,
-        messageTemplate: new MessageTemplate('C is the first letter')
-      }];
-
-      return filterStage.emit(rawEvents)
-        .then(() =>{
-          expect(filteredEvents.length).to.equal(2);
-          expect(filteredEvents[0].level).to.equal(1);
-          expect(filteredEvents[1].level).to.equal(3);
-        });
-    });
-
-    it('calls emit on the next stage', () => {
-      const mockStage = TypeMoq.Mock.ofType<PipelineStage>();
-      mockStage.setup(m => m.emit(TypeMoq.It.isAny())).returns(() => Promise.resolve());
-      const filterStage = new FilterStage(() => true);
-      filterStage.next = mockStage.object;
-
-      return filterStage.emit([])
-        .then(() => mockStage.verify(m => m.emit(TypeMoq.It.isAny()), TypeMoq.Times.once()));
-    });
+  it('does nothing when flushed', () => {
+    return new FilterStage(() => true).flush();
   });
 });
