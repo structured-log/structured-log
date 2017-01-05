@@ -67,15 +67,15 @@ log.verbose('Hello structured-log!');
 There are 6 log levels available by default, in addition to a setting to disable logging completely.
 In decreasing order of severity (borrowing descriptions from [Seq](https://github.com/serilog/serilog/wiki/Writing-Log-Events)):
 
-|Label|Bitfield|Description|
+|Label|Description|Bitfield|
 |---|---|---|
-|Off|0|Nothing|
-|fatal|1|Critical errors causing complete failure of the application|
-|error|3|Indicates failures within the application or connected systems|
-|warning|7|Indicators of possible issues or service/functionality degradatio|
-|information|15|Events of interest or that have relevance to outside observers|
-|debug|31|Internal control flow and diagnostic state dumps to facilitate pinpointing of recognised problems|
-|verbose|63|Tracing information and debugging minutiae; generally only switched on in unusual situations|
+|off|When the minimum level is set to this, nothing will be logged.|0|
+|fatal|Critical errors causing complete failure of the application.|1|
+|error|Indicates failures within the application or connected systems.|3|
+|warning|Indicators of possible issues or service/functionality degradatio.|7|
+|information|Events of interest or that have relevance to outside observers.|15|
+|debug|Internal control flow and diagnostic state dumps to facilitate pinpointing of recognised problems.|31|
+|verbose|Tracing information and debugging minutiae; generally only switched on in unusual situations.|63|
 
 The log levels can also be represented as bitfields, and each log level also includes any levels of higher severity.
 For example, `warning` will also allow events of the `error` level through, but block `information`,
@@ -135,12 +135,12 @@ A sink is a target for log events going through the pipeline.
 #### Built-in sinks
 |Name|Description|
 |---|---|
-|ConsoleSink|Outputs events through the `console` object in Node or the browser|
+|ConsoleSink|Outputs events through the `console` object in Node or the browser.|
 
 #### 3rd party sinks
 |Name|Description|
 |---|---|
-|[SeqSink](https://github.com/Wedvich/structured-log-seq-sink)|Outputs events to a Seq server|
+|[SeqSink](https://github.com/Wedvich/structured-log-seq-sink)|Outputs events to a Seq server.|
 
 ### Filters
 
