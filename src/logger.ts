@@ -1,89 +1,91 @@
-import { ILogEvent, LogEventLevel } from './logEvent';
+import { LogEventLevel, LogEvent } from './logEvent';
+import { MessageTemplate } from './messageTemplate';
 import { Pipeline } from './pipeline';
-import { Sink } from './sink';
-import MessageTemplate from './messageTemplate';
 
-export class Logger extends Sink {
+/**
+ * Logs events.
+ */
+export class Logger {
   private pipeline: Pipeline;
 
+  /**
+   * Creates a new logger instance using the specified pipeline.
+   */
   constructor(pipeline: Pipeline) {
-    super();
-
-    if (!pipeline) {
-      throw new Error('Argument "pipeline" cannot be null or undefined.');
-    }
-
     this.pipeline = pipeline;
   }
 
   /**
-   * Logs a message with the `Fatal` level.
+   * Logs an event with the {@link LogEventLevel.fatal} severity.
+   * @param {string} messageTemplate Message template for the log event.
+   * @param {any[]} properties Properties that can be used to render the message template.
    */
-  public fatal(messageTemplate: string, ...properties: any[]) {
+  fatal(messageTemplate: string, ...properties: any[]) {
     this.write(LogEventLevel.fatal, messageTemplate, properties);
   }
-
+  
   /**
-   * Logs a message with the `Error` level.
+   * Logs an event with the {@link LogEventLevel.error} severity.
+   * @param {string} messageTemplate Message template for the log event.
+   * @param {any[]} properties Properties that can be used to render the message template.
    */
-  public error(messageTemplate: string, ...properties: any[]) {
+  error(messageTemplate: string, ...properties: any[]) {
     this.write(LogEventLevel.error, messageTemplate, properties);
   }
-
+  
   /**
-   * Logs a message with the `Warning` level.
+   * Logs an event with the {@link LogEventLevel.warning} severity.
+   * @param {string} messageTemplate Message template for the log event.
+   * @param {any[]} properties Properties that can be used to render the message template.
    */
-  public warn(messageTemplate: string, ...properties: any[]) {
+  warn(messageTemplate: string, ...properties: any[]) {
     this.write(LogEventLevel.warning, messageTemplate, properties);
   }
-
+  
   /**
-   * Logs a message with the `Information` level.
+   * Logs an event with the {@link LogEventLevel.information} severity.
+   * @param {string} messageTemplate Message template for the log event.
+   * @param {any[]} properties Properties that can be used to render the message template.
    */
-  public info(messageTemplate: string, ...properties: any[]) {
+  info(messageTemplate: string, ...properties: any[]) {
     this.write(LogEventLevel.information, messageTemplate, properties);
   }
-
+  
   /**
-   * Logs a message with the `Debug` level.
+   * Logs an event with the {@link LogEventLevel.debug} severity.
+   * @param {string} messageTemplate Message template for the log event.
+   * @param {any[]} properties Properties that can be used to render the message template.
    */
-  public debug(messageTemplate: string, ...properties: any[]) {
+  debug(messageTemplate: string, ...properties: any[]) {
     this.write(LogEventLevel.debug, messageTemplate, properties);
   }
-
+  
   /**
-   * Logs a message with the `Verbose` level.
+   * Logs an event with the {@link LogEventLevel.verbose} severity.
+   * @param {string} messageTemplate Message template for the log event.
+   * @param {any[]} properties Properties that can be used to render the message template.
    */
-  public verbose(messageTemplate: string, ...properties: any[]) {
+  verbose(messageTemplate: string, ...properties: any[]) {
     this.write(LogEventLevel.verbose, messageTemplate, properties);
   }
 
   /**
-   * @inheritdoc
+   * Flushes the pipeline of this logger.
+   * @returns A {Promise<any>} that will resolve when the pipeline has been flushed.
    */
-  public flush(): Promise<any> {
+  flush(): Promise<any> {
     return this.pipeline.flush();
   }
 
-  public emit(events: ILogEvent[]): Promise<any> {
-    return this.pipeline.emit(events);
-  }
-
-  private write(level: LogEventLevel, rawMessageTemplate: string, properties: any[]) {
-    try {
-      const messageTemplate = new MessageTemplate(rawMessageTemplate);
-      const eventProperties = messageTemplate.bindProperties(properties);
-      const event: ILogEvent = {
-        timestamp: new Date().toISOString(),
-        level,
-        messageTemplate,
-        properties: eventProperties
-      };
-      this.pipeline.emit([event]);
-    } catch (error) {
-      if (this.pipeline.yieldErrors) {
-        throw error;
-      }
-    }
+  private write(level: LogEventLevel, rawMessageTemplate: string, ...unboundProperties: any[]) {
+    const messageTemplate = new MessageTemplate(rawMessageTemplate);
+    const properties = messageTemplate.bindProperties(unboundProperties);
+    const logEvent = new LogEvent(
+      new Date().toISOString(),
+      level,
+      messageTemplate,
+      properties
+    );
+    this.pipeline.emit([logEvent]);
   }
 }

@@ -7,27 +7,39 @@ interface Token {
   raw?: string;
 }
 
-export default class MessageTemplate {
-  public get raw() {
-    return this._raw;
-  }
-  private _raw: string;
+/**
+ * Represents a message template that can be rendered into a log message.
+ */
+export class MessageTemplate {
+  /**
+   * Gets or sets the raw message template of this instance.
+   */
+  raw: string;
+
   private tokens: Token[];
 
+  /**
+   * Creates a new MessageTemplate instance with the given template.
+   */
   constructor(messageTemplate: string) {
-    this._raw = messageTemplate;
+    if (messageTemplate === null || !messageTemplate.length) {
+      throw new Error('Argument "messageTemplate" is required.');
+    }
+
+    this.raw = messageTemplate;
     this.tokens = this.tokenize(messageTemplate);
   }
 
   /**
    * Renders this template using the given properties.
-   * @param {Object?} properties Object containing the properties.
+   * @param {Object} properties Object containing the properties.
    * @returns Rendered message.
    */
-  public render(properties?: Object): string {
+  render(properties?: Object): string {
     if (!this.tokens.length) {
-      return this._raw;
+      return this.raw;
     }
+    properties = properties || {};
     const result = [];
     for (var i = 0; i < this.tokens.length; ++i) {
       const token = this.tokens[i];
@@ -46,10 +58,10 @@ export default class MessageTemplate {
 
   /**
    * Binds the given set of args to their matching tokens.
-   * @param positionalArgs Array of arguments.
+   * @param {any} positionalArgs Arguments.
    * @returns Object containing the properties.
    */
-  public bindProperties(positionalArgs): Object {
+  bindProperties(positionalArgs: any): Object {
     const result = {};
     let nextArg = 0;
     for (var i = 0; i < this.tokens.length && nextArg < positionalArgs.length; ++i) {

@@ -1,89 +1,111 @@
+/// <reference path="../node_modules/@types/node/index.d.ts" />
 /// <reference path="../node_modules/@types/mocha/index.d.ts" />
-/// <reference path="../node_modules/typemoq/dist/typemoq.d.ts" />
 
-import * as TypeMoq from 'typemoq';
 import { expect } from 'chai';
+import * as TypeMoq from 'typemoq';
 import { Pipeline } from '../src/pipeline';
-import PipelineStage from '../src/pipelineStage';
-import { Sink } from '../src/sink';
-import { SinkStage } from '../src/sinkStage';
-import MessageTemplate from '../src/messageTemplate';
-import { ILogEvent, LogEventLevel } from '../src/logEvent';
+import { PipelineStage } from '../src/pipelineStage';
+import { LogEvent, LogEventLevel } from '../src/logEvent';
+import { MessageTemplate } from '../src/messageTemplate';
 
 describe('Pipeline', () => {
-
-  describe('addStage()', () => {
-    it('connects stages to the pipeline in the correct order', () => {
-      class PassThroughStage extends PipelineStage {
-        private emitCallback: Function;
-        constructor(emitCallback: Function) {
-          super();
-          this.emitCallback = emitCallback;
-        }
-        public emit(events: ILogEvent[]): Promise<void> {
-          this.emitCallback();
-          return super.emit(events);
-        }
-      }
-
+  describe('emit()', () => {
+    it('emits events through its stages', () => {
+      let emittedEvents = [];
       const pipeline = new Pipeline();
+      const pipelineStage1 = TypeMoq.Mock.ofType<PipelineStage>();
+      const pipelineStage2 = TypeMoq.Mock.ofType<PipelineStage>();
+      const pipelineStage3 = TypeMoq.Mock.ofType<PipelineStage>();
+      pipelineStage1.setup(m => m.emit(TypeMoq.It.isAny())).returns(events => events);
+      pipelineStage2.setup(m => m.emit(TypeMoq.It.isAny())).returns(events => events);
+      pipelineStage3.setup(m => m.emit(TypeMoq.It.isAny())).callback(events => emittedEvents = events);
+      pipeline.addStage(pipelineStage1.object);
+      pipeline.addStage(pipelineStage2.object);
+      pipeline.addStage(pipelineStage3.object);
+      const events = [
+        new LogEvent('', LogEventLevel.information, new MessageTemplate('Message 1'), {}),
+        new LogEvent('', LogEventLevel.information, new MessageTemplate('Message 2'), {}),
+        new LogEvent('', LogEventLevel.information, new MessageTemplate('Message 3'), {})
+      ];
+      return pipeline.emit(events).then(() => {
+        expect(emittedEvents).to.have.length(3);
+        expect(emittedEvents[0]).to.have.deep.property('messageTemplate.raw', 'Message 1');
+        expect(emittedEvents[1]).to.have.deep.property('messageTemplate.raw', 'Message 2');
+        expect(emittedEvents[2]).to.have.deep.property('messageTemplate.raw', 'Message 3');
+      });
+    });
+
+    it('queues events if a flush is in progress', () => {
+      let emittedEvents = [];
+      const pipeline = new Pipeline();
+      const pipelineStage1 = TypeMoq.Mock.ofType<PipelineStage>();
+      const pipelineStage2 = TypeMoq.Mock.ofType<PipelineStage>();
+      pipelineStage1.setup(m => m.emit(TypeMoq.It.isAny())).returns(events => events);
+      pipelineStage1.setup(m => m.flush()).returns(() => new Promise(resolve => setTimeout(resolve, 1)));
+      pipelineStage2.setup(m => m.emit(TypeMoq.It.isAny())).callback(events => emittedEvents = emittedEvents.concat(events));
+      pipelineStage2.setup(m => m.flush()).returns(() => Promise.resolve());
+      pipeline.addStage(pipelineStage1.object);
+      pipeline.addStage(pipelineStage2.object);
+      const events = [
+        new LogEvent('', LogEventLevel.information, new MessageTemplate('Message 1'), {}),
+        new LogEvent('', LogEventLevel.information, new MessageTemplate('Message 2'), {}),
+        new LogEvent('', LogEventLevel.information, new MessageTemplate('Message 3'), {}),
+        new LogEvent('', LogEventLevel.information, new MessageTemplate('Message 4'), {})
+      ];
       
-      let stageMarker = 0;
-      let stageMarkerSnapshot1 = 0;
-      let stageMarkerSnapshot2 = 0;
-      let stageMarkerSnapshot3 = 0;
-
-      const stage1 = new PassThroughStage(() => stageMarkerSnapshot1 = ++stageMarker);
-      pipeline.addStage(stage1);
-
-      const stage2 = new PassThroughStage(() => stageMarkerSnapshot2 = ++stageMarker);
-      pipeline.addStage(stage2);
-
-      const stage3 = new PassThroughStage(() => stageMarkerSnapshot3 = ++stageMarker);
-      pipeline.addStage(stage3);
-
-      const events = [{
-        timestamp: new Date().toISOString(),
-        level: LogEventLevel.debug,
-        messageTemplate: new MessageTemplate('Test')
-      }];
-
-      return pipeline.emit(events)
+      return pipeline.emit(events.slice(0, 2))
         .then(() => {
-          expect(stageMarkerSnapshot1).to.equal(1);
-          expect(stageMarkerSnapshot2).to.equal(2);
-          expect(stageMarkerSnapshot3).to.equal(3);
+          expect(emittedEvents).to.have.length(2);
+          expect(emittedEvents[0]).to.have.deep.property('messageTemplate.raw', 'Message 1');
+          expect(emittedEvents[1]).to.have.deep.property('messageTemplate.raw', 'Message 2');
+        })
+        .then(() => Promise.all([pipeline.flush(), pipeline.emit(events.slice(2))]))
+        .then(() => {
+          expect(emittedEvents).to.have.length(4);
+          expect(emittedEvents[2]).to.have.deep.property('messageTemplate.raw', 'Message 3');
+          expect(emittedEvents[3]).to.have.deep.property('messageTemplate.raw', 'Message 4');
         });
     });
   });
-  
-  describe('yieldErrors', () => {
-    let pipeline: Pipeline;
-    let stage: SinkStage;
-    let sink: TypeMoq.IMock<Sink>;
-    let events: ILogEvent[];
 
-    beforeEach(() => {
-      pipeline = new Pipeline();
-      sink = TypeMoq.Mock.ofType<Sink>();
-      sink.setup(m => m.emit(TypeMoq.It.isAny())).throws(new Error());
-      stage = new SinkStage(sink.object);
-      pipeline.addStage(stage);
-      events = [{
-        timestamp: new Date().toISOString(),
-        level: LogEventLevel.debug,
-        messageTemplate: new MessageTemplate('Test')
-      }];
+  describe('flush()', () => {
+    it('flushes events through its stages', () => {
+      const pipeline = new Pipeline();
+      const pipelineStage1 = TypeMoq.Mock.ofType<PipelineStage>();
+      const pipelineStage2 = TypeMoq.Mock.ofType<PipelineStage>();
+      const pipelineStage3 = TypeMoq.Mock.ofType<PipelineStage>();
+      pipelineStage1.setup(m => m.flush()).returns(() => Promise.resolve());
+      pipelineStage2.setup(m => m.flush()).returns(() => Promise.resolve());
+      pipelineStage3.setup(m => m.flush()).returns(() => Promise.resolve());
+      pipeline.addStage(pipelineStage1.object);
+      pipeline.addStage(pipelineStage2.object);
+      pipeline.addStage(pipelineStage3.object);
+      return pipeline.flush().then(() => {
+        pipelineStage1.verify(m => m.flush(), TypeMoq.Times.once());
+        pipelineStage2.verify(m => m.flush(), TypeMoq.Times.once());
+        pipelineStage3.verify(m => m.flush(), TypeMoq.Times.once());
+      });
     });
 
-    it('suppresses errors in the pipeline when false', () => {
-      pipeline.yieldErrors = false;
-      expect(() => pipeline.emit(events)).to.not.throw();
+    it('does nothing if a flush is already in progress', () => {
+      const pipeline = new Pipeline();
+      const pipelineStage1 = TypeMoq.Mock.ofType<PipelineStage>();
+      const pipelineStage2 = TypeMoq.Mock.ofType<PipelineStage>();
+      pipelineStage1.setup(m => m.flush()).returns(() => new Promise(resolve => setTimeout(resolve, 1)));
+      pipelineStage2.setup(m => m.flush()).returns(() => Promise.resolve());
+      pipeline.addStage(pipelineStage1.object);
+      pipeline.addStage(pipelineStage2.object);
+      const flushPromise1 = pipeline.flush();
+      const flushPromise2 = pipeline.flush();
+      return flushPromise1.then(() => {
+        expect(flushPromise2).to.equal(flushPromise1);
+        pipelineStage2.verify(m => m.flush(), TypeMoq.Times.once());
+      });
     });
-    
-    it('allows errors in the pipeline to propagate when true', () => {
-      pipeline.yieldErrors = true;
-      expect(() => pipeline.emit(events)).to.throw();
+
+    it('does nothing if the pipeline has no stages', () => {
+      const pipeline = new Pipeline();
+      return pipeline.flush();
     });
   });
 });

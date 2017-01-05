@@ -5,7 +5,8 @@
   "main": "dist/structured-log.js",
   "jsnext:main": "dist/structured-log.es6.js",
   "scripts": {
-    "test": "mocha --compilers js:ts-node/register -r src/polyfill/objectAssign.js test/**/*.spec.ts",
+    "test": "mocha --compilers ts:ts-node/register -r src/polyfills/objectAssign.js test/**/*.spec.ts",
+    "test-coverage": "ts-node node_modules/istanbul/lib/cli.js cover -e .ts -x \"*.d.ts\" -x \"*.spec.ts\" node_modules/mocha/bin/_mocha -- -r src/polyfills/objectAssign.js test/**/*.spec.ts && exit 0",
     "build-es5": "rollup -c rollup.config.es5.js",
     "build-es6": "rollup -c rollup.config.es6.js",
     "build": "npm run build-es5 && npm run build-es6"
@@ -28,11 +29,13 @@
   "devDependencies": {
     "@types/chai": "^3.4.34",
     "@types/mocha": "^2.2.34",
+    "@types/node": "^6.0.57",
     "chai": "^3.5.0",
+    "istanbul": "^1.1.0-alpha.1",
     "mocha": "^3.2.0",
-    "rollup": "^0.37.0",
+    "rollup": "^0.40.0",
     "rollup-plugin-typescript": "^0.8.1",
-    "ts-node": "^1.7.2",
+    "ts-node": "^2.0.0",
     "typemoq": "^1.0.3",
     "typescript": "^2.1.4"
   }

@@ -1,89 +1,76 @@
-import { ILogEvent } from './logEvent';
-import { Sink } from './sink';
-import PipelineStage from './pipelineStage';
+import { PipelineStage } from './pipelineStage';
+import { LogEvent } from './logEvent';
 
-/**
- * Represents the event pipeline.
- */
 export class Pipeline {
-
-  /**
-   * If set to `true`, errors in the pipeline will not be caught and will be
-   * allowed to propagate out to the execution environment.
-   */
-  public yieldErrors: boolean = false;
-
   private stages: PipelineStage[];
+  private eventQueue: LogEvent[];
+  private flushInProgress: boolean;
+  private flushPromise: Promise<any>;
 
-  /**
-   * Creates a new Pipeline instance.
-   */
   constructor() {
     this.stages = [];
+    this.eventQueue = [];
+    this.flushInProgress = false;
   }
 
   /**
-   * Adds a new stage to the pipeline, and connects it to the previous stage.
-   * @param {PipelineStage} stage The stage to add.
+   * Adds a stage to the end of the pipeline.
+   * @param {PipelineStage} stage The pipeline stage to add.
    */
-  public addStage(stage: PipelineStage) {
-    if (typeof stage === 'undefined' || !stage) {
-      throw new Error('Argument "stage" cannot be undefined or null.');
-    }
+  addStage(stage: PipelineStage) {
     this.stages.push(stage);
-    if (this.stages.length > 1) {
-      this.stages[this.stages.length - 2].next = this.stages[this.stages.length - 1];
-    }
   }
 
   /**
-   * Emits events through the pipeline.
+   * Emits events through the pipeline. If a flush is currently in progress, the events will be queued and will been
+   * sent through the pipeline once the flush is complete.
    * @param {LogEvent[]} events The events to emit.
-   * @returns {Promise<any>} Promise that will be resolved when all
-   * pipeline stages have resolved.
    */
-  public emit(events: ILogEvent[]): Promise<any> {
-    try {
-      if (this.stages.length === 0) {
+  emit(events: LogEvent[]): Promise<any> {
+    if (this.flushInProgress) {
+      this.eventQueue = this.eventQueue.concat(events);
+      return this.flushPromise;
+    } else {
+      if (!this.stages.length || !events || !events.length) {
         return Promise.resolve();
       }
 
-      return this.stages[0].emit(events).catch(e => {
-        if (this.yieldErrors) {
-          throw e;
-        }
-      });
-    } catch (e) {
-      if (!this.yieldErrors) {
-        return Promise.resolve();
-      } else {
-          throw e;
+      let promise = Promise.resolve(this.stages[0].emit(events));
+      for (let i = 1; i < this.stages.length; ++i) {
+        promise = promise.then(events => this.stages[i].emit(events));
       }
+
+      return promise;
     }
   }
 
   /**
-   * Flushes any events through the pipeline
-   * @returns {Promise<any>} Promise that will be resolved when all
-   * pipeline stages have been flushed.
+   * Flushes events through the pipeline.
+   * @returns A {Promise<any>} that resolves when all events have been flushed and the pipeline can accept new events.
    */
-  public flush(): Promise<any> {
-    try {
-      if (this.stages.length === 0) {
-        return Promise.resolve();
-      }
-
-      return this.stages[0].flush().catch(e => {
-        if (this.yieldErrors) {
-          throw e;
-        }
-      });
-    } catch (e) {
-      if (!this.yieldErrors) {
-        return Promise.resolve();
-      } else {
-          throw e;
-      }
+  flush(): Promise<any> {
+    if (this.flushInProgress) {
+      return this.flushPromise;
     }
+
+    this.flushInProgress = true;
+    return this.flushPromise = Promise.resolve()
+      .then(() => {
+        if (this.stages.length === 0) {
+          return;
+        }
+
+        let promise = this.stages[0].flush();
+        for (let i = 1; i < this.stages.length; ++i) {
+          promise = promise.then(() => this.stages[i].flush());
+        }
+        return promise;
+      })
+      .then(() => {
+        this.flushInProgress = false;
+        const queuedEvents = this.eventQueue.slice();
+        this.eventQueue = [];
+        return this.emit(queuedEvents);
+      });
   }
 }

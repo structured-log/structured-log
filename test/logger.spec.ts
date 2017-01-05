@@ -1,107 +1,73 @@
+/// <reference path="../node_modules/@types/node/index.d.ts" />
 /// <reference path="../node_modules/@types/mocha/index.d.ts" />
+/// <reference path="../node_modules/typemoq/dist/typemoq.d.ts" />
 
-import * as TypeMoq from 'typemoq';
 import { expect } from 'chai';
-import { ILogEvent, LogEventLevel } from '../src/logEvent';
-import { Pipeline } from '../src/pipeline';
+import * as TypeMoq from 'typemoq';
 import { Logger } from '../src/logger';
+import { LogEvent, LogEventLevel } from '../src/logEvent';
+import { Pipeline } from '../src/pipeline';
+
+function verifyLevel(level: LogEventLevel) {
+  return (events: LogEvent[]) => events.length && events[0].level === level;
+}
 
 describe('Logger', () => {
-  let pipeline: TypeMoq.IMock<Pipeline>;
-  let logger: Logger;
-  let resolveCallback: () => void;
-  let emitPromise;
-  let emittedEvents: ILogEvent[];
-
-  beforeEach(() => {
-    pipeline = TypeMoq.Mock.ofType<Pipeline>();
-    pipeline.setup(m => m.emit(TypeMoq.It.isAny()))
-      .returns(events => {
-        emittedEvents = [...events];
-        resolveCallback();
-        return Promise.resolve();
-      });
-    emitPromise = new Promise(resolve => resolveCallback = resolve);
-    logger = new Logger(pipeline.object);
+  it('logs with fatal severity', () => {
+    const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+    mockPipeline.setup(m => m.emit(TypeMoq.It.is(verifyLevel(LogEventLevel.fatal))));
+    const logger = new Logger(mockPipeline.object);
+    logger.fatal('Test');
+    mockPipeline.verify(m => m.emit(TypeMoq.It.is(verifyLevel(LogEventLevel.fatal))), TypeMoq.Times.once());
   });
 
-  describe('debug()', () => {
-    it('logs events with the Debug level', () => {
-      logger.debug('Test');
-      return emitPromise
-        .then(() => {
-          expect(emittedEvents).to.have.length(1);
-          expect(emittedEvents[0]).to.have.property('level', LogEventLevel.debug);
-        });
-    });
+  it('logs with error severity', () => {
+    const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+    mockPipeline.setup(m => m.emit(TypeMoq.It.is(verifyLevel(LogEventLevel.error))));
+    const logger = new Logger(mockPipeline.object);
+    logger.error('Test');
+    mockPipeline.verify(m => m.emit(TypeMoq.It.is(verifyLevel(LogEventLevel.error))), TypeMoq.Times.once());
   });
 
-  describe('emit()', () => {
-    it('calls emit on the pipeline', () => {
-      pipeline.setup(m => m.emit(TypeMoq.It.isAny())).returns(events => Promise.resolve(events));
-      return logger.emit([]).then(() => pipeline.verify(m => m.emit(TypeMoq.It.isAny()), TypeMoq.Times.once()));
-    });
+  it('logs with warning severity', () => {
+    const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+    mockPipeline.setup(m => m.emit(TypeMoq.It.is(verifyLevel(LogEventLevel.warning))));
+    const logger = new Logger(mockPipeline.object);
+    logger.warn('Test');
+    mockPipeline.verify(m => m.emit(TypeMoq.It.is(verifyLevel(LogEventLevel.warning))), TypeMoq.Times.once());
+  });
+  
+  it('logs with information severity', () => {
+    const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+    mockPipeline.setup(m => m.emit(TypeMoq.It.is(verifyLevel(LogEventLevel.information))));
+    const logger = new Logger(mockPipeline.object);
+    logger.info('Test');
+    mockPipeline.verify(m => m.emit(TypeMoq.It.is(verifyLevel(LogEventLevel.information))), TypeMoq.Times.once());
+  });
+  
+  it('logs with debug severity', () => {
+    const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+    mockPipeline.setup(m => m.emit(TypeMoq.It.is(verifyLevel(LogEventLevel.debug))));
+    const logger = new Logger(mockPipeline.object);
+    logger.debug('Test');
+    mockPipeline.verify(m => m.emit(TypeMoq.It.is(verifyLevel(LogEventLevel.debug))), TypeMoq.Times.once());
   });
 
-  describe('error()', () => {
-    it('logs events with the Error level', () => {
-      logger.error('Test');
-      return emitPromise
-        .then(() => {
-          expect(emittedEvents).to.have.length(1);
-          expect(emittedEvents[0]).to.have.property('level', LogEventLevel.error);
-        });
-    });
-  });
-
-  describe('fatal()', () => {
-    it('logs events with the Fatal level', () => {
-      logger.fatal('Test');
-      return emitPromise
-        .then(() => {
-          expect(emittedEvents).to.have.length(1);
-          expect(emittedEvents[0]).to.have.property('level', LogEventLevel.fatal);
-        });
-    });
+  it('logs with verbose severity', () => {
+    const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+    mockPipeline.setup(m => m.emit(TypeMoq.It.is(verifyLevel(LogEventLevel.verbose))));
+    const logger = new Logger(mockPipeline.object);
+    logger.verbose('Test');
+    mockPipeline.verify(m => m.emit(TypeMoq.It.is(verifyLevel(LogEventLevel.verbose))), TypeMoq.Times.once());
   });
 
   describe('flush()', () => {
-    it('calls flush on the pipeline', () => {
-      pipeline.setup(m => m.flush()).returns(() => Promise.resolve());
-      return logger.flush().then(() => pipeline.verify(m => m.flush(), TypeMoq.Times.once()));
-    });
-  });
-
-  describe('info()', () => {
-    it('logs events with the Information level', () => {
-      logger.info('Test');
-      return emitPromise
-        .then(() => {
-          expect(emittedEvents).to.have.length(1);
-          expect(emittedEvents[0]).to.have.property('level', LogEventLevel.information);
-        });
-    });
-  });
-
-  describe('warn()', () => {
-    it('logs events with the Warning level', () => {
-      logger.warn('Test');
-      return emitPromise
-        .then(() => {
-          expect(emittedEvents).to.have.length(1);
-          expect(emittedEvents[0]).to.have.property('level', LogEventLevel.warning);
-        });
-    });
-  });
-
-  describe('verbose()', () => {
-    it('logs events with the Debug level', () => {
-      logger.verbose('Test');
-      return emitPromise
-        .then(() => {
-          expect(emittedEvents).to.have.length(1);
-          expect(emittedEvents[0]).to.have.property('level', LogEventLevel.verbose);
-        });
+    it('flushes the pipeline', () => {
+      const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+      mockPipeline.setup(m => m.flush());
+      const logger = new Logger(mockPipeline.object);
+      logger.flush();
+      mockPipeline.verify(m => m.flush(), TypeMoq.Times.once());
     });
   });
 });
