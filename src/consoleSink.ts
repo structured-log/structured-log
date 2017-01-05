@@ -1,62 +1,75 @@
-import { ILogEvent, LogEventLevel } from './logEvent';
+import { LogEventLevel, LogEvent } from './logEvent';
 import { Sink } from './sink';
-import MessageTemplate from './messageTemplate';
+import { MessageTemplate } from './messageTemplate';
 
-const consoleProxy = {
-  error: (typeof console !== 'undefined' && console && (console.error || console.log)) || function () {},
-  warn:  (typeof console !== 'undefined' && console && (console.warn || console.log)) || function () {},
-  info:  (typeof console !== 'undefined' && console && (console.info || console.log)) || function () {},
-  debug: (typeof console !== 'undefined' && console && (console.debug || console.log)) || function () {},
-  log:   (typeof console !== 'undefined' && console && console.log) || function () {}
-};
+export interface ConsoleProxy {
+  error(message?: any, ...properties: any[]);
+  warn(message?: any, ...properties: any[]);
+  info(message?: any, ...properties: any[]);
+  debug(message?: any, ...properties: any[]);
+  log(message?: any, ...properties: any[]);
+}
 
-export interface IConsoleSinkOptions {
+export interface ConsoleSinkOptions {
+  consoleProxy?: any;
   includeTimestamps?: boolean;
   includeProperties?: boolean;
 }
 
-export class ConsoleSink extends Sink {
-  private options: IConsoleSinkOptions;
+export class ConsoleSink implements Sink {
+  private options: ConsoleSinkOptions;
+  private consoleProxy: ConsoleProxy;
 
-  constructor(options?: IConsoleSinkOptions) {
-    super();
+  constructor(options?: ConsoleSinkOptions) {
     this.options = options || {};
+    const internalConsole = this.options.consoleProxy || typeof console !== 'undefined' && console || null;
+    const stub = function () { };
+    this.consoleProxy = {
+      error: (internalConsole && (internalConsole.error || internalConsole.log)) || stub,
+      warn:  (internalConsole && (internalConsole.warn || internalConsole.log)) || stub,
+      info:  (internalConsole && (internalConsole.info || internalConsole.log)) || stub,
+      debug: (internalConsole && (internalConsole.debug || internalConsole.log)) || stub,
+      log:   (internalConsole && internalConsole.log) || stub
+    };
   }
 
-  public emit(events: ILogEvent[]): Promise<any> {
-    return Promise.resolve().then(() => {
-      for (let i = 0; i < events.length; ++i) {
-        const e = events[i];
-        switch (e.level) {
-          case LogEventLevel.fatal:
-            this.writeToConsole(consoleProxy.error, 'Fatal', e);
-            break;
+  public emit(events: LogEvent[]) {
+    for (let i = 0; i < events.length; ++i) {
+      const e = events[i];
+      switch (e.level) {
+        case LogEventLevel.fatal:
+          this.writeToConsole(this.consoleProxy.error, 'Fatal', e);
+          break;
 
-          case LogEventLevel.error:
-            this.writeToConsole(consoleProxy.error, 'Error', e);
-            break;
+        case LogEventLevel.error:
+          this.writeToConsole(this.consoleProxy.error, 'Error', e);
+          break;
 
-          case LogEventLevel.warning:
-            this.writeToConsole(consoleProxy.warn, 'Warning', e);
-            break;
+        case LogEventLevel.warning:
+          this.writeToConsole(this.consoleProxy.warn, 'Warning', e);
+          break;
+          
+        case LogEventLevel.debug:
+          this.writeToConsole(this.consoleProxy.debug, 'Debug', e);
+          break;
+          
+        case LogEventLevel.verbose:
+          this.writeToConsole(this.consoleProxy.debug, 'Verbose', e);
+          break;
 
-          case LogEventLevel.information:
-            this.writeToConsole(consoleProxy.info, 'Information', e);
-            break;
-            
-          case LogEventLevel.debug:
-            this.writeToConsole(consoleProxy.debug, 'Debug', e);
-            break;
-            
-          case LogEventLevel.verbose:
-            this.writeToConsole(consoleProxy.debug, 'Verbose', e);
-            break;
-        }
+        case LogEventLevel.information:
+        default: 
+          this.writeToConsole(this.consoleProxy.info, 'Information', e);
+          break;
       }
-    });
+    }
   }
 
-  private writeToConsole(logMethod: Function, prefix: string, e: ILogEvent) {
+  public flush() {
+    return Promise.resolve();
+  }
+
+  private writeToConsole(logMethod: Function, prefix: string, e: LogEvent) {
     let output = '[' + prefix + '] ' + e.messageTemplate.render(e.properties);
     if (this.options.includeTimestamps) {
       output = e.timestamp + ' ' + output;
