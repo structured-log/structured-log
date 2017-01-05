@@ -1,4 +1,4 @@
-# structured-log [![Build Status](https://travis-ci.org/structured-log/structured-log.svg)](https://travis-ci.org/structured-log/structured-log) [![Coverage Status](https://coveralls.io/repos/github/Wedvich/structured-log/badge.svg?branch=dev)](https://coveralls.io/github/Wedvich/structured-log?branch=dev)
+# structured-log [![Build Status](https://travis-ci.org/structured-log/structured-log.svg?branch=master)](https://travis-ci.org/structured-log/structured-log) [![Coverage Status](https://coveralls.io/repos/github/Wedvich/structured-log/badge.svg?branch=master)](https://coveralls.io/github/Wedvich/structured-log?branch=master)
 
 A structured logging framework for JavaScript, inspired by [Serilog](http://serilog.net/).
 
