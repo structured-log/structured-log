@@ -315,11 +315,7 @@ var Logger = (function () {
         this.pipeline.emit(events);
         return events;
     };
-    Logger.prototype.write = function (level, rawMessageTemplate) {
-        var unboundProperties = [];
-        for (var _i = 2; _i < arguments.length; _i++) {
-            unboundProperties[_i - 2] = arguments[_i];
-        }
+    Logger.prototype.write = function (level, rawMessageTemplate, unboundProperties) {
         var messageTemplate = new MessageTemplate(rawMessageTemplate);
         var properties = messageTemplate.bindProperties(unboundProperties);
         var logEvent = new LogEvent(new Date().toISOString(), level, messageTemplate, properties);

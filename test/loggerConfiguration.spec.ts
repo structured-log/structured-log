@@ -39,6 +39,12 @@ describe('LoggerConfiguration', () => {
         expect(emittedEvents[0]).to.have.deep.property('properties.d', 4);
       });
     });
+
+    it('requires an enricher to be provided', () => {
+      const loggerConfiguration = new LoggerConfiguration();
+      expect(() => loggerConfiguration.enrich(undefined)).to.throw();
+      expect(() => loggerConfiguration.enrich(null)).to.throw();
+    });
   });
 
   describe('filter()', () => {
@@ -61,6 +67,12 @@ describe('LoggerConfiguration', () => {
         expect(emittedEvents).to.have.length(1);
         expect(emittedEvents[0]).to.have.deep.property('messageTemplate.raw', 'C is the third letter');
       });
+    });
+
+    it('requires a filter to be provided', () => {
+      const loggerConfiguration = new LoggerConfiguration();
+      expect(() => loggerConfiguration.filter(undefined)).to.throw();
+      expect(() => loggerConfiguration.filter(null)).to.throw();
     });
   });
 

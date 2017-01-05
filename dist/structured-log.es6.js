@@ -277,7 +277,7 @@ class Logger {
         this.pipeline.emit(events);
         return events;
     }
-    write(level, rawMessageTemplate, ...unboundProperties) {
+    write(level, rawMessageTemplate, unboundProperties) {
         const messageTemplate = new MessageTemplate(rawMessageTemplate);
         const properties = messageTemplate.bindProperties(unboundProperties);
         const logEvent = new LogEvent(new Date().toISOString(), level, messageTemplate, properties);

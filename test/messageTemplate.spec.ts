@@ -35,13 +35,18 @@ describe('MessageTemplate', () => {
 
     it('binds properties not in the message template', () => {
       let boundProperties;
+      const f = function () { };
+      const o = null;
       ((...properties: any[]) => {
         const messageTemplate = new MessageTemplate('Happy {age}th birthday, {name}!');
         boundProperties = messageTemplate.bindProperties(properties);
-      })(30, 'Fred', undefined, 'Not in template');
+      })(30, 'Fred', undefined, 'Not in template', f, o, {});
       expect(boundProperties).to.have.property('age', 30);
       expect(boundProperties).to.have.property('name', 'Fred');
       expect(boundProperties).to.have.property('a3', 'Not in template');
+      expect(boundProperties).to.have.property('a4', f.toString());
+      expect(boundProperties).to.have.property('a5', null);
+      expect(boundProperties).to.have.property('a6', {}.toString());
     });
   });
 
@@ -72,6 +77,43 @@ describe('MessageTemplate', () => {
       const message = messageTemplate.render();
 
       expect(message).to.equal('Hello, {@person}!');
+    });
+
+    it('renders string representations of primitive properties', () => {
+      const messageTemplate = new MessageTemplate('{p}');
+      expect(messageTemplate.render({ p: undefined })).to.equal('undefined');
+      expect(messageTemplate.render({ p: null })).to.equal('null');
+      expect(messageTemplate.render({ p: 'text' })).to.equal('text');
+      expect(messageTemplate.render({ p: 123 })).to.equal('123');
+      expect(messageTemplate.render({ p: true })).to.equal(true.toString());
+    });
+
+    it('renders string representations of complex properties', () => {
+      const messageTemplate = new MessageTemplate('{p}');
+      const date = new Date();
+      expect(messageTemplate.render({ p: date })).to.equal(date.toISOString());
+      const complex = {
+        aaaa: {
+          bbbb: {
+            cccc: {
+              dddd: 'eeee'
+            }
+          },
+          ffff: {
+            gggg: {
+              hhhh: {
+                ijkl: 'mnopqrstuvwxyz'
+              }
+            }
+          }
+        }
+      };
+      const complexMessage = messageTemplate.render({ p: complex });
+      expect(complexMessage).to.have.length(70);
+      expect(complexMessage.indexOf('...')).to.equal(67);
+      expect(messageTemplate.render({ p: Symbol('sym') })).to.equal('Symbol(sym)');
+      const f = function () { };
+      expect(messageTemplate.render({ p: f })).to.equal(f.toString());
     });
   });
 });

@@ -62,6 +62,17 @@ describe('Logger', () => {
     mockPipeline.verify(m => m.emit(TypeMoq.It.is(verifyLevel(LogEventLevel.verbose))), TypeMoq.Times.once());
   });
 
+  it('includes logged properties', () => {
+    let loggedEvents = [];
+    const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+    mockPipeline.setup(m => m.emit(TypeMoq.It.is(verifyLevel(LogEventLevel.information))))
+      .callback(events => loggedEvents = loggedEvents.concat(events));
+    const logger = new Logger(mockPipeline.object);
+    logger.info('Test {word}', 'banana');
+    expect(loggedEvents).to.have.length(1);
+    expect(loggedEvents[0]).to.have.deep.property('properties.word', 'banana');
+  });
+
   describe('emit()', () => {
     it('emits events to the pipeline', () => {
       const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();

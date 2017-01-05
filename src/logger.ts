@@ -86,7 +86,7 @@ export class Logger implements Sink {
     return events;
   }
 
-  private write(level: LogEventLevel, rawMessageTemplate: string, ...unboundProperties: any[]) {
+  private write(level: LogEventLevel, rawMessageTemplate: string, unboundProperties: any[]) {
     const messageTemplate = new MessageTemplate(rawMessageTemplate);
     const properties = messageTemplate.bindProperties(unboundProperties);
     const logEvent = new LogEvent(
