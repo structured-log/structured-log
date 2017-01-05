@@ -1,5 +1,5 @@
 {
-  "name": "structured-log-alpha",
+  "name": "structured-log",
   "version": "0.1.0-alpha",
   "description": "A structured logging framework for JavaScript, inspired by Serilog.",
   "main": "dist/structured-log.js",
