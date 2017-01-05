@@ -5,7 +5,8 @@
   "main": "dist/structured-log.js",
   "jsnext:main": "dist/structured-log.es6.js",
   "scripts": {
-    "test": "ts-node node_modules/istanbul/lib/cli.js cover -e .ts -x \"*.d.ts\" -x \"*.spec.ts\" node_modules/mocha/bin/_mocha -- -r src/polyfills/objectAssign.js test/**/*.spec.ts && exit 0",
+    "test": "ts-node node_modules/istanbul/lib/cli.js cover -e .ts -x \"*.d.ts\" -x \"*.spec.ts\" node_modules/mocha/bin/_mocha -- -r src/polyfills/objectAssign.js test/**/*.spec.ts",
+    "coveralls": "npm test && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage",
     "build-es5": "rollup -c rollup.config.es5.js",
     "build-es6": "rollup -c rollup.config.es6.js",
     "build": "npm run build-es5 && npm run build-es6"
@@ -30,6 +31,7 @@
     "@types/mocha": "^2.2.34",
     "@types/node": "^6.0.57",
     "chai": "^3.5.0",
+    "coveralls": "^2.11.15",
     "istanbul": "^1.1.0-alpha.1",
     "mocha": "^3.2.0",
     "rollup": "^0.40.0",
