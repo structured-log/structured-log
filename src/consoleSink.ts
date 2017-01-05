@@ -11,20 +11,20 @@ export interface ConsoleProxy {
 }
 
 export interface ConsoleSinkOptions {
-  consoleProxy?: any;
+  console?: any;
   includeTimestamps?: boolean;
   includeProperties?: boolean;
 }
 
 export class ConsoleSink implements Sink {
   private options: ConsoleSinkOptions;
-  private consoleProxy: ConsoleProxy;
+  private console: ConsoleProxy;
 
   constructor(options?: ConsoleSinkOptions) {
     this.options = options || {};
-    const internalConsole = this.options.consoleProxy || typeof console !== 'undefined' && console || null;
+    const internalConsole = this.options.console || typeof console !== 'undefined' && console || null;
     const stub = function () { };
-    this.consoleProxy = {
+    this.console = {
       error: (internalConsole && (internalConsole.error || internalConsole.log)) || stub,
       warn:  (internalConsole && (internalConsole.warn || internalConsole.log)) || stub,
       info:  (internalConsole && (internalConsole.info || internalConsole.log)) || stub,
@@ -38,28 +38,28 @@ export class ConsoleSink implements Sink {
       const e = events[i];
       switch (e.level) {
         case LogEventLevel.fatal:
-          this.writeToConsole(this.consoleProxy.error, 'Fatal', e);
+          this.writeToConsole(this.console.error, 'Fatal', e);
           break;
 
         case LogEventLevel.error:
-          this.writeToConsole(this.consoleProxy.error, 'Error', e);
+          this.writeToConsole(this.console.error, 'Error', e);
           break;
 
         case LogEventLevel.warning:
-          this.writeToConsole(this.consoleProxy.warn, 'Warning', e);
+          this.writeToConsole(this.console.warn, 'Warning', e);
           break;
           
         case LogEventLevel.debug:
-          this.writeToConsole(this.consoleProxy.debug, 'Debug', e);
+          this.writeToConsole(this.console.debug, 'Debug', e);
           break;
           
         case LogEventLevel.verbose:
-          this.writeToConsole(this.consoleProxy.debug, 'Verbose', e);
+          this.writeToConsole(this.console.debug, 'Verbose', e);
           break;
 
         case LogEventLevel.information:
         default: 
-          this.writeToConsole(this.consoleProxy.info, 'Information', e);
+          this.writeToConsole(this.console.info, 'Information', e);
           break;
       }
     }

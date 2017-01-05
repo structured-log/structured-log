@@ -7,7 +7,7 @@ import { LogEventLevel, isEnabled } from '../src/logEvent';
 
 describe('LogEventLevel', () => {
   it('off includes nothing', () => {
-    expect(LogEventLevel.off & LogEventLevel.fatal).to.equal(0);
+    expect(LogEventLevel.off & LogEventLevel.fatal).to.equal(LogEventLevel.off);
   });
 
   it('error includes fatal', () => {

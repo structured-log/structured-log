@@ -55,6 +55,18 @@ describe('DynamicLevelSwitch', () => {
       expect(dynamicLevelSwitch.isEnabled(LogEventLevel.verbose)).to.be.true;
     });
   });
+  
+  it('turns logging off', () => {
+    const dynamicLevelSwitch = new DynamicLevelSwitch();
+    return dynamicLevelSwitch.off().then(() => {
+      expect(dynamicLevelSwitch.isEnabled(LogEventLevel.fatal)).to.be.false;
+      expect(dynamicLevelSwitch.isEnabled(LogEventLevel.error)).to.be.false;
+      expect(dynamicLevelSwitch.isEnabled(LogEventLevel.warning)).to.be.false;
+      expect(dynamicLevelSwitch.isEnabled(LogEventLevel.information)).to.be.false;
+      expect(dynamicLevelSwitch.isEnabled(LogEventLevel.debug)).to.be.false;
+      expect(dynamicLevelSwitch.isEnabled(LogEventLevel.verbose)).to.be.false;
+    });
+  });
 });
 
 describe('DynamicLevelSwitchStage', () => {

@@ -13,7 +13,7 @@ describe('ConsoleSink', () => {
   describe('emit()', () => {
     it('logs error messages', () => {
       const consoleProxy = TypeMoq.Mock.ofType<ConsoleProxy>();
-      const consoleSink = new ConsoleSink({ consoleProxy: consoleProxy.object });
+      const consoleSink = new ConsoleSink({ console: consoleProxy.object });
       consoleSink.emit([
         new LogEvent('', LogEventLevel.fatal, new MessageTemplate('Test')),
         new LogEvent('', LogEventLevel.error, new MessageTemplate('Test'))
@@ -23,7 +23,7 @@ describe('ConsoleSink', () => {
     
     it('logs warning messages', () => {
       const consoleProxy = TypeMoq.Mock.ofType<ConsoleProxy>();
-      const consoleSink = new ConsoleSink({ consoleProxy: consoleProxy.object });
+      const consoleSink = new ConsoleSink({ console: consoleProxy.object });
       consoleSink.emit([
         new LogEvent('', LogEventLevel.warning, new MessageTemplate('Test'))
       ]);
@@ -32,7 +32,7 @@ describe('ConsoleSink', () => {
     
     it('logs info messages', () => {
       const consoleProxy = TypeMoq.Mock.ofType<ConsoleProxy>();
-      const consoleSink = new ConsoleSink({ consoleProxy: consoleProxy.object });
+      const consoleSink = new ConsoleSink({ console: consoleProxy.object });
       consoleSink.emit([
         new LogEvent('', LogEventLevel.information, new MessageTemplate('Test'))
       ]);
@@ -41,7 +41,7 @@ describe('ConsoleSink', () => {
     
     it('logs debug and verbose messages', () => {
       const consoleProxy = TypeMoq.Mock.ofType<ConsoleProxy>();
-      const consoleSink = new ConsoleSink({ consoleProxy: consoleProxy.object });
+      const consoleSink = new ConsoleSink({ console: consoleProxy.object });
       consoleSink.emit([
         new LogEvent('', LogEventLevel.debug, new MessageTemplate('Test')),
         new LogEvent('', LogEventLevel.verbose, new MessageTemplate('Test'))
@@ -51,7 +51,7 @@ describe('ConsoleSink', () => {
     
     it('falls back to log when the more specific methods are unavailable', () => {
       const consoleProxy = TypeMoq.Mock.ofInstance({ log: (message?: any, ...properties: any[]) => {} });
-      const consoleSink = new ConsoleSink({ consoleProxy: consoleProxy.object });
+      const consoleSink = new ConsoleSink({ console: consoleProxy.object });
       consoleSink.emit([
         new LogEvent('', LogEventLevel.error, new MessageTemplate('Test')),
         new LogEvent('', LogEventLevel.warning, new MessageTemplate('Test')),
@@ -63,7 +63,7 @@ describe('ConsoleSink', () => {
     
     it('does nothing if no log methods are available', () => {
       const consoleProxy = TypeMoq.Mock.ofInstance({});
-      const consoleSink = new ConsoleSink({ consoleProxy: consoleProxy.object });
+      const consoleSink = new ConsoleSink({ console: consoleProxy.object });
       consoleSink.emit([
         new LogEvent('', LogEventLevel.error, new MessageTemplate('Test')),
         new LogEvent('', LogEventLevel.warning, new MessageTemplate('Test')),
@@ -80,7 +80,7 @@ describe('ConsoleSink', () => {
         loggedMessage = message;
       } };
       const consoleSink = new ConsoleSink({
-        consoleProxy,
+        console: consoleProxy,
         includeTimestamps: true
       });
       consoleSink.emit([
@@ -97,7 +97,7 @@ describe('ConsoleSink', () => {
         loggedProperties = properties;
       } };
       const consoleSink = new ConsoleSink({
-        consoleProxy,
+        console: consoleProxy,
         includeProperties: true
       });
       consoleSink.emit([

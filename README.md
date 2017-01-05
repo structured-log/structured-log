@@ -135,7 +135,7 @@ A sink is a target for log events going through the pipeline.
 #### Built-in sinks
 |Name|Description|
 |---|---|
-|ConsoleSink|Outputs events through the `console` object in Node or the browser.|
+|[ConsoleSink](#console-sink)|Outputs events through the `console` object in Node or the browser.|
 
 #### 3rd party sinks
 |Name|Description|
@@ -181,3 +181,19 @@ function getEnrichersFromState() {
   .enrich(getEnrichersFromState)
 
 ```
+
+### Console Sink
+
+The `ConsoleSink`, which outputs event to the Node.js or browser console, is provided by default. The following line creates a new instance that can be passed to the logger configuration:
+
+```js
+var consoleSink = new structuredLog.ConsoleSink({ /* options */ });
+```
+
+The `options` object is optional, but can be used to modify the functionality of the sink. It supports the following properties:
+
+|Key|Description|
+|---|---|
+|console|An object with a console interface (providing `log()`, `info()`, etc.) that will be used by the sink when writing output. The global `console` object will be used by default.|
+|includeProperties|If `true`, the properties of the log event will be written to the console in addition to the message. Defaults to `false`.|
+|includeTimestamps|If `true`, timestamps will be included in the message that is written to the console. Defaults to `false`.|
