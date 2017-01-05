@@ -5,7 +5,7 @@
 import { expect } from 'chai';
 import * as TypeMoq from 'typemoq';
 import { LoggerConfiguration } from '../src/loggerConfiguration';
-import { Logger } from '../src/Logger';
+import { Logger } from '../src/logger';
 import { LogEventLevel } from '../src/logEvent';
 import { Pipeline, PipelineStage } from '../src/pipeline';
 import { Sink, SinkStage } from '../src/sink';
