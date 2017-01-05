@@ -1,26 +1,24 @@
-import { ILogEvent } from './logEvent';
-import PipelineStage from './pipelineStage';
+import { PipelineStage } from './pipeline';
+import { LogEvent } from './logEvent';
 
-export class EnrichStage extends PipelineStage {
-  private enricher: () => Object;
-  constructor(enricher: () => Object) {
-    super();
+type ObjectFactory = () => Object;
+
+export class EnrichStage implements PipelineStage {
+  private enricher: Object | ObjectFactory;
+
+  constructor(enricher: Object | ObjectFactory) {
     this.enricher = enricher;
   }
 
-  public emit(events: ILogEvent[]): Promise<any> {
-    if (!this.next) {
-      return Promise.resolve();
+  emit(events: LogEvent[]): LogEvent[] {
+    const extraProperties = this.enricher instanceof Function ? this.enricher() : this.enricher;
+    for (let i = 0; i < events.length; ++i) {
+      Object.assign(events[i].properties, extraProperties);
     }
+    return events;
+  }
 
-    return Promise.resolve()
-      .then(() => {
-        for (var i = 0; i < events.length; ++i) {
-          const e = events[i];
-          e.properties = Object.assign({}, e.properties, this.enricher());
-        }
-        return events;
-      })
-      .then(enrichedEvents => super.emit(enrichedEvents));
+  flush(): Promise<any> {
+    return Promise.resolve();
   }
 }
