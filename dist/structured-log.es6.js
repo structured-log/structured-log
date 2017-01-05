@@ -26,188 +26,65 @@ if (typeof Object.assign != 'function') {
 }
 
 /**
- * Represents the event pipeline.
+ * Represents the severity level of a log event.
  */
-class Pipeline {
-    /**
-     * Creates a new Pipeline instance.
-     */
-    constructor() {
-        /**
-         * If set to `true`, errors in the pipeline will not be caught and will be
-         * allowed to propagate out to the execution environment.
-         */
-        this.yieldErrors = false;
-        this.stages = [];
-    }
-    /**
-     * Adds a new stage to the pipeline, and connects it to the previous stage.
-     * @param {PipelineStage} stage The stage to add.
-     */
-    addStage(stage) {
-        if (typeof stage === 'undefined' || !stage) {
-            throw new Error('Argument "stage" cannot be undefined or null.');
-        }
-        this.stages.push(stage);
-        if (this.stages.length > 1) {
-            this.stages[this.stages.length - 2].next = this.stages[this.stages.length - 1];
-        }
-    }
-    /**
-     * Emits events through the pipeline.
-     * @param {LogEvent[]} events The events to emit.
-     * @returns {Promise<any>} Promise that will be resolved when all
-     * pipeline stages have resolved.
-     */
-    emit(events) {
-        try {
-            if (this.stages.length === 0) {
-                return Promise.resolve();
-            }
-            return this.stages[0].emit(events).catch(e => {
-                if (this.yieldErrors) {
-                    throw e;
-                }
-            });
-        }
-        catch (e) {
-            if (!this.yieldErrors) {
-                return Promise.resolve();
-            }
-            else {
-                throw e;
-            }
-        }
-    }
-    /**
-     * Flushes any events through the pipeline
-     * @returns {Promise<any>} Promise that will be resolved when all
-     * pipeline stages have been flushed.
-     */
-    flush() {
-        try {
-            if (this.stages.length === 0) {
-                return Promise.resolve();
-            }
-            return this.stages[0].flush().catch(e => {
-                if (this.yieldErrors) {
-                    throw e;
-                }
-            });
-        }
-        catch (e) {
-            if (!this.yieldErrors) {
-                return Promise.resolve();
-            }
-            else {
-                throw e;
-            }
-        }
-    }
-}
-
-/**
- * Represents a stage in the event pipeline.
- */
-class PipelineStage {
-    constructor() {
-        /**
-         * Points to the next stage in the pipeline.
-         */
-        this.next = null;
-        this.chain = Promise.resolve();
-    }
-    /**
-     * Emits events to this pipeline stage, as well as the next stage in the pipeline (if any).
-     * @param {LogEvent[]} events The events to emit.
-     * @returns {Promise<any>} Promise that will be resolved when all subsequent
-     * pipeline stages have resolved.
-     */
-    emit(events) {
-        return this.chain = this.chain.then(() => this.next ? this.next.emit(events) : Promise.resolve());
-    }
-    /**
-     * Flushes this pipeline stage, as well as the next stage in the pipeline (if any).
-     * @returns {Promise<any>} Promise that will be resolved when all subsequent
-     * pipeline stages have been flushed.
-     */
-    flush() {
-        return this.chain = this.chain.then(() => this.next ? this.next.flush() : Promise.resolve());
-    }
-}
-
-class FilterStage extends PipelineStage {
-    constructor(filter) {
-        super();
-        this.filter = filter;
-    }
-    emit(events) {
-        if (!this.next) {
-            return Promise.resolve();
-        }
-        return Promise.resolve()
-            .then(() => events.filter(this.filter))
-            .then(filteredEvents => super.emit(filteredEvents));
-    }
-}
-
-class EnrichStage extends PipelineStage {
-    constructor(enricher) {
-        super();
-        this.enricher = enricher;
-    }
-    emit(events) {
-        if (!this.next) {
-            return Promise.resolve();
-        }
-        return Promise.resolve()
-            .then(() => {
-            for (var i = 0; i < events.length; ++i) {
-                const e = events[i];
-                e.properties = Object.assign({}, e.properties, this.enricher());
-            }
-            return events;
-        })
-            .then(enrichedEvents => super.emit(enrichedEvents));
-    }
-}
-
 var LogEventLevel;
 (function (LogEventLevel) {
-    LogEventLevel[LogEventLevel["fatal"] = 0] = "fatal";
-    LogEventLevel[LogEventLevel["error"] = 1] = "error";
-    LogEventLevel[LogEventLevel["warn"] = 2] = "warn";
-    LogEventLevel[LogEventLevel["warning"] = 2] = "warning";
-    LogEventLevel[LogEventLevel["info"] = 3] = "info";
-    LogEventLevel[LogEventLevel["information"] = 3] = "information";
-    LogEventLevel[LogEventLevel["debug"] = 4] = "debug";
-    LogEventLevel[LogEventLevel["verbose"] = 5] = "verbose";
+    LogEventLevel[LogEventLevel["off"] = 0] = "off";
+    LogEventLevel[LogEventLevel["fatal"] = 1] = "fatal";
+    LogEventLevel[LogEventLevel["error"] = 3] = "error";
+    LogEventLevel[LogEventLevel["warning"] = 7] = "warning";
+    LogEventLevel[LogEventLevel["information"] = 15] = "information";
+    LogEventLevel[LogEventLevel["debug"] = 31] = "debug";
+    LogEventLevel[LogEventLevel["verbose"] = 63] = "verbose";
 })(LogEventLevel || (LogEventLevel = {}));
+/**
+ * Checks if a log event level includes the target log event level.
+ * @param {LogEventLevel} level The level to check.
+ * @param {LogEventLevel} target The target level.
+ * @returns True if the checked level contains the target level.
+ */
 
-class Sink {
-    flush() {
-        return Promise.resolve();
+/**
+ * Represents a log event.
+ */
+class LogEvent {
+    /**
+     * Creates a new log event instance.
+     */
+    constructor(timestamp, level, messageTemplate, properties) {
+        this.timestamp = timestamp;
+        this.level = level;
+        this.messageTemplate = messageTemplate;
+        this.properties = properties || {};
     }
 }
 
 const tokenizer = /\{@?\w+}/g;
+/**
+ * Represents a message template that can be rendered into a log message.
+ */
 class MessageTemplate {
-    get raw() {
-        return this._raw;
-    }
+    /**
+     * Creates a new MessageTemplate instance with the given template.
+     */
     constructor(messageTemplate) {
-        this._raw = messageTemplate;
+        if (messageTemplate === null || !messageTemplate.length) {
+            throw new Error('Argument "messageTemplate" is required.');
+        }
+        this.raw = messageTemplate;
         this.tokens = this.tokenize(messageTemplate);
     }
     /**
      * Renders this template using the given properties.
-     * @param {Object?} properties Object containing the properties.
+     * @param {Object} properties Object containing the properties.
      * @returns Rendered message.
      */
     render(properties) {
         if (!this.tokens.length) {
-            return this._raw;
+            return this.raw;
         }
+        properties = properties || {};
         const result = [];
         for (var i = 0; i < this.tokens.length; ++i) {
             const token = this.tokens[i];
@@ -227,7 +104,7 @@ class MessageTemplate {
     }
     /**
      * Binds the given set of args to their matching tokens.
-     * @param positionalArgs Array of arguments.
+     * @param {any} positionalArgs Arguments.
      * @returns Object containing the properties.
      */
     bindProperties(positionalArgs) {
@@ -326,266 +203,120 @@ class MessageTemplate {
     }
 }
 
-class Logger extends Sink {
+/**
+ * Logs events.
+ */
+class Logger {
+    /**
+     * Creates a new logger instance using the specified pipeline.
+     */
     constructor(pipeline) {
-        super();
-        if (!pipeline) {
-            throw new Error('Argument "pipeline" cannot be null or undefined.');
-        }
         this.pipeline = pipeline;
     }
     /**
-     * Logs a message with the `Fatal` level.
+     * Logs an event with the {@link LogEventLevel.fatal} severity.
+     * @param {string} messageTemplate Message template for the log event.
+     * @param {any[]} properties Properties that can be used to render the message template.
      */
     fatal(messageTemplate, ...properties) {
         this.write(LogEventLevel.fatal, messageTemplate, properties);
     }
     /**
-     * Logs a message with the `Error` level.
+     * Logs an event with the {@link LogEventLevel.error} severity.
+     * @param {string} messageTemplate Message template for the log event.
+     * @param {any[]} properties Properties that can be used to render the message template.
      */
     error(messageTemplate, ...properties) {
         this.write(LogEventLevel.error, messageTemplate, properties);
     }
     /**
-     * Logs a message with the `Warning` level.
+     * Logs an event with the {@link LogEventLevel.warning} severity.
+     * @param {string} messageTemplate Message template for the log event.
+     * @param {any[]} properties Properties that can be used to render the message template.
      */
     warn(messageTemplate, ...properties) {
         this.write(LogEventLevel.warning, messageTemplate, properties);
     }
     /**
-     * Logs a message with the `Information` level.
+     * Logs an event with the {@link LogEventLevel.information} severity.
+     * @param {string} messageTemplate Message template for the log event.
+     * @param {any[]} properties Properties that can be used to render the message template.
      */
     info(messageTemplate, ...properties) {
         this.write(LogEventLevel.information, messageTemplate, properties);
     }
     /**
-     * Logs a message with the `Debug` level.
+     * Logs an event with the {@link LogEventLevel.debug} severity.
+     * @param {string} messageTemplate Message template for the log event.
+     * @param {any[]} properties Properties that can be used to render the message template.
      */
     debug(messageTemplate, ...properties) {
         this.write(LogEventLevel.debug, messageTemplate, properties);
     }
     /**
-     * Logs a message with the `Verbose` level.
+     * Logs an event with the {@link LogEventLevel.verbose} severity.
+     * @param {string} messageTemplate Message template for the log event.
+     * @param {any[]} properties Properties that can be used to render the message template.
      */
     verbose(messageTemplate, ...properties) {
         this.write(LogEventLevel.verbose, messageTemplate, properties);
     }
     /**
-     * @inheritdoc
+     * Flushes the pipeline of this logger.
+     * @returns A {Promise<any>} that will resolve when the pipeline has been flushed.
      */
     flush() {
         return this.pipeline.flush();
     }
-    emit(events) {
-        return this.pipeline.emit(events);
-    }
-    write(level, rawMessageTemplate, properties) {
-        try {
-            const messageTemplate = new MessageTemplate(rawMessageTemplate);
-            const eventProperties = messageTemplate.bindProperties(properties);
-            const event = {
-                timestamp: new Date().toISOString(),
-                level,
-                messageTemplate,
-                properties: eventProperties
-            };
-            this.pipeline.emit([event]);
-        }
-        catch (error) {
-            if (this.pipeline.yieldErrors) {
-                throw error;
-            }
-        }
+    write(level, rawMessageTemplate, ...unboundProperties) {
+        const messageTemplate = new MessageTemplate(rawMessageTemplate);
+        const properties = messageTemplate.bindProperties(unboundProperties);
+        const logEvent = new LogEvent(new Date().toISOString(), level, messageTemplate, properties);
+        this.pipeline.emit([logEvent]);
     }
 }
 
-/**
- * Represents a stage in the pipeline that emits events to a sink.
- */
-class SinkStage extends PipelineStage {
-    constructor(sink) {
-        super();
-        if (typeof sink === 'undefined' || !sink) {
-            throw new Error('Argument "sink" cannot be undefined or null.');
-        }
-        this.sink = sink;
-    }
-    /**
-     * Emits events to the sink, as well as the next stage in the pipeline (if any).
-     * @param {LogEvent[]} events The events to emit.
-     * @returns {Promise<void>} Promise that will be resolved when all subsequent
-     * pipeline stages have resolved.
-     */
-    emit(events) {
-        return Promise.all([super.emit(events), this.sink.emit(events)]);
-    }
-    /**
-     * Flushes the sink, as well as the next stage in the pipeline (if any).
-     */
-    flush() {
-        return Promise.all([super.flush(), this.sink.flush()]);
-    }
-}
-
-/**
- * Dynamically filters events based on a minimum log level.
- */
-class LogEventLevelSwitch {
-    constructor(initialLevel) {
-        this.flushCallback = () => Promise.resolve();
-        /**
-         * Returns true if an event is at or below the minimum level of this switch.
-         */
-        this.filter = (event) => this.isEnabled(event.level);
-        this.currentLevel = initialLevel || LogEventLevel.verbose;
-    }
-    /**
-     * Sets the minimum level for events passing through this switch to Fatal.
-     */
-    fatal() {
-        return this.setLevel(LogEventLevel.fatal);
-    }
-    /**
-     * Sets the minimum level for events passing through this switch to Error.
-     */
-    error() {
-        return this.setLevel(LogEventLevel.error);
-    }
-    /**
-     * Sets the minimum level for events passing through this switch to Warning.
-     */
-    warning() {
-        return this.setLevel(LogEventLevel.warning);
-    }
-    /**
-     * Sets the minimum level for events passing through this switch to Information.
-     */
-    information() {
-        return this.setLevel(LogEventLevel.information);
-    }
-    /**
-   * Sets the minimum level for events passing through this switch to Debug.
-   */
-    debug() {
-        return this.setLevel(LogEventLevel.debug);
-    }
-    /**
-   * Sets the minimum level for events passing through this switch to Verbose.
-   */
-    verbose() {
-        return this.setLevel(LogEventLevel.verbose);
-    }
-    /**
-     * Returns true if a level is at or below the minimum level of this switch.
-     */
-    isEnabled(level) {
-        return level <= this.currentLevel;
-    }
-    /**
-     * Sets a callback to flush events already in the pipeline before changing the current level.
-     */
-    setFlushCallback(flushCallback) {
-        this.flushCallback = flushCallback;
-    }
-    setLevel(level) {
-        return this.flushCallback().then(() => this.currentLevel = level);
-    }
-}
-
-class LoggerConfiguration {
-    constructor(pipeline) {
-        this.minLevel = Object.assign((levelOrLevelSwitch) => {
-            return levelOrLevelSwitch instanceof LogEventLevelSwitch
-                ? this.filter(levelOrLevelSwitch.filter.bind(levelOrLevelSwitch), levelOrLevelSwitch.setFlushCallback.bind(levelOrLevelSwitch))
-                : this.filter(e => e.level <= levelOrLevelSwitch);
-        }, {
-            fatal: () => this.minLevel(LogEventLevel.fatal),
-            error: () => this.minLevel(LogEventLevel.error),
-            warning: () => this.minLevel(LogEventLevel.warning),
-            information: () => this.minLevel(LogEventLevel.information),
-            debug: () => this.minLevel(LogEventLevel.debug),
-            verbose: () => this.minLevel(LogEventLevel.verbose)
-        });
-        this.pipeline = pipeline || new Pipeline();
-    }
-    writeTo(sink) {
-        this.pipeline.addStage(new SinkStage(sink));
-        return this;
-    }
-    enrich(enricher) {
-        if (enricher instanceof Function) {
-            this.pipeline.addStage(new EnrichStage(enricher));
-        }
-        else if (enricher instanceof Object) {
-            this.pipeline.addStage(new EnrichStage(() => enricher));
-        }
-        else {
-            throw new Error('Argument "enricher" must be either a function or an object.');
-        }
-        return this;
-    }
-    filter(predicate, setFlushCallback) {
-        if (predicate instanceof Function) {
-            const filterStage = new FilterStage(predicate);
-            if (!!setFlushCallback && setFlushCallback instanceof Function) {
-                setFlushCallback(filterStage.flush.bind(filterStage));
-            }
-            this.pipeline.addStage(filterStage);
-        }
-        else {
-            throw new Error('Argument "predicate" must be a function.');
-        }
-        return this;
-    }
-    create(yieldErrors = false) {
-        if (!this.pipeline) {
-            throw new Error('The logger for this configuration has already been created.');
-        }
-        this.pipeline.yieldErrors = yieldErrors;
-        const pipeline = this.pipeline;
-        this.pipeline = null;
-        return new Logger(pipeline);
-    }
-}
-
-const consoleProxy = {
-    error: (typeof console !== 'undefined' && console && (console.error || console.log)) || function () { },
-    warn: (typeof console !== 'undefined' && console && (console.warn || console.log)) || function () { },
-    info: (typeof console !== 'undefined' && console && (console.info || console.log)) || function () { },
-    debug: (typeof console !== 'undefined' && console && (console.debug || console.log)) || function () { },
-    log: (typeof console !== 'undefined' && console && console.log) || function () { }
-};
-class ConsoleSink extends Sink {
+class ConsoleSink {
     constructor(options) {
-        super();
         this.options = options || {};
+        const internalConsole = this.options.consoleProxy || typeof console !== 'undefined' && console || null;
+        const stub = function () { };
+        this.consoleProxy = {
+            error: (internalConsole && (internalConsole.error || internalConsole.log)) || stub,
+            warn: (internalConsole && (internalConsole.warn || internalConsole.log)) || stub,
+            info: (internalConsole && (internalConsole.info || internalConsole.log)) || stub,
+            debug: (internalConsole && (internalConsole.debug || internalConsole.log)) || stub,
+            log: (internalConsole && internalConsole.log) || stub
+        };
     }
     emit(events) {
-        return Promise.resolve().then(() => {
-            for (let i = 0; i < events.length; ++i) {
-                const e = events[i];
-                switch (e.level) {
-                    case LogEventLevel.fatal:
-                        this.writeToConsole(consoleProxy.error, 'Fatal', e);
-                        break;
-                    case LogEventLevel.error:
-                        this.writeToConsole(consoleProxy.error, 'Error', e);
-                        break;
-                    case LogEventLevel.warning:
-                        this.writeToConsole(consoleProxy.warn, 'Warning', e);
-                        break;
-                    case LogEventLevel.information:
-                        this.writeToConsole(consoleProxy.info, 'Information', e);
-                        break;
-                    case LogEventLevel.debug:
-                        this.writeToConsole(consoleProxy.debug, 'Debug', e);
-                        break;
-                    case LogEventLevel.verbose:
-                        this.writeToConsole(consoleProxy.debug, 'Verbose', e);
-                        break;
-                }
+        for (let i = 0; i < events.length; ++i) {
+            const e = events[i];
+            switch (e.level) {
+                case LogEventLevel.fatal:
+                    this.writeToConsole(this.consoleProxy.error, 'Fatal', e);
+                    break;
+                case LogEventLevel.error:
+                    this.writeToConsole(this.consoleProxy.error, 'Error', e);
+                    break;
+                case LogEventLevel.warning:
+                    this.writeToConsole(this.consoleProxy.warn, 'Warning', e);
+                    break;
+                case LogEventLevel.debug:
+                    this.writeToConsole(this.consoleProxy.debug, 'Debug', e);
+                    break;
+                case LogEventLevel.verbose:
+                    this.writeToConsole(this.consoleProxy.debug, 'Verbose', e);
+                    break;
+                case LogEventLevel.information:
+                default:
+                    this.writeToConsole(this.consoleProxy.info, 'Information', e);
+                    break;
             }
-        });
+        }
+    }
+    flush() {
+        return Promise.resolve();
     }
     writeToConsole(logMethod, prefix, e) {
         let output = '[' + prefix + '] ' + e.messageTemplate.render(e.properties);
@@ -604,9 +335,12 @@ class ConsoleSink extends Sink {
     }
 }
 
+class LoggerConfiguration {
+}
+
 function configure() {
     return new LoggerConfiguration();
 }
 
-export { LoggerConfiguration, configure, ConsoleSink, LogEventLevelSwitch };
+export { configure, LoggerConfiguration, LogEventLevel, Logger, ConsoleSink };
 //# sourceMappingURL=structured-log.es6.js.map

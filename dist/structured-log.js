@@ -31,216 +31,67 @@ if (typeof Object.assign != 'function') {
   };
 }
 
-function __extends(d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-}
-
 /**
- * Represents the event pipeline.
+ * Represents the severity level of a log event.
  */
-var Pipeline = (function () {
-    /**
-     * Creates a new Pipeline instance.
-     */
-    function Pipeline() {
-        /**
-         * If set to `true`, errors in the pipeline will not be caught and will be
-         * allowed to propagate out to the execution environment.
-         */
-        this.yieldErrors = false;
-        this.stages = [];
-    }
-    /**
-     * Adds a new stage to the pipeline, and connects it to the previous stage.
-     * @param {PipelineStage} stage The stage to add.
-     */
-    Pipeline.prototype.addStage = function (stage) {
-        if (typeof stage === 'undefined' || !stage) {
-            throw new Error('Argument "stage" cannot be undefined or null.');
-        }
-        this.stages.push(stage);
-        if (this.stages.length > 1) {
-            this.stages[this.stages.length - 2].next = this.stages[this.stages.length - 1];
-        }
-    };
-    /**
-     * Emits events through the pipeline.
-     * @param {LogEvent[]} events The events to emit.
-     * @returns {Promise<any>} Promise that will be resolved when all
-     * pipeline stages have resolved.
-     */
-    Pipeline.prototype.emit = function (events) {
-        var _this = this;
-        try {
-            if (this.stages.length === 0) {
-                return Promise.resolve();
-            }
-            return this.stages[0].emit(events).catch(function (e) {
-                if (_this.yieldErrors) {
-                    throw e;
-                }
-            });
-        }
-        catch (e) {
-            if (!this.yieldErrors) {
-                return Promise.resolve();
-            }
-            else {
-                throw e;
-            }
-        }
-    };
-    /**
-     * Flushes any events through the pipeline
-     * @returns {Promise<any>} Promise that will be resolved when all
-     * pipeline stages have been flushed.
-     */
-    Pipeline.prototype.flush = function () {
-        var _this = this;
-        try {
-            if (this.stages.length === 0) {
-                return Promise.resolve();
-            }
-            return this.stages[0].flush().catch(function (e) {
-                if (_this.yieldErrors) {
-                    throw e;
-                }
-            });
-        }
-        catch (e) {
-            if (!this.yieldErrors) {
-                return Promise.resolve();
-            }
-            else {
-                throw e;
-            }
-        }
-    };
-    return Pipeline;
-}());
 
-/**
- * Represents a stage in the event pipeline.
- */
-var PipelineStage = (function () {
-    function PipelineStage() {
-        /**
-         * Points to the next stage in the pipeline.
-         */
-        this.next = null;
-        this.chain = Promise.resolve();
-    }
-    /**
-     * Emits events to this pipeline stage, as well as the next stage in the pipeline (if any).
-     * @param {LogEvent[]} events The events to emit.
-     * @returns {Promise<any>} Promise that will be resolved when all subsequent
-     * pipeline stages have resolved.
-     */
-    PipelineStage.prototype.emit = function (events) {
-        var _this = this;
-        return this.chain = this.chain.then(function () { return _this.next ? _this.next.emit(events) : Promise.resolve(); });
-    };
-    /**
-     * Flushes this pipeline stage, as well as the next stage in the pipeline (if any).
-     * @returns {Promise<any>} Promise that will be resolved when all subsequent
-     * pipeline stages have been flushed.
-     */
-    PipelineStage.prototype.flush = function () {
-        var _this = this;
-        return this.chain = this.chain.then(function () { return _this.next ? _this.next.flush() : Promise.resolve(); });
-    };
-    return PipelineStage;
-}());
-
-var FilterStage = (function (_super) {
-    __extends(FilterStage, _super);
-    function FilterStage(filter) {
-        var _this = _super.call(this) || this;
-        _this.filter = filter;
-        return _this;
-    }
-    FilterStage.prototype.emit = function (events) {
-        var _this = this;
-        if (!this.next) {
-            return Promise.resolve();
-        }
-        return Promise.resolve()
-            .then(function () { return events.filter(_this.filter); })
-            .then(function (filteredEvents) { return _super.prototype.emit.call(_this, filteredEvents); });
-    };
-    return FilterStage;
-}(PipelineStage));
-
-var EnrichStage = (function (_super) {
-    __extends(EnrichStage, _super);
-    function EnrichStage(enricher) {
-        var _this = _super.call(this) || this;
-        _this.enricher = enricher;
-        return _this;
-    }
-    EnrichStage.prototype.emit = function (events) {
-        var _this = this;
-        if (!this.next) {
-            return Promise.resolve();
-        }
-        return Promise.resolve()
-            .then(function () {
-            for (var i = 0; i < events.length; ++i) {
-                var e = events[i];
-                e.properties = Object.assign({}, e.properties, _this.enricher());
-            }
-            return events;
-        })
-            .then(function (enrichedEvents) { return _super.prototype.emit.call(_this, enrichedEvents); });
-    };
-    return EnrichStage;
-}(PipelineStage));
-
-var LogEventLevel;
 (function (LogEventLevel) {
-    LogEventLevel[LogEventLevel["fatal"] = 0] = "fatal";
-    LogEventLevel[LogEventLevel["error"] = 1] = "error";
-    LogEventLevel[LogEventLevel["warn"] = 2] = "warn";
-    LogEventLevel[LogEventLevel["warning"] = 2] = "warning";
-    LogEventLevel[LogEventLevel["info"] = 3] = "info";
-    LogEventLevel[LogEventLevel["information"] = 3] = "information";
-    LogEventLevel[LogEventLevel["debug"] = 4] = "debug";
-    LogEventLevel[LogEventLevel["verbose"] = 5] = "verbose";
-})(LogEventLevel || (LogEventLevel = {}));
+    LogEventLevel[LogEventLevel["off"] = 0] = "off";
+    LogEventLevel[LogEventLevel["fatal"] = 1] = "fatal";
+    LogEventLevel[LogEventLevel["error"] = 3] = "error";
+    LogEventLevel[LogEventLevel["warning"] = 7] = "warning";
+    LogEventLevel[LogEventLevel["information"] = 15] = "information";
+    LogEventLevel[LogEventLevel["debug"] = 31] = "debug";
+    LogEventLevel[LogEventLevel["verbose"] = 63] = "verbose";
+})(exports.LogEventLevel || (exports.LogEventLevel = {}));
+/**
+ * Checks if a log event level includes the target log event level.
+ * @param {LogEventLevel} level The level to check.
+ * @param {LogEventLevel} target The target level.
+ * @returns True if the checked level contains the target level.
+ */
 
-var Sink = (function () {
-    function Sink() {
+/**
+ * Represents a log event.
+ */
+var LogEvent = (function () {
+    /**
+     * Creates a new log event instance.
+     */
+    function LogEvent(timestamp, level, messageTemplate, properties) {
+        this.timestamp = timestamp;
+        this.level = level;
+        this.messageTemplate = messageTemplate;
+        this.properties = properties || {};
     }
-    Sink.prototype.flush = function () {
-        return Promise.resolve();
-    };
-    return Sink;
+    return LogEvent;
 }());
 
 var tokenizer = /\{@?\w+}/g;
+/**
+ * Represents a message template that can be rendered into a log message.
+ */
 var MessageTemplate = (function () {
+    /**
+     * Creates a new MessageTemplate instance with the given template.
+     */
     function MessageTemplate(messageTemplate) {
-        this._raw = messageTemplate;
+        if (messageTemplate === null || !messageTemplate.length) {
+            throw new Error('Argument "messageTemplate" is required.');
+        }
+        this.raw = messageTemplate;
         this.tokens = this.tokenize(messageTemplate);
     }
-    Object.defineProperty(MessageTemplate.prototype, "raw", {
-        get: function () {
-            return this._raw;
-        },
-        enumerable: true,
-        configurable: true
-    });
     /**
      * Renders this template using the given properties.
-     * @param {Object?} properties Object containing the properties.
+     * @param {Object} properties Object containing the properties.
      * @returns Rendered message.
      */
     MessageTemplate.prototype.render = function (properties) {
         if (!this.tokens.length) {
-            return this._raw;
+            return this.raw;
         }
+        properties = properties || {};
         var result = [];
         for (var i = 0; i < this.tokens.length; ++i) {
             var token = this.tokens[i];
@@ -260,7 +111,7 @@ var MessageTemplate = (function () {
     };
     /**
      * Binds the given set of args to their matching tokens.
-     * @param positionalArgs Array of arguments.
+     * @param {any} positionalArgs Arguments.
      * @returns Object containing the properties.
      */
     MessageTemplate.prototype.bindProperties = function (positionalArgs) {
@@ -360,305 +211,149 @@ var MessageTemplate = (function () {
     return MessageTemplate;
 }());
 
-var Logger = (function (_super) {
-    __extends(Logger, _super);
+/**
+ * Logs events.
+ */
+var Logger = (function () {
+    /**
+     * Creates a new logger instance using the specified pipeline.
+     */
     function Logger(pipeline) {
-        var _this = _super.call(this) || this;
-        if (!pipeline) {
-            throw new Error('Argument "pipeline" cannot be null or undefined.');
-        }
-        _this.pipeline = pipeline;
-        return _this;
+        this.pipeline = pipeline;
     }
     /**
-     * Logs a message with the `Fatal` level.
+     * Logs an event with the {@link LogEventLevel.fatal} severity.
+     * @param {string} messageTemplate Message template for the log event.
+     * @param {any[]} properties Properties that can be used to render the message template.
      */
     Logger.prototype.fatal = function (messageTemplate) {
         var properties = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             properties[_i - 1] = arguments[_i];
         }
-        this.write(LogEventLevel.fatal, messageTemplate, properties);
+        this.write(exports.LogEventLevel.fatal, messageTemplate, properties);
     };
     /**
-     * Logs a message with the `Error` level.
+     * Logs an event with the {@link LogEventLevel.error} severity.
+     * @param {string} messageTemplate Message template for the log event.
+     * @param {any[]} properties Properties that can be used to render the message template.
      */
     Logger.prototype.error = function (messageTemplate) {
         var properties = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             properties[_i - 1] = arguments[_i];
         }
-        this.write(LogEventLevel.error, messageTemplate, properties);
+        this.write(exports.LogEventLevel.error, messageTemplate, properties);
     };
     /**
-     * Logs a message with the `Warning` level.
+     * Logs an event with the {@link LogEventLevel.warning} severity.
+     * @param {string} messageTemplate Message template for the log event.
+     * @param {any[]} properties Properties that can be used to render the message template.
      */
     Logger.prototype.warn = function (messageTemplate) {
         var properties = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             properties[_i - 1] = arguments[_i];
         }
-        this.write(LogEventLevel.warning, messageTemplate, properties);
+        this.write(exports.LogEventLevel.warning, messageTemplate, properties);
     };
     /**
-     * Logs a message with the `Information` level.
+     * Logs an event with the {@link LogEventLevel.information} severity.
+     * @param {string} messageTemplate Message template for the log event.
+     * @param {any[]} properties Properties that can be used to render the message template.
      */
     Logger.prototype.info = function (messageTemplate) {
         var properties = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             properties[_i - 1] = arguments[_i];
         }
-        this.write(LogEventLevel.information, messageTemplate, properties);
+        this.write(exports.LogEventLevel.information, messageTemplate, properties);
     };
     /**
-     * Logs a message with the `Debug` level.
+     * Logs an event with the {@link LogEventLevel.debug} severity.
+     * @param {string} messageTemplate Message template for the log event.
+     * @param {any[]} properties Properties that can be used to render the message template.
      */
     Logger.prototype.debug = function (messageTemplate) {
         var properties = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             properties[_i - 1] = arguments[_i];
         }
-        this.write(LogEventLevel.debug, messageTemplate, properties);
+        this.write(exports.LogEventLevel.debug, messageTemplate, properties);
     };
     /**
-     * Logs a message with the `Verbose` level.
+     * Logs an event with the {@link LogEventLevel.verbose} severity.
+     * @param {string} messageTemplate Message template for the log event.
+     * @param {any[]} properties Properties that can be used to render the message template.
      */
     Logger.prototype.verbose = function (messageTemplate) {
         var properties = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             properties[_i - 1] = arguments[_i];
         }
-        this.write(LogEventLevel.verbose, messageTemplate, properties);
+        this.write(exports.LogEventLevel.verbose, messageTemplate, properties);
     };
     /**
-     * @inheritdoc
+     * Flushes the pipeline of this logger.
+     * @returns A {Promise<any>} that will resolve when the pipeline has been flushed.
      */
     Logger.prototype.flush = function () {
         return this.pipeline.flush();
     };
-    Logger.prototype.emit = function (events) {
-        return this.pipeline.emit(events);
-    };
-    Logger.prototype.write = function (level, rawMessageTemplate, properties) {
-        try {
-            var messageTemplate = new MessageTemplate(rawMessageTemplate);
-            var eventProperties = messageTemplate.bindProperties(properties);
-            var event = {
-                timestamp: new Date().toISOString(),
-                level: level,
-                messageTemplate: messageTemplate,
-                properties: eventProperties
-            };
-            this.pipeline.emit([event]);
+    Logger.prototype.write = function (level, rawMessageTemplate) {
+        var unboundProperties = [];
+        for (var _i = 2; _i < arguments.length; _i++) {
+            unboundProperties[_i - 2] = arguments[_i];
         }
-        catch (error) {
-            if (this.pipeline.yieldErrors) {
-                throw error;
-            }
-        }
+        var messageTemplate = new MessageTemplate(rawMessageTemplate);
+        var properties = messageTemplate.bindProperties(unboundProperties);
+        var logEvent = new LogEvent(new Date().toISOString(), level, messageTemplate, properties);
+        this.pipeline.emit([logEvent]);
     };
     return Logger;
-}(Sink));
-
-/**
- * Represents a stage in the pipeline that emits events to a sink.
- */
-var SinkStage = (function (_super) {
-    __extends(SinkStage, _super);
-    function SinkStage(sink) {
-        var _this = _super.call(this) || this;
-        if (typeof sink === 'undefined' || !sink) {
-            throw new Error('Argument "sink" cannot be undefined or null.');
-        }
-        _this.sink = sink;
-        return _this;
-    }
-    /**
-     * Emits events to the sink, as well as the next stage in the pipeline (if any).
-     * @param {LogEvent[]} events The events to emit.
-     * @returns {Promise<void>} Promise that will be resolved when all subsequent
-     * pipeline stages have resolved.
-     */
-    SinkStage.prototype.emit = function (events) {
-        return Promise.all([_super.prototype.emit.call(this, events), this.sink.emit(events)]);
-    };
-    /**
-     * Flushes the sink, as well as the next stage in the pipeline (if any).
-     */
-    SinkStage.prototype.flush = function () {
-        return Promise.all([_super.prototype.flush.call(this), this.sink.flush()]);
-    };
-    return SinkStage;
-}(PipelineStage));
-
-/**
- * Dynamically filters events based on a minimum log level.
- */
-var LogEventLevelSwitch = (function () {
-    function LogEventLevelSwitch(initialLevel) {
-        var _this = this;
-        this.flushCallback = function () { return Promise.resolve(); };
-        /**
-         * Returns true if an event is at or below the minimum level of this switch.
-         */
-        this.filter = function (event) { return _this.isEnabled(event.level); };
-        this.currentLevel = initialLevel || LogEventLevel.verbose;
-    }
-    /**
-     * Sets the minimum level for events passing through this switch to Fatal.
-     */
-    LogEventLevelSwitch.prototype.fatal = function () {
-        return this.setLevel(LogEventLevel.fatal);
-    };
-    /**
-     * Sets the minimum level for events passing through this switch to Error.
-     */
-    LogEventLevelSwitch.prototype.error = function () {
-        return this.setLevel(LogEventLevel.error);
-    };
-    /**
-     * Sets the minimum level for events passing through this switch to Warning.
-     */
-    LogEventLevelSwitch.prototype.warning = function () {
-        return this.setLevel(LogEventLevel.warning);
-    };
-    /**
-     * Sets the minimum level for events passing through this switch to Information.
-     */
-    LogEventLevelSwitch.prototype.information = function () {
-        return this.setLevel(LogEventLevel.information);
-    };
-    /**
-   * Sets the minimum level for events passing through this switch to Debug.
-   */
-    LogEventLevelSwitch.prototype.debug = function () {
-        return this.setLevel(LogEventLevel.debug);
-    };
-    /**
-   * Sets the minimum level for events passing through this switch to Verbose.
-   */
-    LogEventLevelSwitch.prototype.verbose = function () {
-        return this.setLevel(LogEventLevel.verbose);
-    };
-    /**
-     * Returns true if a level is at or below the minimum level of this switch.
-     */
-    LogEventLevelSwitch.prototype.isEnabled = function (level) {
-        return level <= this.currentLevel;
-    };
-    /**
-     * Sets a callback to flush events already in the pipeline before changing the current level.
-     */
-    LogEventLevelSwitch.prototype.setFlushCallback = function (flushCallback) {
-        this.flushCallback = flushCallback;
-    };
-    LogEventLevelSwitch.prototype.setLevel = function (level) {
-        var _this = this;
-        return this.flushCallback().then(function () { return _this.currentLevel = level; });
-    };
-    return LogEventLevelSwitch;
 }());
 
-var LoggerConfiguration = (function () {
-    function LoggerConfiguration(pipeline) {
-        var _this = this;
-        this.minLevel = Object.assign(function (levelOrLevelSwitch) {
-            return levelOrLevelSwitch instanceof LogEventLevelSwitch
-                ? _this.filter(levelOrLevelSwitch.filter.bind(levelOrLevelSwitch), levelOrLevelSwitch.setFlushCallback.bind(levelOrLevelSwitch))
-                : _this.filter(function (e) { return e.level <= levelOrLevelSwitch; });
-        }, {
-            fatal: function () { return _this.minLevel(LogEventLevel.fatal); },
-            error: function () { return _this.minLevel(LogEventLevel.error); },
-            warning: function () { return _this.minLevel(LogEventLevel.warning); },
-            information: function () { return _this.minLevel(LogEventLevel.information); },
-            debug: function () { return _this.minLevel(LogEventLevel.debug); },
-            verbose: function () { return _this.minLevel(LogEventLevel.verbose); }
-        });
-        this.pipeline = pipeline || new Pipeline();
-    }
-    LoggerConfiguration.prototype.writeTo = function (sink) {
-        this.pipeline.addStage(new SinkStage(sink));
-        return this;
-    };
-    LoggerConfiguration.prototype.enrich = function (enricher) {
-        if (enricher instanceof Function) {
-            this.pipeline.addStage(new EnrichStage(enricher));
-        }
-        else if (enricher instanceof Object) {
-            this.pipeline.addStage(new EnrichStage(function () { return enricher; }));
-        }
-        else {
-            throw new Error('Argument "enricher" must be either a function or an object.');
-        }
-        return this;
-    };
-    LoggerConfiguration.prototype.filter = function (predicate, setFlushCallback) {
-        if (predicate instanceof Function) {
-            var filterStage = new FilterStage(predicate);
-            if (!!setFlushCallback && setFlushCallback instanceof Function) {
-                setFlushCallback(filterStage.flush.bind(filterStage));
-            }
-            this.pipeline.addStage(filterStage);
-        }
-        else {
-            throw new Error('Argument "predicate" must be a function.');
-        }
-        return this;
-    };
-    LoggerConfiguration.prototype.create = function (yieldErrors) {
-        if (yieldErrors === void 0) { yieldErrors = false; }
-        if (!this.pipeline) {
-            throw new Error('The logger for this configuration has already been created.');
-        }
-        this.pipeline.yieldErrors = yieldErrors;
-        var pipeline = this.pipeline;
-        this.pipeline = null;
-        return new Logger(pipeline);
-    };
-    return LoggerConfiguration;
-}());
-
-var consoleProxy = {
-    error: (typeof console !== 'undefined' && console && (console.error || console.log)) || function () { },
-    warn: (typeof console !== 'undefined' && console && (console.warn || console.log)) || function () { },
-    info: (typeof console !== 'undefined' && console && (console.info || console.log)) || function () { },
-    debug: (typeof console !== 'undefined' && console && (console.debug || console.log)) || function () { },
-    log: (typeof console !== 'undefined' && console && console.log) || function () { }
-};
-var ConsoleSink = (function (_super) {
-    __extends(ConsoleSink, _super);
+var ConsoleSink = (function () {
     function ConsoleSink(options) {
-        var _this = _super.call(this) || this;
-        _this.options = options || {};
-        return _this;
+        this.options = options || {};
+        var internalConsole = this.options.consoleProxy || typeof console !== 'undefined' && console || null;
+        var stub = function () { };
+        this.consoleProxy = {
+            error: (internalConsole && (internalConsole.error || internalConsole.log)) || stub,
+            warn: (internalConsole && (internalConsole.warn || internalConsole.log)) || stub,
+            info: (internalConsole && (internalConsole.info || internalConsole.log)) || stub,
+            debug: (internalConsole && (internalConsole.debug || internalConsole.log)) || stub,
+            log: (internalConsole && internalConsole.log) || stub
+        };
     }
     ConsoleSink.prototype.emit = function (events) {
-        var _this = this;
-        return Promise.resolve().then(function () {
-            for (var i = 0; i < events.length; ++i) {
-                var e = events[i];
-                switch (e.level) {
-                    case LogEventLevel.fatal:
-                        _this.writeToConsole(consoleProxy.error, 'Fatal', e);
-                        break;
-                    case LogEventLevel.error:
-                        _this.writeToConsole(consoleProxy.error, 'Error', e);
-                        break;
-                    case LogEventLevel.warning:
-                        _this.writeToConsole(consoleProxy.warn, 'Warning', e);
-                        break;
-                    case LogEventLevel.information:
-                        _this.writeToConsole(consoleProxy.info, 'Information', e);
-                        break;
-                    case LogEventLevel.debug:
-                        _this.writeToConsole(consoleProxy.debug, 'Debug', e);
-                        break;
-                    case LogEventLevel.verbose:
-                        _this.writeToConsole(consoleProxy.debug, 'Verbose', e);
-                        break;
-                }
+        for (var i = 0; i < events.length; ++i) {
+            var e = events[i];
+            switch (e.level) {
+                case exports.LogEventLevel.fatal:
+                    this.writeToConsole(this.consoleProxy.error, 'Fatal', e);
+                    break;
+                case exports.LogEventLevel.error:
+                    this.writeToConsole(this.consoleProxy.error, 'Error', e);
+                    break;
+                case exports.LogEventLevel.warning:
+                    this.writeToConsole(this.consoleProxy.warn, 'Warning', e);
+                    break;
+                case exports.LogEventLevel.debug:
+                    this.writeToConsole(this.consoleProxy.debug, 'Debug', e);
+                    break;
+                case exports.LogEventLevel.verbose:
+                    this.writeToConsole(this.consoleProxy.debug, 'Verbose', e);
+                    break;
+                case exports.LogEventLevel.information:
+                default:
+                    this.writeToConsole(this.consoleProxy.info, 'Information', e);
+                    break;
             }
-        });
+        }
+    };
+    ConsoleSink.prototype.flush = function () {
+        return Promise.resolve();
     };
     ConsoleSink.prototype.writeToConsole = function (logMethod, prefix, e) {
         var output = '[' + prefix + '] ' + e.messageTemplate.render(e.properties);
@@ -676,16 +371,22 @@ var ConsoleSink = (function (_super) {
         logMethod.apply(void 0, [output].concat(values));
     };
     return ConsoleSink;
-}(Sink));
+}());
+
+var LoggerConfiguration = (function () {
+    function LoggerConfiguration() {
+    }
+    return LoggerConfiguration;
+}());
 
 function configure() {
     return new LoggerConfiguration();
 }
 
-exports.LoggerConfiguration = LoggerConfiguration;
 exports.configure = configure;
+exports.LoggerConfiguration = LoggerConfiguration;
+exports.Logger = Logger;
 exports.ConsoleSink = ConsoleSink;
-exports.LogEventLevelSwitch = LogEventLevelSwitch;
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
