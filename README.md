@@ -66,6 +66,7 @@ log.verbose('Hello structured-log!');
 
 There are 6 log levels available by default, in addition to a setting to disable logging completely.
 In decreasing order of severity (borrowing descriptions from [Seq](https://github.com/serilog/serilog/wiki/Writing-Log-Events)):
+
 |Label|Bitfield|Description|
 |---|---|---|
 |Off|0|Nothing|
