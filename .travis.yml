@@ -5,3 +5,7 @@ node_js:
 install:
   - npm install -g typescript mocha
   - npm install
+after_script:
+  - npm run test-coverage
+  - cat ./coverage/lcov.info | node ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage
+  
