@@ -4,7 +4,7 @@
 import { expect } from 'chai';
 import * as TypeMoq from 'typemoq';
 import { Pipeline } from '../src/pipeline';
-import { PipelineStage } from '../src/pipelineStage';
+import { PipelineStage } from '../src/pipeline';
 import { LogEvent, LogEventLevel } from '../src/logEvent';
 import { MessageTemplate } from '../src/messageTemplate';
 

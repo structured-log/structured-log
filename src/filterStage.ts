@@ -1,4 +1,4 @@
-import { PipelineStage } from './pipelineStage';
+import { PipelineStage } from './pipeline';
 import { LogEvent } from './logEvent';
 
 export class FilterStage implements PipelineStage {
@@ -9,7 +9,7 @@ export class FilterStage implements PipelineStage {
   }
 
   emit(events: LogEvent[]): LogEvent[] {
-    return events && events.length && events.filter(this.predicate) || [];
+    return events.filter(this.predicate);
   }
 
   flush(): Promise<any> {
