@@ -327,9 +327,9 @@ var Logger = (function () {
 var ConsoleSink = (function () {
     function ConsoleSink(options) {
         this.options = options || {};
-        var internalConsole = this.options.consoleProxy || typeof console !== 'undefined' && console || null;
+        var internalConsole = this.options.console || typeof console !== 'undefined' && console || null;
         var stub = function () { };
-        this.consoleProxy = {
+        this.console = {
             error: (internalConsole && (internalConsole.error || internalConsole.log)) || stub,
             warn: (internalConsole && (internalConsole.warn || internalConsole.log)) || stub,
             info: (internalConsole && (internalConsole.info || internalConsole.log)) || stub,
@@ -342,23 +342,25 @@ var ConsoleSink = (function () {
             var e = events[i];
             switch (e.level) {
                 case exports.LogEventLevel.fatal:
-                    this.writeToConsole(this.consoleProxy.error, 'Fatal', e);
+                    this.writeToConsole(this.console.error, 'Fatal', e);
                     break;
                 case exports.LogEventLevel.error:
-                    this.writeToConsole(this.consoleProxy.error, 'Error', e);
+                    this.writeToConsole(this.console.error, 'Error', e);
                     break;
                 case exports.LogEventLevel.warning:
-                    this.writeToConsole(this.consoleProxy.warn, 'Warning', e);
-                    break;
-                case exports.LogEventLevel.debug:
-                    this.writeToConsole(this.consoleProxy.debug, 'Debug', e);
-                    break;
-                case exports.LogEventLevel.verbose:
-                    this.writeToConsole(this.consoleProxy.debug, 'Verbose', e);
+                    this.writeToConsole(this.console.warn, 'Warning', e);
                     break;
                 case exports.LogEventLevel.information:
+                    this.writeToConsole(this.console.info, 'Information', e);
+                    break;
+                case exports.LogEventLevel.debug:
+                    this.writeToConsole(this.console.debug, 'Debug', e);
+                    break;
+                case exports.LogEventLevel.verbose:
+                    this.writeToConsole(this.console.debug, 'Verbose', e);
+                    break;
                 default:
-                    this.writeToConsole(this.consoleProxy.info, 'Information', e);
+                    this.writeToConsole(this.console.log, 'Log', e);
                     break;
             }
         }
@@ -367,9 +369,9 @@ var ConsoleSink = (function () {
         return Promise.resolve();
     };
     ConsoleSink.prototype.writeToConsole = function (logMethod, prefix, e) {
-        var output = '[' + prefix + '] ' + e.messageTemplate.render(e.properties);
+        var output = "[" + prefix + "] " + e.messageTemplate.render(e.properties);
         if (this.options.includeTimestamps) {
-            output = e.timestamp + ' ' + output;
+            output = e.timestamp + " " + output;
         }
         var values = [];
         if (this.options.includeProperties) {
@@ -432,6 +434,10 @@ var DynamicLevelSwitch = (function () {
     DynamicLevelSwitch.prototype.verbose = function () {
         var _this = this;
         return this.flushDelegate().then(function () { return _this.minLevel = exports.LogEventLevel.verbose; });
+    };
+    DynamicLevelSwitch.prototype.off = function () {
+        var _this = this;
+        return this.flushDelegate().then(function () { return _this.minLevel = exports.LogEventLevel.off; });
     };
     DynamicLevelSwitch.prototype.isEnabled = function (level) {
         return this.minLevel === null || isEnabled(this.minLevel, level);

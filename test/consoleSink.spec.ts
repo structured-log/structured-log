@@ -49,6 +49,15 @@ describe('ConsoleSink', () => {
       consoleProxy.verify(m => m.debug(TypeMoq.It.isAny()), TypeMoq.Times.exactly(2));
     });
     
+    it('logs messages with an unknown log level', () => {
+      const consoleProxy = TypeMoq.Mock.ofType<ConsoleProxy>();
+      const consoleSink = new ConsoleSink({ console: consoleProxy.object });
+      consoleSink.emit([
+        new LogEvent('', 100, new MessageTemplate('Test'))
+      ]);
+      consoleProxy.verify(m => m.log(TypeMoq.It.isAny()), TypeMoq.Times.once());
+    });
+    
     it('falls back to log when the more specific methods are unavailable', () => {
       const consoleProxy = TypeMoq.Mock.ofInstance({ log: (message?: any, ...properties: any[]) => {} });
       const consoleSink = new ConsoleSink({ console: consoleProxy.object });

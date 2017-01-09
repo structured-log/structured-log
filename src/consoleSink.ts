@@ -48,6 +48,10 @@ export class ConsoleSink implements Sink {
         case LogEventLevel.warning:
           this.writeToConsole(this.console.warn, 'Warning', e);
           break;
+
+        case LogEventLevel.information:
+          this.writeToConsole(this.console.info, 'Information', e);
+          break;
           
         case LogEventLevel.debug:
           this.writeToConsole(this.console.debug, 'Debug', e);
@@ -57,9 +61,8 @@ export class ConsoleSink implements Sink {
           this.writeToConsole(this.console.debug, 'Verbose', e);
           break;
 
-        case LogEventLevel.information:
         default: 
-          this.writeToConsole(this.console.info, 'Information', e);
+          this.writeToConsole(this.console.log, 'Log', e);
           break;
       }
     }
@@ -70,9 +73,9 @@ export class ConsoleSink implements Sink {
   }
 
   private writeToConsole(logMethod: Function, prefix: string, e: LogEvent) {
-    let output = '[' + prefix + '] ' + e.messageTemplate.render(e.properties);
+    let output = `[${prefix}] ${e.messageTemplate.render(e.properties)}`;
     if (this.options.includeTimestamps) {
-      output = e.timestamp + ' ' + output;
+      output = `${e.timestamp} ${output}`;
     }
     const values = [];
     if (this.options.includeProperties) {
