@@ -1,6 +1,11 @@
-# structured-log [![Build Status](https://travis-ci.org/structured-log/structured-log.svg?branch=master)](https://travis-ci.org/structured-log/structured-log) [![Coverage Status](https://coveralls.io/repos/github/Wedvich/structured-log/badge.svg?branch=master)](https://coveralls.io/github/Wedvich/structured-log?branch=master)
+# structured-log
 
 A structured logging framework for JavaScript, inspired by [Serilog](http://serilog.net/).
+
+|Branch|Status|
+|---|---|---|
+|`master`|[![Build Status](https://travis-ci.org/structured-log/structured-log.svg?branch=master)](https://travis-ci.org/structured-log/structured-log)|
+|`dev`|[![Build Status](https://travis-ci.org/structured-log/structured-log.svg?branch=dev)](https://travis-ci.org/structured-log/structured-log)|
 
 ## Basic Example
 
@@ -46,9 +51,9 @@ enrichers can be inserted between the different sinks to build a highly
 controllable pipeline.
 
 ```js
-  .writeTo(new ConsoleSink())
+  .writeTo(new structuredLog.ConsoleSink())
   .minLevel.warning()
-  .writeTo(new HttpSink({ url: 'http://example.com' }))
+  .writeTo(new OtherExampleSink({ url: 'http://example.com' }))
   .writeTo(...)
 ```
 
@@ -69,13 +74,13 @@ In decreasing order of severity (with descriptions borrowed from [Seq](https://g
 
 |Label|Description|Bitfield|
 |---|---|---|
-|off|When the minimum level is set to this, nothing will be logged.|0|
-|fatal|Critical errors causing complete failure of the application.|1|
-|error|Indicates failures within the application or connected systems.|3|
-|warning|Indicators of possible issues or service/functionality degradatio.|7|
-|information|Events of interest or that have relevance to outside observers.|15|
-|debug|Internal control flow and diagnostic state dumps to facilitate pinpointing of recognised problems.|31|
-|verbose|Tracing information and debugging minutiae; generally only switched on in unusual situations.|63|
+|`off`|When the minimum level is set to this, nothing will be logged.|0|
+|`fatal`|Critical errors causing complete failure of the application.|1|
+|`error`|Indicates failures within the application or connected systems.|3|
+|`warning`|Indicators of possible issues or service/functionality degradatio.|7|
+|`information`|Events of interest or that have relevance to outside observers.|15|
+|`debug`|Internal control flow and diagnostic state dumps to facilitate pinpointing of recognised problems.|31|
+|`verbose`|Tracing information and debugging minutiae; generally only switched on in unusual situations.|63|
 
 The log levels can also be represented as bitfields, and each log level also includes any levels of higher severity.
 For example, `warning` will also allow events of the `error` level through, but block `information`,
@@ -112,10 +117,12 @@ log.verbose('Exiting getUsers()');
 #### Dynamically controlling the minimum level
 
 You can also control the minimum level dynamically using the `DynamicLevelSwitch` class. Pass an instance to the `minLevel()` function:
+
 ```js
-var dynamicLevelSwitch = new DynamicLevelSwitch();
+const dynamicLevelSwitch = new DynamicLevelSwitch();
 
 // ...
+
   .minLevel(dynamicLevelSwitch)
 ```
 
@@ -130,7 +137,26 @@ logger.debug('This message won\'t');
 
 ### Sinks
 
-A sink is a target for log events going through the pipeline.
+A *sink* is a recipient for log events going through the pipeline, and is generally used to publish events to some external source
+such as the developer console, file system or an online service.
+
+To add a sink as a target for log events in the pipeline, pass an instance to the `writeTo()` function.
+
+```js
+  .writeTo(new ExampleSink())
+```
+
+The `Logger` object that's created with the `create()` method is also a valid sink, so you can pass it to another pipeline.
+
+```js
+const logger1 = structuredLog.configure()
+  // ...
+  .create();
+
+const logger2 = structuredLog.configure()
+  .writeTo(logger1)
+  .create();
+```
 
 #### Built-in sinks
 |Name|Description|
@@ -140,12 +166,13 @@ A sink is a target for log events going through the pipeline.
 #### 3rd party sinks
 |Name|Description|
 |---|---|
-|[SeqSink](https://github.com/Wedvich/structured-log-seq-sink)|Outputs events to a Seq server.|
+|[SeqSink](https://github.com/Wedvich/structured-log-seq-sink)|Outputs events to a [Seq](https://getseq.net) server.|
 
-### Filters
+### Filtering
 
-You can add filters to the pipeline by using the `filter()` function. It takes
-a single predicate that will be applied to events passing through the filter.
+You can *filter* which events are passed through the pipeline using the `filter()` function. It takes
+a single function parameter that will be used to test events going into the filter, and if it returns `true`,
+the events will be allowed to continue through the pipeline.
 
 The below example will filter out any log events with template properties, only
 allowing pure text events through to the next pipeline stage.
@@ -154,9 +181,11 @@ allowing pure text events through to the next pipeline stage.
   .filter(logEvent => logEvent.properties.length === 0)
 ```
 
-### Enrichers
+The predicate should take a log event as its only parameter, and return true or false.
 
-Log events going through the pipeline can be enriched with additional properties
+### Enrichment
+
+Log events going through the pipeline can be *enriched* with additional properties
 by using the `enrich()` function.
 
 ```js
@@ -167,24 +196,22 @@ by using the `enrich()` function.
 ```
 
 You can also pass a function as the first argument, and return an object with
-the properties to enrich with.
+the properties to enrich with. This can be useful to dynamically add properties based on the current context or state of the application.
 
 ```js
-function getEnrichersFromState() {
-  return {
-    'user': state.user
-  };
-}
+const state = {
+  user: null
+};
 
 // ...
 
-  .enrich(getEnrichersFromState)
-
+  .enrich(() => ({ user: state.user.name }))
 ```
 
 ### Console Sink
 
-The `ConsoleSink`, which outputs event to the Node.js or browser console, is provided by default. The following line creates a new instance that can be passed to the logger configuration:
+The `ConsoleSink`, which outputs event to the Node.js or browser console, is provided by default.
+The following line creates a new instance that can be passed to the logger configuration:
 
 ```js
 var consoleSink = new structuredLog.ConsoleSink({ /* options */ });
