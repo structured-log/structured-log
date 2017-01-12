@@ -95,6 +95,30 @@ describe('Logger', () => {
     expect(loggedEvents[5]).to.have.property('error', error);
   });
 
+  it('catches errors when suppressed', () => {
+    let loggedEvents = [];
+    const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+    const logger = new Logger(TypeMoq.Mock.ofType<Pipeline>().object);
+    expect(() => logger.fatal(undefined)).to.not.throw();
+    expect(() => logger.error(undefined)).to.not.throw();
+    expect(() => logger.warn(undefined)).to.not.throw();
+    expect(() => logger.info(undefined)).to.not.throw();
+    expect(() => logger.debug(undefined)).to.not.throw();
+    expect(() => logger.verbose(undefined)).to.not.throw();
+  });
+
+  it('throws errors when not suppressed', () => {
+    let loggedEvents = [];
+    const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+    const logger = new Logger(TypeMoq.Mock.ofType<Pipeline>().object, false);
+    expect(() => logger.fatal(undefined)).to.throw();
+    expect(() => logger.error(undefined)).to.throw();
+    expect(() => logger.warn(undefined)).to.throw();
+    expect(() => logger.info(undefined)).to.throw();
+    expect(() => logger.debug(undefined)).to.throw();
+    expect(() => logger.verbose(undefined)).to.throw();
+  });
+
   describe('emit()', () => {
     it('emits events to the pipeline', () => {
       const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
@@ -103,15 +127,46 @@ describe('Logger', () => {
       logger.emit([new LogEvent('', LogEventLevel.information, new MessageTemplate('Test'))]);
       mockPipeline.verify(m => m.emit(TypeMoq.It.isAny()), TypeMoq.Times.once());
     });
+
+    it('catches errors when suppressed', () => {
+      const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+      mockPipeline.setup(m => m.emit(TypeMoq.It.isAny())).throws(new Error('Error'));
+      const logger = new Logger(mockPipeline.object);
+      expect(() => logger.emit([])).to.not.throw();
+    });
+
+    it('throws errors when not suppressed', () => {
+      const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+      mockPipeline.setup(m => m.emit(TypeMoq.It.isAny())).throws(new Error('Error'));
+      const logger = new Logger(mockPipeline.object, false);
+      expect(() => logger.emit([])).to.throw();
+    });
   });
 
   describe('flush()', () => {
     it('flushes the pipeline', () => {
       const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
-      mockPipeline.setup(m => m.flush());
+      mockPipeline.setup(m => m.flush()).returns(() => Promise.resolve());
       const logger = new Logger(mockPipeline.object);
       logger.flush();
       mockPipeline.verify(m => m.flush(), TypeMoq.Times.once());
+    });
+
+    it('catches errors when suppressed', () => {
+      const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+      mockPipeline.setup(m => m.flush()).returns(() => Promise.reject('Error'));
+      const logger = new Logger(mockPipeline.object);
+      return logger.flush();
+    });
+
+    it('throws errors when not suppressed', () => {
+      const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+      mockPipeline.setup(m => m.flush()).returns(() => Promise.reject('Error'));
+      const logger = new Logger(mockPipeline.object, false);
+      return logger.flush().then(
+        ok => expect.fail(),
+        error => expect(error).to.exist
+      );
     });
   });
 });

@@ -208,6 +208,19 @@ const state = {
   .enrich(() => ({ user: state.user.name }))
 ```
 
+### Errors
+
+Errors in the logger are suppressed by default. To disable suppression, and allow errors to be propagated to the environment, use the `suppressErrors()`
+function to set suppression to `false`.
+
+```js
+  .suppressErrors(false)
+```
+
+This setting is global for the pipeline, so if it is called multiple times in the configuration chain, the value of the last call will be used.
+
+> Only errors throw in the logging pipeline will be suppressed. Errors that occur during configuration will always propagate.
+
 ### Console Sink
 
 The `ConsoleSink`, which outputs event to the Node.js or browser console, is provided by default.

@@ -15,9 +15,11 @@ interface MinLevel extends LogEventLevelSwitch<LoggerConfiguration> {
  */
 export class LoggerConfiguration {
   private pipeline: Pipeline;
+  private _suppressErrors: boolean;
 
   constructor() {
     this.pipeline = new Pipeline();
+    this._suppressErrors = true;
   }
 
   /**
@@ -86,9 +88,17 @@ export class LoggerConfiguration {
   }
 
   /**
+   * Enable or disable error suppression.
+   */
+  suppressErrors(suppress?: boolean): LoggerConfiguration {
+    this._suppressErrors = typeof suppress === 'undefined' || !!suppress;
+    return this;
+  }
+
+  /**
    * Creates a new logger instance based on this configuration.
    */
   create(): Logger {
-    return new Logger(this.pipeline);
+    return new Logger(this.pipeline, this._suppressErrors);
   }
 }

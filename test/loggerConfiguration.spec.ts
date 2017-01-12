@@ -296,6 +296,41 @@ describe('LoggerConfiguration', () => {
     });
   });
 
+  describe('suppressErrors()', () => {
+    it('enables suppression when true or undefined', () => {
+      const logger1 = new LoggerConfiguration()
+        .suppressErrors(true)
+        .create();
+
+      const logger2 = new LoggerConfiguration()
+        .suppressErrors()
+        .create();
+
+      expect(logger1.suppressErrors).to.be.true;
+      expect(logger2.suppressErrors).to.be.true;
+    });
+    
+    it('disables suppression when false', () => {
+      const logger = new LoggerConfiguration()
+        .suppressErrors(false)
+        .create();
+
+      expect(logger.suppressErrors).to.be.false;
+    });
+    
+    it('uses the value of the last call', () => {
+      const logger = new LoggerConfiguration()
+        .suppressErrors(false)
+        .suppressErrors(true)
+        .suppressErrors(false)
+        .suppressErrors()
+        .suppressErrors(false)
+        .create();
+
+      expect(logger.suppressErrors).to.be.false;
+    });
+  });
+
   describe('writeTo()', () => {
     it('adds a sink to the pipeline', () => {
       let emittedEvents = [];

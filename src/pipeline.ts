@@ -35,7 +35,7 @@ export class Pipeline {
       this.eventQueue = this.eventQueue.concat(events);
       return this.flushPromise;
     } else {
-      if (!this.stages.length || !events || !events.length) {
+      if (!this.stages.length || !events.length) {
         return Promise.resolve();
       }
 

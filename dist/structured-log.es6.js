@@ -42,10 +42,10 @@ var LogEventLevel;
  * Checks if a log event level includes the target log event level.
  * @param {LogEventLevel} level The level to check.
  * @param {LogEventLevel} target The target level.
- * @returns True if the checked level contains the target level.
+ * @returns True if the checked level contains the target level, or if the checked level is undefined.
  */
 function isEnabled(level, target) {
-    return (level & target) === target;
+    return typeof level === 'undefined' || (level & target) === target;
 }
 /**
  * Represents a log event.
@@ -213,55 +213,99 @@ class Logger {
     /**
      * Creates a new logger instance using the specified pipeline.
      */
-    constructor(pipeline) {
+    constructor(pipeline, suppressErrors) {
+        this.suppressErrors = true;
         this.pipeline = pipeline;
+        this.suppressErrors = typeof suppressErrors === 'undefined' || suppressErrors;
     }
     fatal(errorOrMessageTemplate, ...properties) {
-        if (errorOrMessageTemplate instanceof Error) {
-            this.write(LogEventLevel.fatal, properties[0], properties.slice(1), errorOrMessageTemplate);
+        try {
+            if (errorOrMessageTemplate instanceof Error) {
+                this.write(LogEventLevel.fatal, properties[0], properties.slice(1), errorOrMessageTemplate);
+            }
+            else {
+                this.write(LogEventLevel.fatal, errorOrMessageTemplate, properties);
+            }
         }
-        else {
-            this.write(LogEventLevel.fatal, errorOrMessageTemplate, properties);
+        catch (error) {
+            if (!this.suppressErrors) {
+                throw error;
+            }
         }
     }
     error(errorOrMessageTemplate, ...properties) {
-        if (errorOrMessageTemplate instanceof Error) {
-            this.write(LogEventLevel.error, properties[0], properties.slice(1), errorOrMessageTemplate);
+        try {
+            if (errorOrMessageTemplate instanceof Error) {
+                this.write(LogEventLevel.error, properties[0], properties.slice(1), errorOrMessageTemplate);
+            }
+            else {
+                this.write(LogEventLevel.error, errorOrMessageTemplate, properties);
+            }
         }
-        else {
-            this.write(LogEventLevel.error, errorOrMessageTemplate, properties);
+        catch (error) {
+            if (!this.suppressErrors) {
+                throw error;
+            }
         }
     }
     warn(errorOrMessageTemplate, ...properties) {
-        if (errorOrMessageTemplate instanceof Error) {
-            this.write(LogEventLevel.warning, properties[0], properties.slice(1), errorOrMessageTemplate);
+        try {
+            if (errorOrMessageTemplate instanceof Error) {
+                this.write(LogEventLevel.warning, properties[0], properties.slice(1), errorOrMessageTemplate);
+            }
+            else {
+                this.write(LogEventLevel.warning, errorOrMessageTemplate, properties);
+            }
         }
-        else {
-            this.write(LogEventLevel.warning, errorOrMessageTemplate, properties);
+        catch (error) {
+            if (!this.suppressErrors) {
+                throw error;
+            }
         }
     }
     info(errorOrMessageTemplate, ...properties) {
-        if (errorOrMessageTemplate instanceof Error) {
-            this.write(LogEventLevel.information, properties[0], properties.slice(1), errorOrMessageTemplate);
+        try {
+            if (errorOrMessageTemplate instanceof Error) {
+                this.write(LogEventLevel.information, properties[0], properties.slice(1), errorOrMessageTemplate);
+            }
+            else {
+                this.write(LogEventLevel.information, errorOrMessageTemplate, properties);
+            }
         }
-        else {
-            this.write(LogEventLevel.information, errorOrMessageTemplate, properties);
+        catch (error) {
+            if (!this.suppressErrors) {
+                throw error;
+            }
         }
     }
     debug(errorOrMessageTemplate, ...properties) {
-        if (errorOrMessageTemplate instanceof Error) {
-            this.write(LogEventLevel.debug, properties[0], properties.slice(1), errorOrMessageTemplate);
+        try {
+            if (errorOrMessageTemplate instanceof Error) {
+                this.write(LogEventLevel.debug, properties[0], properties.slice(1), errorOrMessageTemplate);
+            }
+            else {
+                this.write(LogEventLevel.debug, errorOrMessageTemplate, properties);
+            }
         }
-        else {
-            this.write(LogEventLevel.debug, errorOrMessageTemplate, properties);
+        catch (error) {
+            if (!this.suppressErrors) {
+                throw error;
+            }
         }
     }
     verbose(errorOrMessageTemplate, ...properties) {
-        if (errorOrMessageTemplate instanceof Error) {
-            this.write(LogEventLevel.verbose, properties[0], properties.slice(1), errorOrMessageTemplate);
+        try {
+            if (errorOrMessageTemplate instanceof Error) {
+                this.write(LogEventLevel.verbose, properties[0], properties.slice(1), errorOrMessageTemplate);
+            }
+            else {
+                this.write(LogEventLevel.verbose, errorOrMessageTemplate, properties);
+            }
         }
-        else {
-            this.write(LogEventLevel.verbose, errorOrMessageTemplate, properties);
+        catch (error) {
+            if (!this.suppressErrors) {
+                throw error;
+            }
         }
     }
     /**
@@ -269,14 +313,23 @@ class Logger {
      * @returns A {Promise<any>} that will resolve when the pipeline has been flushed.
      */
     flush() {
-        return this.pipeline.flush();
+        return this.suppressErrors
+            ? this.pipeline.flush().catch(() => { })
+            : this.pipeline.flush();
     }
     /**
      * Emits events through this logger's pipeline.
      */
     emit(events) {
-        this.pipeline.emit(events);
-        return events;
+        try {
+            this.pipeline.emit(events);
+            return events;
+        }
+        catch (error) {
+            if (!this.suppressErrors) {
+                throw error;
+            }
+        }
     }
     write(level, rawMessageTemplate, unboundProperties, error) {
         const messageTemplate = new MessageTemplate(rawMessageTemplate);
@@ -302,6 +355,8 @@ class ConsoleSink {
     emit(events) {
         for (let i = 0; i < events.length; ++i) {
             const e = events[i];
+            if (!isEnabled(this.options.restrictedToMinimumLevel, e.level))
+                continue;
             switch (e.level) {
                 case LogEventLevel.fatal:
                     this.writeToConsole(this.console.error, 'Fatal', e);
@@ -433,7 +488,7 @@ class Pipeline {
             return this.flushPromise;
         }
         else {
-            if (!this.stages.length || !events || !events.length) {
+            if (!this.stages.length || !events.length) {
                 return Promise.resolve();
             }
             let promise = Promise.resolve(this.stages[0].emit(events));
@@ -539,6 +594,7 @@ class LoggerConfiguration {
             verbose: () => this.minLevel(LogEventLevel.verbose)
         });
         this.pipeline = new Pipeline();
+        this._suppressErrors = true;
     }
     /**
      * Adds a sink to the pipeline.
@@ -574,10 +630,17 @@ class LoggerConfiguration {
         return this;
     }
     /**
+     * Enable or disable error suppression.
+     */
+    suppressErrors(suppress) {
+        this._suppressErrors = typeof suppress === 'undefined' || !!suppress;
+        return this;
+    }
+    /**
      * Creates a new logger instance based on this configuration.
      */
     create() {
-        return new Logger(this.pipeline);
+        return new Logger(this.pipeline, this._suppressErrors);
     }
 }
 

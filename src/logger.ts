@@ -9,11 +9,14 @@ import { Sink } from './sink';
 export class Logger implements Sink {
   private pipeline: Pipeline;
 
+  suppressErrors: boolean = true;
+
   /**
    * Creates a new logger instance using the specified pipeline.
    */
-  constructor(pipeline: Pipeline) {
+  constructor(pipeline: Pipeline, suppressErrors?: boolean) {
     this.pipeline = pipeline;
+    this.suppressErrors = typeof suppressErrors === 'undefined' || suppressErrors;
   }
 
   /**
@@ -32,10 +35,16 @@ export class Logger implements Sink {
   fatal(error: Error, messageTemplate: string, ...properties: any[]);
 
   fatal(errorOrMessageTemplate: any, ...properties: any[]) {
-    if (errorOrMessageTemplate instanceof Error) {
-      this.write(LogEventLevel.fatal, properties[0], properties.slice(1), errorOrMessageTemplate);
-    } else {
-      this.write(LogEventLevel.fatal, errorOrMessageTemplate, properties);
+    try {
+      if (errorOrMessageTemplate instanceof Error) {
+        this.write(LogEventLevel.fatal, properties[0], properties.slice(1), errorOrMessageTemplate);
+      } else {
+        this.write(LogEventLevel.fatal, errorOrMessageTemplate, properties);
+      }
+    } catch (error) {
+      if (!this.suppressErrors) {
+        throw error;
+      }
     }
   }
   
@@ -55,10 +64,16 @@ export class Logger implements Sink {
   error(error: Error, messageTemplate: string, ...properties: any[]);
 
   error(errorOrMessageTemplate: any, ...properties: any[]) {
-    if (errorOrMessageTemplate instanceof Error) {
-      this.write(LogEventLevel.error, properties[0], properties.slice(1), errorOrMessageTemplate);
-    } else {
-      this.write(LogEventLevel.error, errorOrMessageTemplate, properties);
+    try {
+      if (errorOrMessageTemplate instanceof Error) {
+        this.write(LogEventLevel.error, properties[0], properties.slice(1), errorOrMessageTemplate);
+      } else {
+        this.write(LogEventLevel.error, errorOrMessageTemplate, properties);
+      }
+    } catch (error) {
+      if (!this.suppressErrors) {
+        throw error;
+      }
     }
   }
   
@@ -78,10 +93,16 @@ export class Logger implements Sink {
   warn(error: Error, messageTemplate: string, ...properties: any[]);
 
   warn(errorOrMessageTemplate: any, ...properties: any[]) {
-    if (errorOrMessageTemplate instanceof Error) {
-      this.write(LogEventLevel.warning, properties[0], properties.slice(1), errorOrMessageTemplate);
-    } else {
-      this.write(LogEventLevel.warning, errorOrMessageTemplate, properties);
+    try {
+      if (errorOrMessageTemplate instanceof Error) {
+        this.write(LogEventLevel.warning, properties[0], properties.slice(1), errorOrMessageTemplate);
+      } else {
+        this.write(LogEventLevel.warning, errorOrMessageTemplate, properties);
+      }
+    } catch (error) {
+      if (!this.suppressErrors) {
+        throw error;
+      }
     }
   }
   
@@ -101,10 +122,16 @@ export class Logger implements Sink {
   info(error: Error, messageTemplate: string, ...properties: any[]);
 
   info(errorOrMessageTemplate: any, ...properties: any[]) {
-    if (errorOrMessageTemplate instanceof Error) {
-      this.write(LogEventLevel.information, properties[0], properties.slice(1), errorOrMessageTemplate);
-    } else {
-      this.write(LogEventLevel.information, errorOrMessageTemplate, properties);
+    try {
+      if (errorOrMessageTemplate instanceof Error) {
+        this.write(LogEventLevel.information, properties[0], properties.slice(1), errorOrMessageTemplate);
+      } else {
+        this.write(LogEventLevel.information, errorOrMessageTemplate, properties);
+      }
+    } catch (error) {
+      if (!this.suppressErrors) {
+        throw error;
+      }
     }
   }
   
@@ -124,10 +151,16 @@ export class Logger implements Sink {
   debug(error: Error, messageTemplate: string, ...properties: any[]);
 
   debug(errorOrMessageTemplate: any, ...properties: any[]) {
-    if (errorOrMessageTemplate instanceof Error) {
-      this.write(LogEventLevel.debug, properties[0], properties.slice(1), errorOrMessageTemplate);
-    } else {
-      this.write(LogEventLevel.debug, errorOrMessageTemplate, properties);
+    try {
+      if (errorOrMessageTemplate instanceof Error) {
+        this.write(LogEventLevel.debug, properties[0], properties.slice(1), errorOrMessageTemplate);
+      } else {
+        this.write(LogEventLevel.debug, errorOrMessageTemplate, properties);
+      }
+    } catch (error) {
+      if (!this.suppressErrors) {
+        throw error;
+      }
     }
   }
   
@@ -147,10 +180,16 @@ export class Logger implements Sink {
   verbose(error: Error, messageTemplate: string, ...properties: any[]);
 
   verbose(errorOrMessageTemplate: any, ...properties: any[]) {
-    if (errorOrMessageTemplate instanceof Error) {
-      this.write(LogEventLevel.verbose, properties[0], properties.slice(1), errorOrMessageTemplate);
-    } else {
-      this.write(LogEventLevel.verbose, errorOrMessageTemplate, properties);
+    try {
+      if (errorOrMessageTemplate instanceof Error) {
+        this.write(LogEventLevel.verbose, properties[0], properties.slice(1), errorOrMessageTemplate);
+      } else {
+        this.write(LogEventLevel.verbose, errorOrMessageTemplate, properties);
+      }
+    } catch (error) {
+      if (!this.suppressErrors) {
+        throw error;
+      }
     }
   }
 
@@ -159,15 +198,23 @@ export class Logger implements Sink {
    * @returns A {Promise<any>} that will resolve when the pipeline has been flushed.
    */
   flush(): Promise<any> {
-    return this.pipeline.flush();
+    return this.suppressErrors
+      ? this.pipeline.flush().catch(() => {})
+      : this.pipeline.flush();
   }
 
   /**
    * Emits events through this logger's pipeline.
    */
   emit(events: LogEvent[]): LogEvent[] {
-    this.pipeline.emit(events);
-    return events;
+    try {
+      this.pipeline.emit(events);
+      return events;
+    } catch (error) {
+      if (!this.suppressErrors) {
+        throw error;
+      }
+    }
   }
 
   private write(level: LogEventLevel, rawMessageTemplate: string, unboundProperties: any[], error?: Error) {

@@ -54,10 +54,10 @@ function __extends(d, b) {
  * Checks if a log event level includes the target log event level.
  * @param {LogEventLevel} level The level to check.
  * @param {LogEventLevel} target The target level.
- * @returns True if the checked level contains the target level.
+ * @returns True if the checked level contains the target level, or if the checked level is undefined.
  */
 function isEnabled(level, target) {
-    return (level & target) === target;
+    return typeof level === 'undefined' || (level & target) === target;
 }
 /**
  * Represents a log event.
@@ -227,19 +227,28 @@ var Logger = (function () {
     /**
      * Creates a new logger instance using the specified pipeline.
      */
-    function Logger(pipeline) {
+    function Logger(pipeline, suppressErrors) {
+        this.suppressErrors = true;
         this.pipeline = pipeline;
+        this.suppressErrors = typeof suppressErrors === 'undefined' || suppressErrors;
     }
     Logger.prototype.fatal = function (errorOrMessageTemplate) {
         var properties = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             properties[_i - 1] = arguments[_i];
         }
-        if (errorOrMessageTemplate instanceof Error) {
-            this.write(exports.LogEventLevel.fatal, properties[0], properties.slice(1), errorOrMessageTemplate);
+        try {
+            if (errorOrMessageTemplate instanceof Error) {
+                this.write(exports.LogEventLevel.fatal, properties[0], properties.slice(1), errorOrMessageTemplate);
+            }
+            else {
+                this.write(exports.LogEventLevel.fatal, errorOrMessageTemplate, properties);
+            }
         }
-        else {
-            this.write(exports.LogEventLevel.fatal, errorOrMessageTemplate, properties);
+        catch (error) {
+            if (!this.suppressErrors) {
+                throw error;
+            }
         }
     };
     Logger.prototype.error = function (errorOrMessageTemplate) {
@@ -247,11 +256,18 @@ var Logger = (function () {
         for (var _i = 1; _i < arguments.length; _i++) {
             properties[_i - 1] = arguments[_i];
         }
-        if (errorOrMessageTemplate instanceof Error) {
-            this.write(exports.LogEventLevel.error, properties[0], properties.slice(1), errorOrMessageTemplate);
+        try {
+            if (errorOrMessageTemplate instanceof Error) {
+                this.write(exports.LogEventLevel.error, properties[0], properties.slice(1), errorOrMessageTemplate);
+            }
+            else {
+                this.write(exports.LogEventLevel.error, errorOrMessageTemplate, properties);
+            }
         }
-        else {
-            this.write(exports.LogEventLevel.error, errorOrMessageTemplate, properties);
+        catch (error) {
+            if (!this.suppressErrors) {
+                throw error;
+            }
         }
     };
     Logger.prototype.warn = function (errorOrMessageTemplate) {
@@ -259,11 +275,18 @@ var Logger = (function () {
         for (var _i = 1; _i < arguments.length; _i++) {
             properties[_i - 1] = arguments[_i];
         }
-        if (errorOrMessageTemplate instanceof Error) {
-            this.write(exports.LogEventLevel.warning, properties[0], properties.slice(1), errorOrMessageTemplate);
+        try {
+            if (errorOrMessageTemplate instanceof Error) {
+                this.write(exports.LogEventLevel.warning, properties[0], properties.slice(1), errorOrMessageTemplate);
+            }
+            else {
+                this.write(exports.LogEventLevel.warning, errorOrMessageTemplate, properties);
+            }
         }
-        else {
-            this.write(exports.LogEventLevel.warning, errorOrMessageTemplate, properties);
+        catch (error) {
+            if (!this.suppressErrors) {
+                throw error;
+            }
         }
     };
     Logger.prototype.info = function (errorOrMessageTemplate) {
@@ -271,11 +294,18 @@ var Logger = (function () {
         for (var _i = 1; _i < arguments.length; _i++) {
             properties[_i - 1] = arguments[_i];
         }
-        if (errorOrMessageTemplate instanceof Error) {
-            this.write(exports.LogEventLevel.information, properties[0], properties.slice(1), errorOrMessageTemplate);
+        try {
+            if (errorOrMessageTemplate instanceof Error) {
+                this.write(exports.LogEventLevel.information, properties[0], properties.slice(1), errorOrMessageTemplate);
+            }
+            else {
+                this.write(exports.LogEventLevel.information, errorOrMessageTemplate, properties);
+            }
         }
-        else {
-            this.write(exports.LogEventLevel.information, errorOrMessageTemplate, properties);
+        catch (error) {
+            if (!this.suppressErrors) {
+                throw error;
+            }
         }
     };
     Logger.prototype.debug = function (errorOrMessageTemplate) {
@@ -283,11 +313,18 @@ var Logger = (function () {
         for (var _i = 1; _i < arguments.length; _i++) {
             properties[_i - 1] = arguments[_i];
         }
-        if (errorOrMessageTemplate instanceof Error) {
-            this.write(exports.LogEventLevel.debug, properties[0], properties.slice(1), errorOrMessageTemplate);
+        try {
+            if (errorOrMessageTemplate instanceof Error) {
+                this.write(exports.LogEventLevel.debug, properties[0], properties.slice(1), errorOrMessageTemplate);
+            }
+            else {
+                this.write(exports.LogEventLevel.debug, errorOrMessageTemplate, properties);
+            }
         }
-        else {
-            this.write(exports.LogEventLevel.debug, errorOrMessageTemplate, properties);
+        catch (error) {
+            if (!this.suppressErrors) {
+                throw error;
+            }
         }
     };
     Logger.prototype.verbose = function (errorOrMessageTemplate) {
@@ -295,11 +332,18 @@ var Logger = (function () {
         for (var _i = 1; _i < arguments.length; _i++) {
             properties[_i - 1] = arguments[_i];
         }
-        if (errorOrMessageTemplate instanceof Error) {
-            this.write(exports.LogEventLevel.verbose, properties[0], properties.slice(1), errorOrMessageTemplate);
+        try {
+            if (errorOrMessageTemplate instanceof Error) {
+                this.write(exports.LogEventLevel.verbose, properties[0], properties.slice(1), errorOrMessageTemplate);
+            }
+            else {
+                this.write(exports.LogEventLevel.verbose, errorOrMessageTemplate, properties);
+            }
         }
-        else {
-            this.write(exports.LogEventLevel.verbose, errorOrMessageTemplate, properties);
+        catch (error) {
+            if (!this.suppressErrors) {
+                throw error;
+            }
         }
     };
     /**
@@ -307,14 +351,23 @@ var Logger = (function () {
      * @returns A {Promise<any>} that will resolve when the pipeline has been flushed.
      */
     Logger.prototype.flush = function () {
-        return this.pipeline.flush();
+        return this.suppressErrors
+            ? this.pipeline.flush().catch(function () { })
+            : this.pipeline.flush();
     };
     /**
      * Emits events through this logger's pipeline.
      */
     Logger.prototype.emit = function (events) {
-        this.pipeline.emit(events);
-        return events;
+        try {
+            this.pipeline.emit(events);
+            return events;
+        }
+        catch (error) {
+            if (!this.suppressErrors) {
+                throw error;
+            }
+        }
     };
     Logger.prototype.write = function (level, rawMessageTemplate, unboundProperties, error) {
         var messageTemplate = new MessageTemplate(rawMessageTemplate);
@@ -341,6 +394,8 @@ var ConsoleSink = (function () {
     ConsoleSink.prototype.emit = function (events) {
         for (var i = 0; i < events.length; ++i) {
             var e = events[i];
+            if (!isEnabled(this.options.restrictedToMinimumLevel, e.level))
+                continue;
             switch (e.level) {
                 case exports.LogEventLevel.fatal:
                     this.writeToConsole(this.console.error, 'Fatal', e);
@@ -486,7 +541,7 @@ var Pipeline = (function () {
             return this.flushPromise;
         }
         else {
-            if (!this.stages.length || !events || !events.length) {
+            if (!this.stages.length || !events.length) {
                 return Promise.resolve();
             }
             var promise = Promise.resolve(this.stages[0].emit(events));
@@ -603,6 +658,7 @@ var LoggerConfiguration = (function () {
             verbose: function () { return _this.minLevel(exports.LogEventLevel.verbose); }
         });
         this.pipeline = new Pipeline();
+        this._suppressErrors = true;
     }
     /**
      * Adds a sink to the pipeline.
@@ -638,10 +694,17 @@ var LoggerConfiguration = (function () {
         return this;
     };
     /**
+     * Enable or disable error suppression.
+     */
+    LoggerConfiguration.prototype.suppressErrors = function (suppress) {
+        this._suppressErrors = typeof suppress === 'undefined' || !!suppress;
+        return this;
+    };
+    /**
      * Creates a new logger instance based on this configuration.
      */
     LoggerConfiguration.prototype.create = function () {
-        return new Logger(this.pipeline);
+        return new Logger(this.pipeline, this._suppressErrors);
     };
     return LoggerConfiguration;
 }());
