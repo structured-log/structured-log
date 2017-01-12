@@ -33,7 +33,8 @@ Or, using Bower:
 
     bower install structured-log
 
-> Note: **structured-log** embeds a polyfill for `Object.assign`, but you will need to bring your own `Promise` polyfill to use it in an environment that doesn't support Promises natively.
+> Note: **structured-log** embeds a polyfill for `Object.assign`, but you will need to bring your own
+> `Promise` polyfill to use it in an environment that doesn't support Promises natively.
 
 ## Configuration
 
@@ -99,9 +100,9 @@ The below examples will all set the minimum level to `warning`:
   .minLevel('warning')
 ```
 
-There is no minimum level set by default, but a common choice is `Information`. Note that if a restrictive level is set early in the pipeline,
-and a more permissive level is set further down, the events that are filtered out by the more restrictive level
-will never reach the more permissive filter.
+There is no minimum level set by default, but a common choice is `Information`. Note that if a restrictive level is set
+early in the pipeline, and a more permissive level is set further down, the events that are filtered out by the more
+restrictive level will never reach the more permissive filter.
 
 The Logger object contains shorthand methods for logging to each level.
 
@@ -114,9 +115,21 @@ log.debug('Accept-Encoding header value: {acceptEncoding}', response.acceptEncod
 log.verbose('Exiting getUsers()');
 ```
 
+You can also pass an error object as the first argument to any of the logging methods, which will pass it along with
+the event and allow it to be processed by the pipeline:
+
+```js
+try {
+  // something that fails here
+ } catch (error) {
+   log.error(error, error.message);
+ }
+```
+
 #### Dynamically controlling the minimum level
 
-You can also control the minimum level dynamically using the `DynamicLevelSwitch` class. Pass an instance to the `minLevel()` function:
+You can also control the minimum level dynamically using the `DynamicLevelSwitch` class.
+Pass an instance to the `minLevel()` function:
 
 ```js
 const dynamicLevelSwitch = new DynamicLevelSwitch();
@@ -126,8 +139,8 @@ const dynamicLevelSwitch = new DynamicLevelSwitch();
   .minLevel(dynamicLevelSwitch)
 ```
 
-You can then call the same shorthand methods as those present on the `minLevel` object (`error()`, `debug()` etc.) to dynamically change
-the minimum level for the subsequent stages in the pipeline.
+You can then call the same shorthand methods as those present on the `minLevel` object (`error()`, `debug()` etc.) to
+dynamically change the minimum level for the subsequent stages in the pipeline.
 
 ```js
 logger.debug('This message will be logged');
@@ -137,8 +150,8 @@ logger.debug('This message won\'t');
 
 ### Sinks
 
-A *sink* is a recipient for log events going through the pipeline, and is generally used to publish events to some external source
-such as the developer console, file system or an online service.
+A *sink* is a recipient for log events going through the pipeline, and is generally used to publish events to some
+external source such as the developer console, file system or an online service.
 
 To add a sink as a target for log events in the pipeline, pass an instance to the `writeTo()` function.
 
@@ -146,7 +159,8 @@ To add a sink as a target for log events in the pipeline, pass an instance to th
   .writeTo(new ExampleSink())
 ```
 
-The `Logger` object that's created with the `create()` method is also a valid sink, so you can pass it to another pipeline.
+The `Logger` object that's created with the `create()` method is also a valid sink,
+so you can pass it to another pipeline.
 
 ```js
 const logger1 = structuredLog.configure()
@@ -195,8 +209,8 @@ by using the `enrich()` function.
   })
 ```
 
-You can also pass a function as the first argument, and return an object with
-the properties to enrich with. This can be useful to dynamically add properties based on the current context or state of the application.
+You can also pass a function as the first argument, and return an object with the properties to enrich with.
+This can be useful to dynamically add properties based on the current context or state of the application.
 
 ```js
 const state = {
@@ -210,16 +224,18 @@ const state = {
 
 ### Errors
 
-Errors in the logger are suppressed by default. To disable suppression, and allow errors to be propagated to the environment, use the `suppressErrors()`
-function to set suppression to `false`.
+Errors in the logger are suppressed by default. To disable suppression, and allow errors to be propagated to
+the environment, use the `suppressErrors()` function to set suppression to `false`.
 
 ```js
   .suppressErrors(false)
 ```
 
-This setting is global for the pipeline, so if it is called multiple times in the configuration chain, the value of the last call will be used.
+This setting is global for the pipeline, so if it is called multiple times in the configuration chain, the value of
+the last call will be used.
 
-> Only errors throw in the logging pipeline will be suppressed. Errors that occur during configuration will always propagate.
+> Only errors throw in the logging pipeline will be suppressed.
+> Errors that occur during configuration will always propagate.
 
 ### Console Sink
 
@@ -230,7 +246,8 @@ The following line creates a new instance that can be passed to the logger confi
 var consoleSink = new structuredLog.ConsoleSink({ /* options */ });
 ```
 
-The `options` object is optional, but can be used to modify the functionality of the sink. It supports the following properties:
+The `options` object is optional, but can be used to modify the functionality of the sink.
+It supports the following properties:
 
 |Key|Description|
 |---|---|
