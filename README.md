@@ -1,395 +1,257 @@
-#structured-log [![Build Status](https://travis-ci.org/structured-log/structured-log.svg)](https://travis-ci.org/structured-log/structured-log)
+# structured-log
 
-A structured logging framework for Javascript. Based on [Serilog](http://serilog.net/).
+A structured logging framework for JavaScript, inspired by [Serilog](http://serilog.net/).
 
-**WARNING:** structured-log is a work in progress and will change over time.
+|Branch|Status|
+|---|---|---|
+|`master`|[![Build Status](https://travis-ci.org/structured-log/structured-log.svg?branch=master)](https://travis-ci.org/structured-log/structured-log)|
+|`dev`|[![Build Status](https://travis-ci.org/structured-log/structured-log.svg?branch=dev)](https://travis-ci.org/structured-log/structured-log)|
+
+## Basic Example
+
+```js
+const structuredLog = require('structured-log');
+
+const log = structuredLog.configure()
+  .writeTo(new structuredLog.ConsoleSink())
+  .create();
+
+log.info('Hello {Name}!', 'Greg');
+```
+
+The above code will print the following to the console:
+
+    [Information] Hello Greg!
 
 ## Installation
 
-### Server-side ([Node.js](https://nodejs.org/)) via [npm](https://www.npmjs.com/package/structured-log)
+**structured-log** is distributed through [npm](https://www.npmjs.com/package/structured-log) and [Bower](https://bower.io/). Run the following:
 
-  npm install --save structured-log
+    npm i --save structured-log
 
-### Client-side (Web Browser) via [Bower](http://bower.io/search/?q=structured-log)
+Or, using Bower:
 
-  bower install --save structured-log
- 
-## Basic Setup
+    bower install structured-log
 
-This section describes the most basic *structured-log* configuration for server and client.
+> Note: **structured-log** embeds a polyfill for `Object.assign`, but you will need to bring your own
+> `Promise` polyfill to use it in an environment that doesn't support Promises natively.
 
-### Server-side
+## Configuration
 
-In your NodeJS script:
+Configuring **structured-log** is a straightforward process, going through three steps.
+First, we initialize a new logging pipeline configuration by calling `configure()`:
 
-	var structuredLog = require('structured-log');
-	var coloredConsoleSink = require('structured-log/colored-console-sink');
-
-	var log = structuredLog.configure()
-    	.writeTo(coloredConsoleSink())
-	    .create();
-    
-### Client-side
-
-In your HTML file:
-
-```
-  <script type='text/javascript' src='bower_components/structured-log/structured-log.min.js />
+```js
+const log = structuredLog.configure()
 ```
 
-In your Javascript code:
-
-	var log = structuredLog.configure() 
-    	.writeTo(structuredLog.consoleSink())
-	    .create();
-  
-### Multiple sinks
-
-Setup of *structured-log* is via a *fluent API* that configures and creates a logger. One example of this is to specify multilple sinks, eg:
-
-	var log = structuredLog.configure() 
-		.writeTo(consoleSink)
-		.writeTo(httpSink({ url: '<some-url>' }))
-		.create();
-
-### Writing to another log
-
-A log can easily be piped to another log:
-
-	var someOtherLog = structuredLog.configure()
-		// ... setup ...
-		.create(); 
-
-	var log = structuredLog.configure() 
-		.writeTo(consoleSink)
-		.writeTo(someOtherLog)
-		.create();
-
-
-## Basic Usage
-
-Debugging:
-
-	log.trace('My debug message!');
-	log.debug('My debug message!');
-	log.verbose('My debug message!');
- 
-Information:
-
-	log.info('Something happened in the application...');
-
-Information alternative:
-
-	log('Something happened in the application...');
-
-Warnings:
-  
-	log.warn('Some not-fatal error happened...');
-
-Errors:
-
-	log.error('Something bad happened...');
-	log.error(exceptionOrErrorObject, 'Something bad happend...');
-
-## Structured Logging
-
-All the logging functions accept a message template and a set of key/value properties that are used to render the template when constring the log message for display. The properties are maintained separately to the template and rendered message which is what makes this a structured logging system.
-
-Here are some examples that have been adapted for Javascript from the [Serilog C# examples](http://serilog.net/):
- 
-	var position = { Latitude: 25, Longitude: 134 };
-	var elapsedMs = 34;
-	
-	log.info("Processed {@Position} in {Elapsed:000} ms.", {
-		Position: position,
-		Elapsed: elapsedMs
-	});
-
-Properties can also be specified by positional parameters, the same as how it works in Serilog C#: 
-
-	log.info("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-
-## Included Sinks
-
-A *sink* is a plugin that is invoked for each *log event*. Usualy a sink defines an *output method* for logs, such as the ability to output to the [console]( https://developer.mozilla.org/en/docs/Web/API/console).  
-
-*structured-log* includes a number of built-in sinks.
-
-### Server-side
-
-All sinks are imported using the Nodejs *require* function as follows:
-
-	var someSink = require('<sink-name>');
-
-| Name | Description | Batched/Unbatched |
-| ---- | ----------- | ----------------- |
-| console-sink | Writes formatted log events to the *console* | Unbatched |
-| colored-console-sink | Same as above, but with colors | Unbatched |
-| json-console-sink | Writes structured json to the console for each log event | Unbatched |
-| stream-sink | Writes formatted log events to a Nodejs stream | Unbatched |
-| json-stream-sink | Writes structured json tot he console for each log event | Unbatched |
-| http-sink | Outputs structured json log events via HTTP post |  Batched |
-
-### Client-side
-
-| Name | Description |
-| ---- | ------------- |
-| console-sink | Writes formatted log events to the *console* | Unbatched |
-| json-console-sink | Writes structured json to the console for each log event | Unbatched |
-| http-sink | Outputs structured json log events via HTTP post | Batched |
-
-## Batching
-
-Some of the sinks are batched. Batched sinks process multiple log events at once usually for increased performance or to reduce timing issues (eg HTTP logs being received out of order). 
-
-### Configuring Batched Sinks
-
-All batched sinks (even custom batched sinks) have the same standard configuration options.
-
-	var httpSink = require('structured-log-http-sink'); 
-	
-	var log = structuredLog.configure()
-		.batch({
-			batchSize: 1000,          	// Flush the queue every 1000 logs.
-			timeDuration: 3000,         // Milliseconds to wait before flushing the queue.            
-		})
-		.writeTo(httpSink({
-			url: 'http://somelogreceiver',	// Configuration for the custom sink.
-		})
-		.create();
-
-*batchSize* specifies the amount of logs to include in a batch. When this number of logs are in the queue the queue will be flushed and processed by the sink.
-
-*timeDuration* specifies the amount of time that will pass before the log queue is flushed. This ensure that the queue is periodically flushed even if not enought logs events have been queued to trigger the *batchSize* flush. 
-
-Either of these options can be omitted and be set to default values.
-
-### Flushing Queued Logs
-
-The queue of batched logs can be flushed at any time by calling the *flush* function.
-
-If it suits your purpose you can simply call flush:
-	
-	log.flush();
-
-If you need a callback when the flush has completed you have two options.
-
-The first option is the standard Javascript-style callback:
-
-	log.flush(function (err) {
-		if (err) {
-			// An error occurred while flushing.
-		}
-		else {
-			// The queue was flushed successfully.
-		}
-	});
- 
-The second option is to use the promise that is returned by *flush*:
-
-	log.flush()
-		.then(function () {
-			// The queue was flushed successfully.
-		})
-		.catch(function (err) {
-			// An error occurred while flushing.
-		})
-		.done(); // Terminate the promise chain.
-
-## 3rd-party Sinks
-
-A number of additional sinks are available as separate packages.
-
-If you release your own custom sink for *structured-log* please let us know and we'll add it to the list!  
-
-### Server-side (via npm)
-
-| Name | Description |
-| ---- | ------------- |
-| [email-sink](???) | Outputs formattted log messages via SMTP |
-| [mongodb-sink](???) | Writes structure json log events to the MongoDB database |
-
-### Client-side (via bower)
-
-| Name | Description |
-| ---- | ------------- |
-| [websockets-sink](???) | Outputs formattted log messages via websockets |
-| [socketio-sink](???) | Outputs formattted log messages via [the Socket.IO library](http://socket.io/) |
-
-## Make your own sink
-
-It is very easy to make your own sink. You first have to decide if the sink should process log events individually or as a batch.
-
-There are plenty of built-in examples of sinks. So can you can always copy and modify an existing sink.
-
-### Non-batched custom sink
-
-Non-batched sinks process each log event individually:
-
-	var myCustomSink = function (options) {
-		return {
-			emit: function (logEvent) {
-				//
-				// ... your custom log event processing goes here ...
-				//
-			}
-		};
-	};
-	
-	var customSinkOptions = {
-		// Whatever custom options you need...
-	};
-	
-	var log = structuredLog.configure()
-		.writeTo(myCustomSink(customSinkOptions))
-		.create();
-
-### As a Nodejs module
-
-MyCustomSink.js:
-
-	module.exports = function (options) {
-		return {
-			emit: function (logEvent) {
-				//
-				// ... your custom log event processing goes here ...
-				//
-			}
-		};
-	};
-
-SomewhereElse.js:
-
-	var myCustomSink = require('./MyCustomSink');
-	
-	var customSinkOptions = {
-		// Whatever custom options you need...
-	};
-	
-	var log = structuredLog.configure()
-		.writeTo(myCustomSink(customSinkOptions))
-		.create();
-
-
-### Batched custom sink
-
-Batched sinks process a batch of log events at a time. *structured-log* buffers log events until the log queue is flushed. By simply replacing the *emit* function with *emitBatch* you can convert your sink to work in batched mode, accepting an *array* of log events instead of just a single  log event.
-
-	var myCustomSink = function (options) {
-		return {
-			emitBatch: function (logEvents) {
-				//
-				// ... process the array of log events ...
-				//
-			}
-		};
-	};
-
-## Advanced Setup
-
-The *fluent API* has numerous functions to configure your log.
+The second step is the main step. Configuration of different
+filters and targets is done by chaining methods together in a fluent syntax.
+Events flow through the pipeline from top to bottom, so new filters and
+enrichers can be inserted between the different sinks to build a highly
+controllable pipeline.
+
+```js
+  .writeTo(new structuredLog.ConsoleSink())
+  .minLevel.warning()
+  .writeTo(new OtherExampleSink({ url: 'http://example.com' }))
+  .writeTo(...)
+```
+
+The chain is closed by calling `create()`, which instantiates a new logger
+instance based on the pipeline configuration.
+
+```js
+  .create();
+
+// The logger is ready for use!
+log.verbose('Hello structured-log!');
+```
 
 ### Log Levels
 
-Set the minimum log level that is output:
+There are 6 log levels available by default, in addition to a setting to disable logging completely.
+In decreasing order of severity (with descriptions borrowed from [Seq](https://github.com/serilog/serilog/wiki/Writing-Log-Events#log-event-levels)):
 
-	var log = structuredLog.configure()
-		.minLevel('WARN')
-		.writeTo(consoleSink())
-		.create();
+|Label|Description|Bitfield|
+|---|---|---|
+|`off`|When the minimum level is set to this, nothing will be logged.|0|
+|`fatal`|Critical errors causing complete failure of the application.|1|
+|`error`|Indicates failures within the application or connected systems.|3|
+|`warning`|Indicators of possible issues or service/functionality degradatio.|7|
+|`information`|Events of interest or that have relevance to outside observers.|15|
+|`debug`|Internal control flow and diagnostic state dumps to facilitate pinpointing of recognised problems.|31|
+|`verbose`|Tracing information and debugging minutiae; generally only switched on in unusual situations.|63|
 
-*minimumLevel* applies to subsequent sinks in the configuration, so you can use it to set a different level for each sink: 
+The log levels can also be represented as bitfields, and each log level also includes any levels of higher severity.
+For example, `warning` will also allow events of the `error` level through, but block `information`,
+`debug` and `verbose`.
 
-	var log = structuredLog.configuration()
-		.minLevel('VERBOSE')
-		.writeTo(consoleSink())
-		.minLevel('INFO')
-		.writeTo(httpSink())
-		.minLevel('ERROR')
-		.writeTo(emailSink())
-		.create();
+A minimum level can be set anywhere in the pipeline to only allow events matching that level
+level or lower to pass further through the pipeline.
+
+The below examples will all set the minimum level to `warning`:
+
+```js
+  .minLevel.warning()
+// or
+  .minLevel(7)
+// or
+  .minLevel('warning')
+```
+
+There is no minimum level set by default, but a common choice is `Information`. Note that if a restrictive level is set
+early in the pipeline, and a more permissive level is set further down, the events that are filtered out by the more
+restrictive level will never reach the more permissive filter.
+
+The Logger object contains shorthand methods for logging to each level.
+
+```js
+log.fatal('Application startup failed due to a missing configuration file');
+log.error('Could not parse response message');
+log.warn('Execution time of {time} exceeded budget of {budget}ms', actualTime, budgetTime);
+log.info('Started a new session');
+log.debug('Accept-Encoding header value: {acceptEncoding}', response.acceptEncoding);
+log.verbose('Exiting getUsers()');
+```
+
+You can also pass an error object as the first argument to any of the logging methods, which will pass it along with
+the event and allow it to be processed by the pipeline:
+
+```js
+try {
+  // something that fails here
+ } catch (error) {
+   log.error(error, error.message);
+ }
+```
+
+#### Dynamically controlling the minimum level
+
+You can also control the minimum level dynamically using the `DynamicLevelSwitch` class.
+Pass an instance to the `minLevel()` function:
+
+```js
+const dynamicLevelSwitch = new DynamicLevelSwitch();
+
+// ...
+
+  .minLevel(dynamicLevelSwitch)
+```
+
+You can then call the same shorthand methods as those present on the `minLevel` object (`error()`, `debug()` etc.) to
+dynamically change the minimum level for the subsequent stages in the pipeline.
+
+```js
+logger.debug('This message will be logged');
+dynamicLevelSwitch.warning();
+logger.debug('This message won\'t');
+```
+
+### Sinks
+
+A *sink* is a recipient for log events going through the pipeline, and is generally used to publish events to some
+external source such as the developer console, file system or an online service.
+
+To add a sink as a target for log events in the pipeline, pass an instance to the `writeTo()` function.
+
+```js
+  .writeTo(new ExampleSink())
+```
+
+The `Logger` object that's created with the `create()` method is also a valid sink,
+so you can pass it to another pipeline.
+
+```js
+const logger1 = structuredLog.configure()
+  // ...
+  .create();
+
+const logger2 = structuredLog.configure()
+  .writeTo(logger1)
+  .create();
+```
+
+#### Built-in sinks
+|Name|Description|
+|---|---|
+|[ConsoleSink](#console-sink)|Outputs events through the `console` object in Node or the browser.|
+
+#### 3rd party sinks
+|Name|Description|
+|---|---|
+|[SeqSink](https://github.com/Wedvich/structured-log-seq-sink)|Outputs events to a [Seq](https://getseq.net) server.|
 
 ### Filtering
 
-Custom filtering can be applied to include/exclude logging based on a predicate function. 
+You can *filter* which events are passed through the pipeline using the `filter()` function. It takes
+a single function parameter that will be used to test events going into the filter, and if it returns `true`,
+the events will be allowed to continue through the pipeline.
 
-	var log = structuredLog.configure()
-		.filter(function (logEvent) {
-			return someCondition(logEvent);
-		})
-		.writeTo(consoleSink())
-		.create();
+The below example will filter out any log events with template properties, only
+allowing pure text events through to the next pipeline stage.
 
-This kind of filtering affects subsequent sinks in the configuration, you can use it in combination with *clearFilter* to provide different filters for different sinks: 
+```js
+  .filter(logEvent => logEvent.properties.length === 0)
+```
 
-	var log = structuredLog.configure()
-		.filter(function (logEvent) {
-			return okForConsole(logEvent);
-		}))
-		.writeTo(consoleSink())
-		.resetFilter()
-		.filter(function (logEvent) {
-			return okForHttp(logEvent);
-		}))
-		.create();
-
-Logs can also be filtered after configuration, this effectively creates a new log with the added filter:
-
-	var log2 = log.filter(function (logEvent) {
-		// ... some condition ...
-	});
-	
-	log2.info("This log is filtered by the new criteria!");   
-
+The predicate should take a log event as its only parameter, and return true or false.
 
 ### Enrichment
 
-Enrichment can be used to add key/value properties to all logs output via a particular logger.
+Log events going through the pipeline can be *enriched* with additional properties
+by using the `enrich()` function.
 
-	var log = structuredLog.configure()
-		.enrich({
-			UserId: getCurUserId(),
-			SessionId: getCurSessionId(),
-		})
-		.writeTo(consoleSink())
-		.create();
+```js
+  .enrich({
+    'version': 2,
+    'source': 'Client Application'
+  })
+```
 
-A function can also be provided that is evaluated at runtime to attach properties to log events in a more dynamic fashion:
+You can also pass a function as the first argument, and return an object with the properties to enrich with.
+This can be useful to dynamically add properties based on the current context or state of the application.
 
-	var log = structuredLog.configure()
-		.enrich(function () {
-			return {
-				UserId: getCurUserId(),
-				SessionId: getCurSessionId(),		
-			};
-		})
-		.writeTo(consoleSink())
-		.create();
+```js
+const state = {
+  user: null
+};
 
-Any number of properties can be attached to log messages in this manner. The properties may then be used in the log messages themselves:
+// ...
 
-	log.info("Current user {UserId} has done something.");
+  .enrich(() => ({ user: state.user.name }))
+```
 
-As with other configuration, the *enrich* only affects subsequent sinks.
+### Errors
 
-Logs can also be enriched after configuration, this effectively creates a new log with additional properties:
+Errors in the logger are suppressed by default. To disable suppression, and allow errors to be propagated to
+the environment, use the `suppressErrors()` function to set suppression to `false`.
 
-	var log2 = log.enrich({ NewProperty: 'just for log2' };
-	
-	log2.info("I've added a new property: {NewProperty}");   
-	
-### Tagging
+```js
+  .suppressErrors(false)
+```
 
-Logs can be tagged with string values. This is useful to filter and categories logs generated by an application:
+This setting is global for the pipeline, so if it is called multiple times in the configuration chain, the value of
+the last call will be used.
 
-	var log = structuredLog.configure()
-		.tag("authentication-system")
-		.writeTo(consoleSink())
-		.create();
+> Only errors throw in the logging pipeline will be suppressed.
+> Errors that occur during configuration will always propagate.
 
-Logs can also be tagged after configuration, this effectively creates a new log that has the desired tag:
-	
-	var log2 = log.tag('some-new-tag');
-	
-	log2.info("This log is tagged with 'some-new-tag'");
-	
+### Console Sink
+
+The `ConsoleSink`, which outputs event to the Node.js or browser console, is provided by default.
+The following line creates a new instance that can be passed to the logger configuration:
+
+```js
+var consoleSink = new structuredLog.ConsoleSink({ /* options */ });
+```
+
+The `options` object is optional, but can be used to modify the functionality of the sink.
+It supports the following properties:
+
+|Key|Description|
+|---|---|
+|console|An object with a console interface (providing `log()`, `info()`, etc.) that will be used by the sink when writing output. The global `console` object will be used by default.|
+|includeProperties|If `true`, the properties of the log event will be written to the console in addition to the message. Defaults to `false`.|
+|includeTimestamps|If `true`, timestamps will be included in the message that is written to the console. Defaults to `false`.|
+|restrictedToMinimumLevel|If set, only events of the specified level or higher will be output to the console.|

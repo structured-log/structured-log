@@ -1,31 +1,6 @@
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <title>Hello</title>
-    <style>
-      html, body {
-        margin: 0;
-        padding: 0;
-      }
+const structuredLog = require('../../dist/structured-log');
 
-      body {
-        font-family: sans-serif;
-        margin: 0 10px;
-      }
-
-      pre {
-        background: rgba(128, 128, 128, 0.1);
-        border: 1px solid rgba(128, 128, 128, 0.2);
-        color: rgba(0, 0, 0, 0.8);
-        padding: 10px;
-      }
-    </style>
-  </head>
-  <body>
-    <p>Open your console to see this example in action:</p>
-    <pre>
-var logger = structuredLog.configure()
+const logger = structuredLog.configure()
   .minLevel.information()
   .writeTo(new structuredLog.ConsoleSink())
   .create(true);
@@ -33,7 +8,7 @@ var logger = structuredLog.configure()
 logger.info('You should see this in the console!');
 logger.verbose('But you shouldn\'t see this.');
 
-var secondLogger = structuredLog.configure()
+const secondLogger = structuredLog.configure()
   .minLevel.debug()
   .writeTo(new structuredLog.ConsoleSink())
   .writeTo(logger)
@@ -64,12 +39,3 @@ thirdLogger.flush()
   .then(() => {
     thirdLogger.error('And then this again!');
   });
-    </pre>
-
-    <!-- https://github.com/stefanpenner/es6-promise -->
-    <script src="es6-promise.auto.min.js"></script>
-
-    <script src="../../dist/structured-log.js"></script>
-    <script src="script.js"></script>
-  </body>
-</html>
