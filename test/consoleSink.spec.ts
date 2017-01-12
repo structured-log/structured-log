@@ -81,6 +81,20 @@ describe('ConsoleSink', () => {
       ]);
     });
     
+    it('does not log events lower than the restricted level', () => {
+      const consoleProxy = TypeMoq.Mock.ofInstance({ log: (message?: any, ...properties: any[]) => {} });
+      const consoleSink = new ConsoleSink({
+        console: consoleProxy.object,
+        restrictedToMinimumLevel: LogEventLevel.information
+      });
+      consoleSink.emit([
+        new LogEvent('', LogEventLevel.error, new MessageTemplate('Test')),
+        new LogEvent('', LogEventLevel.information, new MessageTemplate('Test')),
+        new LogEvent('', LogEventLevel.debug, new MessageTemplate('Test')),
+        new LogEvent('', LogEventLevel.verbose, new MessageTemplate('Test'))
+      ]);
+      consoleProxy.verify(m => m.log(TypeMoq.It.isAny()), TypeMoq.Times.exactly(2));
+    });
 
     it('includes timestamps when specified in options', () => {
       const timestamp = new Date().toISOString();

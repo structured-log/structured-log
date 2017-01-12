@@ -30,10 +30,10 @@ export interface LogEventLevelSwitch<T> {
  * Checks if a log event level includes the target log event level.
  * @param {LogEventLevel} level The level to check.
  * @param {LogEventLevel} target The target level.
- * @returns True if the checked level contains the target level.
+ * @returns True if the checked level contains the target level, or if the checked level is undefined.
  */
 export function isEnabled(level: LogEventLevel, target: LogEventLevel): boolean {
-  return (level & target) === target;
+  return typeof level === 'undefined' || (level & target) === target;
 }
 
 /**

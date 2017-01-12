@@ -224,3 +224,4 @@ The `options` object is optional, but can be used to modify the functionality of
 |console|An object with a console interface (providing `log()`, `info()`, etc.) that will be used by the sink when writing output. The global `console` object will be used by default.|
 |includeProperties|If `true`, the properties of the log event will be written to the console in addition to the message. Defaults to `false`.|
 |includeTimestamps|If `true`, timestamps will be included in the message that is written to the console. Defaults to `false`.|
+|restrictedToMinimumLevel|If set, only events of the specified level or higher will be output to the console.|

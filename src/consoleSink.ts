@@ -1,4 +1,4 @@
-import { LogEventLevel, LogEvent } from './logEvent';
+import { LogEventLevel, LogEvent, isEnabled } from './logEvent';
 import { Sink } from './sink';
 import { MessageTemplate } from './messageTemplate';
 
@@ -14,6 +14,7 @@ export interface ConsoleSinkOptions {
   console?: any;
   includeTimestamps?: boolean;
   includeProperties?: boolean;
+  restrictedToMinimumLevel?: LogEventLevel;
 }
 
 export class ConsoleSink implements Sink {
@@ -36,6 +37,9 @@ export class ConsoleSink implements Sink {
   public emit(events: LogEvent[]) {
     for (let i = 0; i < events.length; ++i) {
       const e = events[i];
+      if (!isEnabled(this.options.restrictedToMinimumLevel, e.level))
+        continue;
+
       switch (e.level) {
         case LogEventLevel.fatal:
           this.writeToConsole(this.console.error, 'Fatal', e);
