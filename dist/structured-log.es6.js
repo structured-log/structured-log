@@ -398,6 +398,9 @@ class ConsoleSink {
                 }
             }
         }
+        if (e.error instanceof Error) {
+            values.push('\n', e.error);
+        }
         logMethod(output, ...values);
     }
 }

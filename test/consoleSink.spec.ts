@@ -57,6 +57,27 @@ describe('ConsoleSink', () => {
       ]);
       consoleProxy.verify(m => m.log(TypeMoq.It.isAny()), TypeMoq.Times.once());
     });
+
+    it('logs error objects', () => {
+      let loggedMessage: string;
+      let loggedProperty: any;
+      let loggedError: Error;
+      const consoleProxy = TypeMoq.Mock.ofType<ConsoleProxy>();
+      consoleProxy.setup(m => m.info(TypeMoq.It.isAny(), TypeMoq.It.isAny(), TypeMoq.It.isAny(), TypeMoq.It.isAny()))
+        .callback((message, property, newline, error) => {
+          loggedMessage = message;
+          loggedProperty = property;
+          loggedError = error;
+        });
+      const consoleSink = new ConsoleSink({ console: consoleProxy.object, includeProperties: true });
+      const error = new Error('Simple error test');
+      consoleSink.emit([
+        new LogEvent('', LogEventLevel.information, new MessageTemplate('Test {a}'), { a: 'b' }, error)
+      ]);
+      expect(loggedMessage).to.contain('Test b');
+      expect(loggedProperty).to.equal('b');
+      expect(loggedError).to.equal(error);
+    });
     
     it('falls back to log when the more specific methods are unavailable', () => {
       const consoleProxy = TypeMoq.Mock.ofInstance({ log: (message?: any, ...properties: any[]) => {} });

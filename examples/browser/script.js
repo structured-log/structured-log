@@ -25,11 +25,12 @@ var thirdLogger = structuredLog.configure()
 
 thirdLogger.flush()
   .then(() => {
-    thirdLogger.warn('You can also dynamically control the log level, which allows you to see this...');
+    thirdLogger.warn(new Error('Something bad must have happened here'),
+      'You can also dynamically control the log level, which allows you to see this stack trace:');
     return dynamicLevelSwitch.fatal();
   })
   .then(() => {
-    thirdLogger.error('... but not this.');
+    thirdLogger.error(new Error('Hidden'), '... but not this one.');
     thirdLogger.fatal('And still this!');
     return dynamicLevelSwitch.error();
   })

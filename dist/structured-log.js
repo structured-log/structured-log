@@ -437,6 +437,9 @@ var ConsoleSink = (function () {
                 }
             }
         }
+        if (e.error instanceof Error) {
+            values.push('\n', e.error);
+        }
         logMethod.apply(void 0, [output].concat(values));
     };
     return ConsoleSink;
