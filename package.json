@@ -1,32 +1,44 @@
 {
-  "description": "A serializing logger for JavaScript apps based on Serilog.",
-  "main": "src/structured-log.js",
+  "name": "structured-log",
+  "version": "0.1.0-alpha",
+  "description": "A structured logging framework for JavaScript, inspired by Serilog.",
+  "main": "dist/structured-log.js",
+  "jsnext:main": "dist/structured-log.es6.js",
   "scripts": {
-    "test": "mocha --reporter=spec"
+    "test": "mocha --compilers ts:ts-node/register -r src/polyfills/objectAssign.js test/**/*.spec.ts",
+    "test-coverage": "ts-node node_modules/istanbul/lib/cli.js cover -e .ts -x \"*.d.ts\" -x \"*.spec.ts\" node_modules/mocha/bin/_mocha -- -r src/polyfills/objectAssign.js test/**/*.spec.ts",
+    "build-es5": "rollup -c rollup.config.es5.js",
+    "build-es6": "rollup -c rollup.config.es6.js",
+    "build": "npm run build-es5 && npm run build-es6",
+    "prepublish": "npm run build"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/structured-log/structured-log.js"
+    "url": "https://github.com/structured-log/structured-log"
   },
   "keywords": [
     "logging",
     "structured",
-    "semantic"
+    "semantic",
+    "serilog"
   ],
-  "author": "Serilog Contributors",
-  "license": "Apache 2",
+  "author": "structured-log Contributors",
+  "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/structured-log/structured-log.js/issues"
+    "url": "https://github.com/structured-log/structured-log/issues"
   },
   "devDependencies": {
-    "gulp": "~3.9.0",
-    "gulp-browserify": "^0.5.1",
-    "gulp-clean": "^0.3.1",
-    "gulp-concat": "^2.6.0",
-    "gulp-jshint": "^1.11.2",
-    "gulp-rename": "^1.2.2",
-    "gulp-uglify": "^1.2.0",
-    "gulp-using": "0.0.1",
-    "rimraf": "^2.4.1"
+    "@types/chai": "^3.4.34",
+    "@types/mocha": "^2.2.35",
+    "@types/node": "^6.0.57",
+    "chai": "^3.5.0",
+    "coveralls": "^2.11.15",
+    "istanbul": "^1.1.0-alpha.1",
+    "mocha": "^3.2.0",
+    "rollup": "^0.40.1",
+    "rollup-plugin-typescript": "^0.8.1",
+    "ts-node": "^2.0.0",
+    "typemoq": "^1.1.0",
+    "typescript": "^2.1.4"
   }
 }
