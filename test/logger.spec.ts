@@ -73,6 +73,28 @@ describe('Logger', () => {
     expect(loggedEvents[0]).to.have.deep.property('properties.word', 'banana');
   });
 
+  it('includes logged error', () => {
+    let loggedEvents = [];
+    const error = new Error('Sample');
+    const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+    mockPipeline.setup(m => m.emit(TypeMoq.It.isAny()))
+      .callback(events => loggedEvents = loggedEvents.concat(events));
+    const logger = new Logger(mockPipeline.object);
+    logger.fatal(error, 'Test');
+    logger.error(error, 'Test');
+    logger.warn(error, 'Test');
+    logger.info(error, 'Test');
+    logger.debug(error, 'Test');
+    logger.verbose(error, 'Test');
+    expect(loggedEvents).to.have.length(6);
+    expect(loggedEvents[0]).to.have.property('error', error);
+    expect(loggedEvents[1]).to.have.property('error', error);
+    expect(loggedEvents[2]).to.have.property('error', error);
+    expect(loggedEvents[3]).to.have.property('error', error);
+    expect(loggedEvents[4]).to.have.property('error', error);
+    expect(loggedEvents[5]).to.have.property('error', error);
+  });
+
   describe('emit()', () => {
     it('emits events to the pipeline', () => {
       const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();

@@ -66,11 +66,12 @@ var LogEvent = (function () {
     /**
      * Creates a new log event instance.
      */
-    function LogEvent(timestamp, level, messageTemplate, properties) {
+    function LogEvent(timestamp, level, messageTemplate, properties, error) {
         this.timestamp = timestamp;
         this.level = level;
         this.messageTemplate = messageTemplate;
         this.properties = properties || {};
+        this.error = error || null;
     }
     return LogEvent;
 }());
@@ -229,77 +230,77 @@ var Logger = (function () {
     function Logger(pipeline) {
         this.pipeline = pipeline;
     }
-    /**
-     * Logs an event with the {LogEventLevel.fatal} severity.
-     * @param {string} messageTemplate Message template for the log event.
-     * @param {any[]} properties Properties that can be used to render the message template.
-     */
-    Logger.prototype.fatal = function (messageTemplate) {
+    Logger.prototype.fatal = function (errorOrMessageTemplate) {
         var properties = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             properties[_i - 1] = arguments[_i];
         }
-        this.write(exports.LogEventLevel.fatal, messageTemplate, properties);
+        if (errorOrMessageTemplate instanceof Error) {
+            this.write(exports.LogEventLevel.fatal, properties[0], properties.slice(1), errorOrMessageTemplate);
+        }
+        else {
+            this.write(exports.LogEventLevel.fatal, errorOrMessageTemplate, properties);
+        }
     };
-    /**
-     * Logs an event with the {LogEventLevel.error} severity.
-     * @param {string} messageTemplate Message template for the log event.
-     * @param {any[]} properties Properties that can be used to render the message template.
-     */
-    Logger.prototype.error = function (messageTemplate) {
+    Logger.prototype.error = function (errorOrMessageTemplate) {
         var properties = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             properties[_i - 1] = arguments[_i];
         }
-        this.write(exports.LogEventLevel.error, messageTemplate, properties);
+        if (errorOrMessageTemplate instanceof Error) {
+            this.write(exports.LogEventLevel.error, properties[0], properties.slice(1), errorOrMessageTemplate);
+        }
+        else {
+            this.write(exports.LogEventLevel.error, errorOrMessageTemplate, properties);
+        }
     };
-    /**
-     * Logs an event with the {LogEventLevel.warning} severity.
-     * @param {string} messageTemplate Message template for the log event.
-     * @param {any[]} properties Properties that can be used to render the message template.
-     */
-    Logger.prototype.warn = function (messageTemplate) {
+    Logger.prototype.warn = function (errorOrMessageTemplate) {
         var properties = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             properties[_i - 1] = arguments[_i];
         }
-        this.write(exports.LogEventLevel.warning, messageTemplate, properties);
+        if (errorOrMessageTemplate instanceof Error) {
+            this.write(exports.LogEventLevel.warning, properties[0], properties.slice(1), errorOrMessageTemplate);
+        }
+        else {
+            this.write(exports.LogEventLevel.warning, errorOrMessageTemplate, properties);
+        }
     };
-    /**
-     * Logs an event with the {LogEventLevel.information} severity.
-     * @param {string} messageTemplate Message template for the log event.
-     * @param {any[]} properties Properties that can be used to render the message template.
-     */
-    Logger.prototype.info = function (messageTemplate) {
+    Logger.prototype.info = function (errorOrMessageTemplate) {
         var properties = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             properties[_i - 1] = arguments[_i];
         }
-        this.write(exports.LogEventLevel.information, messageTemplate, properties);
+        if (errorOrMessageTemplate instanceof Error) {
+            this.write(exports.LogEventLevel.information, properties[0], properties.slice(1), errorOrMessageTemplate);
+        }
+        else {
+            this.write(exports.LogEventLevel.information, errorOrMessageTemplate, properties);
+        }
     };
-    /**
-     * Logs an event with the {LogEventLevel.debug} severity.
-     * @param {string} messageTemplate Message template for the log event.
-     * @param {any[]} properties Properties that can be used to render the message template.
-     */
-    Logger.prototype.debug = function (messageTemplate) {
+    Logger.prototype.debug = function (errorOrMessageTemplate) {
         var properties = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             properties[_i - 1] = arguments[_i];
         }
-        this.write(exports.LogEventLevel.debug, messageTemplate, properties);
+        if (errorOrMessageTemplate instanceof Error) {
+            this.write(exports.LogEventLevel.debug, properties[0], properties.slice(1), errorOrMessageTemplate);
+        }
+        else {
+            this.write(exports.LogEventLevel.debug, errorOrMessageTemplate, properties);
+        }
     };
-    /**
-     * Logs an event with the {LogEventLevel.verbose} severity.
-     * @param {string} messageTemplate Message template for the log event.
-     * @param {any[]} properties Properties that can be used to render the message template.
-     */
-    Logger.prototype.verbose = function (messageTemplate) {
+    Logger.prototype.verbose = function (errorOrMessageTemplate) {
         var properties = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             properties[_i - 1] = arguments[_i];
         }
-        this.write(exports.LogEventLevel.verbose, messageTemplate, properties);
+        if (errorOrMessageTemplate instanceof Error) {
+            this.write(exports.LogEventLevel.verbose, properties[0], properties.slice(1), errorOrMessageTemplate);
+        }
+        else {
+            this.write(exports.LogEventLevel.verbose, errorOrMessageTemplate, properties);
+        }
     };
     /**
      * Flushes the pipeline of this logger.
@@ -315,10 +316,10 @@ var Logger = (function () {
         this.pipeline.emit(events);
         return events;
     };
-    Logger.prototype.write = function (level, rawMessageTemplate, unboundProperties) {
+    Logger.prototype.write = function (level, rawMessageTemplate, unboundProperties, error) {
         var messageTemplate = new MessageTemplate(rawMessageTemplate);
         var properties = messageTemplate.bindProperties(unboundProperties);
-        var logEvent = new LogEvent(new Date().toISOString(), level, messageTemplate, properties);
+        var logEvent = new LogEvent(new Date().toISOString(), level, messageTemplate, properties, error);
         this.pipeline.emit([logEvent]);
     };
     return Logger;

@@ -43,11 +43,12 @@ export class LogEvent {
   /**
    * Creates a new log event instance.
    */
-  constructor(timestamp: string, level: LogEventLevel, messageTemplate: MessageTemplate, properties?: Object) {
+  constructor(timestamp: string, level: LogEventLevel, messageTemplate: MessageTemplate, properties?: Object, error?: Error) {
     this.timestamp = timestamp;
     this.level = level;
     this.messageTemplate = messageTemplate;
     this.properties = properties || {};
+    this.error = error || null;
   }
 
   /**
@@ -70,4 +71,9 @@ export class LogEvent {
    * Gets or sets an object containing the captured properties of this event.
    */
   properties: Object;
+
+  /**
+   * Gets or sets an error associated with this event.
+   */
+  error: Error;
 }

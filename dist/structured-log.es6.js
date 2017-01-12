@@ -54,11 +54,12 @@ class LogEvent {
     /**
      * Creates a new log event instance.
      */
-    constructor(timestamp, level, messageTemplate, properties) {
+    constructor(timestamp, level, messageTemplate, properties, error) {
         this.timestamp = timestamp;
         this.level = level;
         this.messageTemplate = messageTemplate;
         this.properties = properties || {};
+        this.error = error || null;
     }
 }
 
@@ -215,53 +216,53 @@ class Logger {
     constructor(pipeline) {
         this.pipeline = pipeline;
     }
-    /**
-     * Logs an event with the {LogEventLevel.fatal} severity.
-     * @param {string} messageTemplate Message template for the log event.
-     * @param {any[]} properties Properties that can be used to render the message template.
-     */
-    fatal(messageTemplate, ...properties) {
-        this.write(LogEventLevel.fatal, messageTemplate, properties);
+    fatal(errorOrMessageTemplate, ...properties) {
+        if (errorOrMessageTemplate instanceof Error) {
+            this.write(LogEventLevel.fatal, properties[0], properties.slice(1), errorOrMessageTemplate);
+        }
+        else {
+            this.write(LogEventLevel.fatal, errorOrMessageTemplate, properties);
+        }
     }
-    /**
-     * Logs an event with the {LogEventLevel.error} severity.
-     * @param {string} messageTemplate Message template for the log event.
-     * @param {any[]} properties Properties that can be used to render the message template.
-     */
-    error(messageTemplate, ...properties) {
-        this.write(LogEventLevel.error, messageTemplate, properties);
+    error(errorOrMessageTemplate, ...properties) {
+        if (errorOrMessageTemplate instanceof Error) {
+            this.write(LogEventLevel.error, properties[0], properties.slice(1), errorOrMessageTemplate);
+        }
+        else {
+            this.write(LogEventLevel.error, errorOrMessageTemplate, properties);
+        }
     }
-    /**
-     * Logs an event with the {LogEventLevel.warning} severity.
-     * @param {string} messageTemplate Message template for the log event.
-     * @param {any[]} properties Properties that can be used to render the message template.
-     */
-    warn(messageTemplate, ...properties) {
-        this.write(LogEventLevel.warning, messageTemplate, properties);
+    warn(errorOrMessageTemplate, ...properties) {
+        if (errorOrMessageTemplate instanceof Error) {
+            this.write(LogEventLevel.warning, properties[0], properties.slice(1), errorOrMessageTemplate);
+        }
+        else {
+            this.write(LogEventLevel.warning, errorOrMessageTemplate, properties);
+        }
     }
-    /**
-     * Logs an event with the {LogEventLevel.information} severity.
-     * @param {string} messageTemplate Message template for the log event.
-     * @param {any[]} properties Properties that can be used to render the message template.
-     */
-    info(messageTemplate, ...properties) {
-        this.write(LogEventLevel.information, messageTemplate, properties);
+    info(errorOrMessageTemplate, ...properties) {
+        if (errorOrMessageTemplate instanceof Error) {
+            this.write(LogEventLevel.information, properties[0], properties.slice(1), errorOrMessageTemplate);
+        }
+        else {
+            this.write(LogEventLevel.information, errorOrMessageTemplate, properties);
+        }
     }
-    /**
-     * Logs an event with the {LogEventLevel.debug} severity.
-     * @param {string} messageTemplate Message template for the log event.
-     * @param {any[]} properties Properties that can be used to render the message template.
-     */
-    debug(messageTemplate, ...properties) {
-        this.write(LogEventLevel.debug, messageTemplate, properties);
+    debug(errorOrMessageTemplate, ...properties) {
+        if (errorOrMessageTemplate instanceof Error) {
+            this.write(LogEventLevel.debug, properties[0], properties.slice(1), errorOrMessageTemplate);
+        }
+        else {
+            this.write(LogEventLevel.debug, errorOrMessageTemplate, properties);
+        }
     }
-    /**
-     * Logs an event with the {LogEventLevel.verbose} severity.
-     * @param {string} messageTemplate Message template for the log event.
-     * @param {any[]} properties Properties that can be used to render the message template.
-     */
-    verbose(messageTemplate, ...properties) {
-        this.write(LogEventLevel.verbose, messageTemplate, properties);
+    verbose(errorOrMessageTemplate, ...properties) {
+        if (errorOrMessageTemplate instanceof Error) {
+            this.write(LogEventLevel.verbose, properties[0], properties.slice(1), errorOrMessageTemplate);
+        }
+        else {
+            this.write(LogEventLevel.verbose, errorOrMessageTemplate, properties);
+        }
     }
     /**
      * Flushes the pipeline of this logger.
@@ -277,10 +278,10 @@ class Logger {
         this.pipeline.emit(events);
         return events;
     }
-    write(level, rawMessageTemplate, unboundProperties) {
+    write(level, rawMessageTemplate, unboundProperties, error) {
         const messageTemplate = new MessageTemplate(rawMessageTemplate);
         const properties = messageTemplate.bindProperties(unboundProperties);
-        const logEvent = new LogEvent(new Date().toISOString(), level, messageTemplate, properties);
+        const logEvent = new LogEvent(new Date().toISOString(), level, messageTemplate, properties, error);
         this.pipeline.emit([logEvent]);
     }
 }
