@@ -242,15 +242,57 @@ The `ConsoleSink`, which outputs event to the Node.js or browser console, is pro
 The following line creates a new instance that can be passed to the logger configuration:
 
 ```js
-var consoleSink = new structuredLog.ConsoleSink({ /* options */ });
+var consoleSink = new ConsoleSink({ /* options */ });
 ```
 
 The `options` object is optional, but can be used to modify the functionality of the sink.
 It supports the following properties:
 
-|Key|Description|
-|---|---|
-|console|An object with a console interface (providing `log()`, `info()`, etc.) that will be used by the sink when writing output. The global `console` object will be used by default.|
-|includeProperties|If `true`, the properties of the log event will be written to the console in addition to the message. Defaults to `false`.|
-|includeTimestamps|If `true`, timestamps will be included in the message that is written to the console. Defaults to `false`.|
-|restrictedToMinimumLevel|If set, only events of the specified level or higher will be output to the console.|
+|Key|Description|Default|
+|---|---|---|
+|`console`|An object with a console interface (providing `log()`, `info()`, etc.) that will be used by the sink when writing output.|`console` global|
+|`includeProperties`|If `true`, the properties of the log event will be written to the console in addition to the message.|`false`|
+|`includeTimestamps`|If `true`, timestamps will be included in the message that is written to the console.|`false`|
+|`restrictedToMinimumLevel`|If set, only events of the specified level or higher will be output to the console.||
+
+### Batched Sink
+
+The `BatchedSink` allows for batching events periodically and by size.
+
+It can either be used as a wrapper around existing sinks:
+
+```js
+var batchedSink = new BatchedSink(new ConsoleSink(), { /* options */ });
+```
+
+Or, if developing a sink and using ES6 or TypeScript, you can use it as a base class to add batching capabilities:
+
+```js
+class MySink extends BatchedSink {
+  constructor() {
+    super(null, { /* options */ });
+  }
+
+  // Override emitCore and/or flushCore to add your own sink's behavior
+
+  emitCore(events) {
+    // ...
+  }
+
+  flushCore() {
+    // ...
+
+    return Promise.resolve();
+    // If you don't return a promise,
+    // a resolved promise will be returned for you
+  }
+}
+```
+
+The `options` object is optional, but can be used to modify the batching thresholds.
+It supports the following properties:
+
+|Key|Description|Default|
+|---|---|---|
+|`maxSize`|The maximum number of events in a single batch. The sink will be flushed immediately when this limit is hit.|`100`|
+|`period`|The interval for autmoatic flushing of batches, in seconds.|`10`|

@@ -4,6 +4,18 @@
     (factory((global.structuredLog = global.structuredLog || {})));
 }(this, (function (exports) { 'use strict';
 
+const __assign = Object.assign || function (target) {
+    for (var source, i = 1; i < arguments.length; i++) {
+        source = arguments[i];
+        for (var prop in source) {
+            if (Object.prototype.hasOwnProperty.call(source, prop)) {
+                target[prop] = source[prop];
+            }
+        }
+    }
+    return target;
+};
+
 function __extends(d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -442,6 +454,61 @@ var ConsoleSink = (function () {
     return ConsoleSink;
 }());
 
+var defaultBatchedSinkOptions = {
+    maxSize: 100,
+    period: 10
+};
+var BatchedSink = (function () {
+    function BatchedSink(innerSink, options) {
+        this.innerSink = innerSink || null;
+        this.options = __assign({}, defaultBatchedSinkOptions, (options || {}));
+        this.batchedEvents = [];
+        this.cycleBatch();
+    }
+    BatchedSink.prototype.emit = function (events) {
+        if (isNaN(this.options.period) || this.options.period <= 0) {
+            return this.innerSink.emit(events);
+        }
+        if (this.batchedEvents.length + events.length <= this.options.maxSize) {
+            (_a = this.batchedEvents).push.apply(_a, events);
+        }
+        else {
+            var cursor = this.options.maxSize - this.batchedEvents.length;
+            (_b = this.batchedEvents).push.apply(_b, events.slice(0, cursor));
+            while (cursor < events.length) {
+                this.cycleBatch();
+                (_c = this.batchedEvents).push.apply(_c, events.slice(cursor, cursor = cursor + this.options.maxSize));
+            }
+        }
+        return events;
+        var _a, _b, _c;
+    };
+    BatchedSink.prototype.flush = function () {
+        this.cycleBatch();
+        var corePromise = this.flushCore();
+        return corePromise instanceof Promise ? corePromise : Promise.resolve();
+    };
+    BatchedSink.prototype.emitCore = function (events) {
+        return this.innerSink.emit(events);
+    };
+    BatchedSink.prototype.flushCore = function () {
+        return this.innerSink.flush();
+    };
+    BatchedSink.prototype.cycleBatch = function () {
+        var _this = this;
+        if (isNaN(this.options.period) || this.options.period <= 0) {
+            return;
+        }
+        clearTimeout(this.batchTimeout);
+        if (this.batchedEvents.length) {
+            this.emitCore(this.batchedEvents.slice(0));
+            this.batchedEvents.length = 0;
+        }
+        this.batchTimeout = setTimeout(function () { return _this.cycleBatch(); }, this.options.period * 1000);
+    };
+    return BatchedSink;
+}());
+
 var FilterStage = (function () {
     function FilterStage(predicate) {
         this.predicate = predicate;
@@ -641,7 +708,7 @@ var LoggerConfiguration = (function () {
             }
             else if (typeof levelOrSwitch === 'string') {
                 var level_1 = exports.LogEventLevel[levelOrSwitch.toLowerCase()];
-                if (typeof level_1 === 'undefined') {
+                if (typeof level_1 === 'undefined' || level_1 === null) {
                     throw new TypeError('Argument "levelOrSwitch" is not a valid LogEventLevel value.');
                 }
                 return _this.filter(function (e) { return isEnabled(level_1, e.level); });
@@ -717,6 +784,7 @@ exports.configure = configure;
 exports.LoggerConfiguration = LoggerConfiguration;
 exports.Logger = Logger;
 exports.ConsoleSink = ConsoleSink;
+exports.BatchedSink = BatchedSink;
 exports.DynamicLevelSwitch = DynamicLevelSwitch;
 
 Object.defineProperty(exports, '__esModule', { value: true });

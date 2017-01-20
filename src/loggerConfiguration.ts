@@ -45,7 +45,7 @@ export class LoggerConfiguration {
       return this;
     } else if (typeof levelOrSwitch === 'string') {
       const level = <LogEventLevel>LogEventLevel[levelOrSwitch.toLowerCase()];
-      if (typeof level === 'undefined') {
+      if (typeof level === 'undefined' || level === null) {
         throw new TypeError('Argument "levelOrSwitch" is not a valid LogEventLevel value.');
       }
       return this.filter(e => isEnabled(level, e.level));

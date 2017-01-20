@@ -34,7 +34,7 @@ export class Logger implements Sink {
    */
   fatal(error: Error, messageTemplate: string, ...properties: any[]);
 
-  fatal(errorOrMessageTemplate: any, ...properties: any[]) {
+  fatal(errorOrMessageTemplate: Error | string, ...properties: any[]) {
     try {
       if (errorOrMessageTemplate instanceof Error) {
         this.write(LogEventLevel.fatal, properties[0], properties.slice(1), errorOrMessageTemplate);
@@ -63,7 +63,7 @@ export class Logger implements Sink {
    */
   error(error: Error, messageTemplate: string, ...properties: any[]);
 
-  error(errorOrMessageTemplate: any, ...properties: any[]) {
+  error(errorOrMessageTemplate: Error | string, ...properties: any[]) {
     try {
       if (errorOrMessageTemplate instanceof Error) {
         this.write(LogEventLevel.error, properties[0], properties.slice(1), errorOrMessageTemplate);
@@ -92,7 +92,7 @@ export class Logger implements Sink {
    */
   warn(error: Error, messageTemplate: string, ...properties: any[]);
 
-  warn(errorOrMessageTemplate: any, ...properties: any[]) {
+  warn(errorOrMessageTemplate: Error | string, ...properties: any[]) {
     try {
       if (errorOrMessageTemplate instanceof Error) {
         this.write(LogEventLevel.warning, properties[0], properties.slice(1), errorOrMessageTemplate);
@@ -121,7 +121,7 @@ export class Logger implements Sink {
    */
   info(error: Error, messageTemplate: string, ...properties: any[]);
 
-  info(errorOrMessageTemplate: any, ...properties: any[]) {
+  info(errorOrMessageTemplate: Error | string, ...properties: any[]) {
     try {
       if (errorOrMessageTemplate instanceof Error) {
         this.write(LogEventLevel.information, properties[0], properties.slice(1), errorOrMessageTemplate);
@@ -150,7 +150,7 @@ export class Logger implements Sink {
    */
   debug(error: Error, messageTemplate: string, ...properties: any[]);
 
-  debug(errorOrMessageTemplate: any, ...properties: any[]) {
+  debug(errorOrMessageTemplate: Error | string, ...properties: any[]) {
     try {
       if (errorOrMessageTemplate instanceof Error) {
         this.write(LogEventLevel.debug, properties[0], properties.slice(1), errorOrMessageTemplate);
@@ -179,7 +179,7 @@ export class Logger implements Sink {
    */
   verbose(error: Error, messageTemplate: string, ...properties: any[]);
 
-  verbose(errorOrMessageTemplate: any, ...properties: any[]) {
+  verbose(errorOrMessageTemplate: Error | string, ...properties: any[]) {
     try {
       if (errorOrMessageTemplate instanceof Error) {
         this.write(LogEventLevel.verbose, properties[0], properties.slice(1), errorOrMessageTemplate);

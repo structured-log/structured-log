@@ -1,3 +1,15 @@
+const __assign = Object.assign || function (target) {
+    for (var source, i = 1; i < arguments.length; i++) {
+        source = arguments[i];
+        for (var prop in source) {
+            if (Object.prototype.hasOwnProperty.call(source, prop)) {
+                target[prop] = source[prop];
+            }
+        }
+    }
+    return target;
+};
+
 /**
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/assign
  */
@@ -402,6 +414,58 @@ class ConsoleSink {
     }
 }
 
+const defaultBatchedSinkOptions = {
+    maxSize: 100,
+    period: 10
+};
+class BatchedSink {
+    constructor(innerSink, options) {
+        this.innerSink = innerSink || null;
+        this.options = __assign({}, defaultBatchedSinkOptions, (options || {}));
+        this.batchedEvents = [];
+        this.cycleBatch();
+    }
+    emit(events) {
+        if (isNaN(this.options.period) || this.options.period <= 0) {
+            return this.innerSink.emit(events);
+        }
+        if (this.batchedEvents.length + events.length <= this.options.maxSize) {
+            this.batchedEvents.push(...events);
+        }
+        else {
+            let cursor = this.options.maxSize - this.batchedEvents.length;
+            this.batchedEvents.push(...events.slice(0, cursor));
+            while (cursor < events.length) {
+                this.cycleBatch();
+                this.batchedEvents.push(...events.slice(cursor, cursor = cursor + this.options.maxSize));
+            }
+        }
+        return events;
+    }
+    flush() {
+        this.cycleBatch();
+        const corePromise = this.flushCore();
+        return corePromise instanceof Promise ? corePromise : Promise.resolve();
+    }
+    emitCore(events) {
+        return this.innerSink.emit(events);
+    }
+    flushCore() {
+        return this.innerSink.flush();
+    }
+    cycleBatch() {
+        if (isNaN(this.options.period) || this.options.period <= 0) {
+            return;
+        }
+        clearTimeout(this.batchTimeout);
+        if (this.batchedEvents.length) {
+            this.emitCore(this.batchedEvents.slice(0));
+            this.batchedEvents.length = 0;
+        }
+        this.batchTimeout = setTimeout(() => this.cycleBatch(), this.options.period * 1000);
+    }
+}
+
 class FilterStage {
     constructor(predicate) {
         this.predicate = predicate;
@@ -577,7 +641,7 @@ class LoggerConfiguration {
             }
             else if (typeof levelOrSwitch === 'string') {
                 const level = LogEventLevel[levelOrSwitch.toLowerCase()];
-                if (typeof level === 'undefined') {
+                if (typeof level === 'undefined' || level === null) {
                     throw new TypeError('Argument "levelOrSwitch" is not a valid LogEventLevel value.');
                 }
                 return this.filter(e => isEnabled(level, e.level));
@@ -648,5 +712,5 @@ function configure() {
     return new LoggerConfiguration();
 }
 
-export { configure, LoggerConfiguration, LogEventLevel, Logger, ConsoleSink, DynamicLevelSwitch };
+export { configure, LoggerConfiguration, LogEventLevel, Logger, ConsoleSink, BatchedSink, DynamicLevelSwitch };
 //# sourceMappingURL=structured-log.es6.js.map
