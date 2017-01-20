@@ -6,7 +6,7 @@
   "jsnext:main": "dist/structured-log.es6.js",
   "scripts": {
     "test": "mocha --compilers ts:ts-node/register -r test/polyfills.ts test/**/*.spec.ts",
-    "test-coverage": "ts-node node_modules/istanbul/lib/cli.js cover -e .ts -x \"*.d.ts\" -x \"*.spec.ts\" -x \"**\\polyfills\\*.ts\" node_modules/mocha/bin/_mocha -- -r test/polyfills.ts test/**/*.spec.ts",
+    "test-coverage": "ts-node node_modules/istanbul/lib/cli.js cover -e .ts -x \"*.d.ts\" -x \"*.spec.ts\" -x \"**/polyfills/**/*.ts\" node_modules/mocha/bin/_mocha -- -r test/polyfills.ts test/**/*.spec.ts",
     "build-es5": "rollup -c rollup.config.es5.js",
     "build-es6": "rollup -c rollup.config.es6.js",
     "build": "npm run build-es5 && npm run build-es6",
