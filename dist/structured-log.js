@@ -466,9 +466,6 @@ var BatchedSink = (function () {
         this.cycleBatch();
     }
     BatchedSink.prototype.emit = function (events) {
-        if (isNaN(this.options.period) || this.options.period <= 0) {
-            return this.innerSink.emit(events);
-        }
         if (this.batchedEvents.length + events.length <= this.options.maxSize) {
             (_a = this.batchedEvents).push.apply(_a, events);
         }
@@ -496,15 +493,14 @@ var BatchedSink = (function () {
     };
     BatchedSink.prototype.cycleBatch = function () {
         var _this = this;
-        if (isNaN(this.options.period) || this.options.period <= 0) {
-            return;
-        }
         clearTimeout(this.batchTimeout);
         if (this.batchedEvents.length) {
             this.emitCore(this.batchedEvents.slice(0));
             this.batchedEvents.length = 0;
         }
-        this.batchTimeout = setTimeout(function () { return _this.cycleBatch(); }, this.options.period * 1000);
+        if (!isNaN(this.options.period) && this.options.period > 0) {
+            this.batchTimeout = setTimeout(function () { return _this.cycleBatch(); }, this.options.period * 1000);
+        }
     };
     return BatchedSink;
 }());

@@ -257,7 +257,7 @@ It supports the following properties:
 
 ### Batched Sink
 
-The `BatchedSink` allows for batching events periodically and by size.
+The `BatchedSink` allows for batching events periodically and/or by batch size.
 
 It can either be used as a wrapper around existing sinks:
 

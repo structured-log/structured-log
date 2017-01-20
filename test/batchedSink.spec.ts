@@ -34,7 +34,7 @@ describe('BatchedSink', () => {
   });
   
   describe('emit()', () => {
-    it('does no batching if the period is not a positive number', () => {
+    it('disables periodic batching if the period is not a positive number', () => {
       const innerSink = TypeMoq.Mock.ofType(ConcreteSink);
       const batchedSink = new BatchedSink(innerSink.object, {
         period: 0
@@ -44,7 +44,11 @@ describe('BatchedSink', () => {
       batchedSink.emit([new LogEvent('', LogEventLevel.information, new MessageTemplate('Test 2'))]);
       batchedSink.emit([new LogEvent('', LogEventLevel.information, new MessageTemplate('Test 3'))]);
 
-      innerSink.verify(m => m.emit(TypeMoq.It.isAny()), TypeMoq.Times.exactly(3));
+      innerSink.verify(m => m.emit(TypeMoq.It.isAny()), TypeMoq.Times.never());
+
+      return batchedSink.flush().then(() => {
+        innerSink.verify(m => m.emit(TypeMoq.It.isAny()), TypeMoq.Times.once());
+      });
     });
 
     it('batches events up to the maximum batch size', () => {

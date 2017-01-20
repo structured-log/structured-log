@@ -426,9 +426,6 @@ class BatchedSink {
         this.cycleBatch();
     }
     emit(events) {
-        if (isNaN(this.options.period) || this.options.period <= 0) {
-            return this.innerSink.emit(events);
-        }
         if (this.batchedEvents.length + events.length <= this.options.maxSize) {
             this.batchedEvents.push(...events);
         }
@@ -454,15 +451,14 @@ class BatchedSink {
         return this.innerSink.flush();
     }
     cycleBatch() {
-        if (isNaN(this.options.period) || this.options.period <= 0) {
-            return;
-        }
         clearTimeout(this.batchTimeout);
         if (this.batchedEvents.length) {
             this.emitCore(this.batchedEvents.slice(0));
             this.batchedEvents.length = 0;
         }
-        this.batchTimeout = setTimeout(() => this.cycleBatch(), this.options.period * 1000);
+        if (!isNaN(this.options.period) && this.options.period > 0) {
+            this.batchTimeout = setTimeout(() => this.cycleBatch(), this.options.period * 1000);
+        }
     }
 }
 
