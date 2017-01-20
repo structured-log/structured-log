@@ -9,6 +9,3 @@ require('../src/polyfills/objectAssign');
 
 declare var Symbol: any;
 require('es6-symbol');
-
-declare var Proxy: any;
-require('proxy-polyfill');

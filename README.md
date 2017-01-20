@@ -2,10 +2,9 @@
 
 A structured logging framework for JavaScript, inspired by [Serilog](http://serilog.net/).
 
-|Branch|Status|
-|---|---|---|
-|`master`|[![Build Status](https://travis-ci.org/structured-log/structured-log.svg?branch=master)](https://travis-ci.org/structured-log/structured-log)|
-|`dev`|[![Build Status](https://travis-ci.org/structured-log/structured-log.svg?branch=dev)](https://travis-ci.org/structured-log/structured-log)|
+[![npm](https://img.shields.io/npm/v/structured-log.svg)](https://www.npmjs.com/package/structured-log)
+[![Bower](https://img.shields.io/bower/v/structured-log.svg)]()
+[![Build Status](https://travis-ci.org/structured-log/structured-log.svg?branch=master)](https://travis-ci.org/structured-log/structured-log)
 
 ## Basic Example
 
