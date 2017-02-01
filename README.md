@@ -289,10 +289,11 @@ class MySink extends BatchedSink {
 }
 ```
 
-The `options` object is optional, but can be used to modify the batching thresholds.
+The `options` object is optional, but can be used to modify the batching thresholds or add durability to the sink.
 It supports the following properties:
 
 |Key|Description|Default|
 |---|---|---|
+|`durableStore`|An instance implementing the [Web Storage API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API) interface (such as `localStorage` in the browser, or [node-localstorage](https://github.com/lmaccherone/node-localstorage) for Node.js applications). If this is set, it will be used as an intermediate store for events until they have been successfully flushed through the pipeline.|`null`|
 |`maxSize`|The maximum number of events in a single batch. The sink will be flushed immediately when this limit is hit.|`100`|
 |`period`|The interval for autmoatic flushing of batches, in seconds.|`10`|

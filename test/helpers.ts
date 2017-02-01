@@ -22,3 +22,24 @@ export class ConcreteConsoleProxy implements ConsoleProxy {
   debug(message?: any, ...properties: any[]) { }
   log(message?: any, ...properties: any[]) { }
 }
+
+export class ConcreteStorage {
+  length: number = 0;
+
+  getItem(key: string): string {
+    return this[key] || null;
+  }
+
+  setItem(key: string, data: string) {
+    if (!this.getItem(key)) {
+      ++this.length;
+    }
+    this[key] = data;
+  }
+
+  removeItem(key: string) {
+    this[key] = null;
+    delete this[key];
+    --this.length;
+  }
+}

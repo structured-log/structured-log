@@ -8,8 +8,8 @@ import * as TypeMoq from 'typemoq';
 import { Logger } from '../src/logger';
 import { LogEvent, LogEventLevel } from '../src/logEvent';
 import { MessageTemplate } from '../src/messageTemplate';
-import { BatchedSink } from '../src/batchedSink';
-import { ConcreteSink } from './helpers';
+import { BatchedSink, defaultBatchedSinkOptions } from '../src/batchedSink';
+import { ConcreteSink, ConcreteStorage } from './helpers';
 
 describe('BatchedSink', () => {
   describe('constructor()', () => {
@@ -17,8 +17,8 @@ describe('BatchedSink', () => {
       const innerSink = TypeMoq.Mock.ofType(ConcreteSink);
       const batchedSink = new BatchedSink(innerSink.object);
 
-      expect(batchedSink).to.have.deep.property('options.maxSize', 100);
-      expect(batchedSink).to.have.deep.property('options.period', 10);
+      expect(batchedSink).to.have.deep.property('options.maxSize', defaultBatchedSinkOptions.maxSize);
+      expect(batchedSink).to.have.deep.property('options.period', defaultBatchedSinkOptions.period);
     });
     
     it('uses the passed options', () => {
@@ -179,6 +179,68 @@ describe('BatchedSink', () => {
       const batchedSink = new BatchedSink(innerSink.object);
       return batchedSink.flush().then(() => {
         innerSink.verify(m => m.flush(), TypeMoq.Times.once());
+      });
+    });
+  });
+
+  describe('when it has a durable store', () => {
+    it('flushes any previously stored events on creation', () => {
+      const durableStore = new ConcreteStorage();
+      const initialEvents = [
+        new LogEvent('', LogEventLevel.information, new MessageTemplate('Test 1')),
+        new LogEvent('', LogEventLevel.information, new MessageTemplate('Test 2'))
+      ];
+      durableStore.setItem('structured-log-batched-sink-durable-cache-123', JSON.stringify(initialEvents));
+
+      const emittedBatches = [];
+      const innerSink = TypeMoq.Mock.ofType(ConcreteSink);
+      innerSink.setup(m => m.emit(TypeMoq.It.isAny())).callback(batch => emittedBatches.push(batch));
+      innerSink.setup(m => m.flush()).returns(() => Promise.resolve());
+      const batchedSink = new BatchedSink(innerSink.object, {
+        period: 0,
+        maxSize: 2,
+        durableStore: <Storage> durableStore
+      });
+
+      return batchedSink.flush().then(() => {
+        expect(emittedBatches[0][0]).to.have.deep.property('messageTemplate.raw', 'Test 1');
+        expect(emittedBatches[0][1]).to.have.deep.property('messageTemplate.raw', 'Test 2');
+      });
+    });
+
+    it('stores events in a durable storage', () => {
+      const durableStore = new ConcreteStorage();
+      const batchedSink = new BatchedSink(null, {
+        period: 0,
+        maxSize: 3,
+        durableStore: <Storage> durableStore
+      });
+
+      batchedSink.emit([
+        new LogEvent('', LogEventLevel.information, new MessageTemplate('Test 1')),
+        new LogEvent('', LogEventLevel.information, new MessageTemplate('Test 2'))
+      ]);
+      
+      expect(durableStore.length).to.equal(1);
+    });
+
+    it('cleans up the stored events once they have been shipped', () => {
+      const durableStore = new ConcreteStorage();
+      const innerSink = TypeMoq.Mock.ofType(ConcreteSink);
+      innerSink.setup(m => m.flush()).returns(() => Promise.resolve());
+      const batchedSink = new BatchedSink(innerSink.object, {
+        period: 0,
+        maxSize: 2,
+        durableStore: <Storage> durableStore
+      });
+
+      batchedSink.emit([
+        new LogEvent('', LogEventLevel.information, new MessageTemplate('Test 1')),
+        new LogEvent('', LogEventLevel.information, new MessageTemplate('Test 2'))
+      ]);
+
+      return batchedSink.flush().then(() => {
+        expect(durableStore.length).to.equal(0);
       });
     });
   });
