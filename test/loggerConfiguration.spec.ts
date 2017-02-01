@@ -10,6 +10,7 @@ import { LogEventLevel } from '../src/logEvent';
 import { Pipeline, PipelineStage } from '../src/pipeline';
 import { Sink, SinkStage } from '../src/sink';
 import { DynamicLevelSwitch } from '../src/dynamicLevelSwitch';
+import { ConcreteSink } from './helpers';
 
 describe('LoggerConfiguration', () => {
   describe('create()', () => {
@@ -23,7 +24,7 @@ describe('LoggerConfiguration', () => {
   describe('enrich()', () => {
     it('adds an enricher to the pipeline', () => {
       let emittedEvents = [];
-      const sink = TypeMoq.Mock.ofType<Sink>();
+      const sink = TypeMoq.Mock.ofType(ConcreteSink);
       sink.setup(m => m.emit(TypeMoq.It.isAny())).callback(events => emittedEvents = emittedEvents.concat(events));
 
       const logger = new LoggerConfiguration()
@@ -50,7 +51,7 @@ describe('LoggerConfiguration', () => {
   describe('filter()', () => {
     it('adds a filter to the pipeline', () => {
       let emittedEvents = [];
-      const sink = TypeMoq.Mock.ofType<Sink>();
+      const sink = TypeMoq.Mock.ofType(ConcreteSink);
       sink.setup(m => m.emit(TypeMoq.It.isAny())).callback(events => emittedEvents = emittedEvents.concat(events));
 
       const logger = new LoggerConfiguration()
@@ -85,7 +86,7 @@ describe('LoggerConfiguration', () => {
 
     it('sets the minimum level', () => {
       let emittedEvents = [];
-      const sink = TypeMoq.Mock.ofType<Sink>();
+      const sink = TypeMoq.Mock.ofType(ConcreteSink);
       sink.setup(m => m.emit(TypeMoq.It.isAny())).callback(events => emittedEvents = emittedEvents.concat(events));
 
       const logger = new LoggerConfiguration()
@@ -106,7 +107,7 @@ describe('LoggerConfiguration', () => {
 
     it('sets the minimum by bit flags', () => {
       let emittedEvents = [];
-      const sink = TypeMoq.Mock.ofType<Sink>();
+      const sink = TypeMoq.Mock.ofType(ConcreteSink);
       sink.setup(m => m.emit(TypeMoq.It.isAny())).callback(events => emittedEvents = emittedEvents.concat(events));
 
       const logger = new LoggerConfiguration()
@@ -128,7 +129,7 @@ describe('LoggerConfiguration', () => {
 
     it('sets the minimum level by label (case-insensitive)', () => {
       let emittedEvents = [];
-      const sink = TypeMoq.Mock.ofType<Sink>();
+      const sink = TypeMoq.Mock.ofType(ConcreteSink);
       sink.setup(m => m.emit(TypeMoq.It.isAny())).callback(events => emittedEvents = emittedEvents.concat(events));
 
       const logger = new LoggerConfiguration()
@@ -154,7 +155,7 @@ describe('LoggerConfiguration', () => {
 
     it('sets the specified dynamic switch', () => {
       let emittedEvents = [];
-      const sink = TypeMoq.Mock.ofType<Sink>();
+      const sink = TypeMoq.Mock.ofType(ConcreteSink);
       sink.setup(m => m.emit(TypeMoq.It.isAny())).callback(events => emittedEvents = emittedEvents.concat(events));
 
       const dynamicLevelSwitch = new DynamicLevelSwitch();
@@ -182,7 +183,7 @@ describe('LoggerConfiguration', () => {
     
     it('sets minimum level through the fatal() alias', () => {
       let emittedEvents = [];
-      const sink = TypeMoq.Mock.ofType<Sink>();
+      const sink = TypeMoq.Mock.ofType(ConcreteSink);
       sink.setup(m => m.emit(TypeMoq.It.isAny())).callback(events => emittedEvents = emittedEvents.concat(events));
 
       const logger = new LoggerConfiguration()
@@ -201,7 +202,7 @@ describe('LoggerConfiguration', () => {
     
     it('sets minimum level through the error() alias', () => {
       let emittedEvents = [];
-      const sink = TypeMoq.Mock.ofType<Sink>();
+      const sink = TypeMoq.Mock.ofType(ConcreteSink);
       sink.setup(m => m.emit(TypeMoq.It.isAny())).callback(events => emittedEvents = emittedEvents.concat(events));
 
       const logger = new LoggerConfiguration()
@@ -220,7 +221,7 @@ describe('LoggerConfiguration', () => {
     
     it('sets minimum level through the warning() alias', () => {
       let emittedEvents = [];
-      const sink = TypeMoq.Mock.ofType<Sink>();
+      const sink = TypeMoq.Mock.ofType(ConcreteSink);
       sink.setup(m => m.emit(TypeMoq.It.isAny())).callback(events => emittedEvents = emittedEvents.concat(events));
 
       const logger = new LoggerConfiguration()
@@ -239,7 +240,7 @@ describe('LoggerConfiguration', () => {
     
     it('sets minimum level through the information() alias', () => {
       let emittedEvents = [];
-      const sink = TypeMoq.Mock.ofType<Sink>();
+      const sink = TypeMoq.Mock.ofType(ConcreteSink);
       sink.setup(m => m.emit(TypeMoq.It.isAny())).callback(events => emittedEvents = emittedEvents.concat(events));
 
       const logger = new LoggerConfiguration()
@@ -258,7 +259,7 @@ describe('LoggerConfiguration', () => {
     
     it('sets minimum level through the debug() alias', () => {
       let emittedEvents = [];
-      const sink = TypeMoq.Mock.ofType<Sink>();
+      const sink = TypeMoq.Mock.ofType(ConcreteSink);
       sink.setup(m => m.emit(TypeMoq.It.isAny())).callback(events => emittedEvents = emittedEvents.concat(events));
 
       const logger = new LoggerConfiguration()
@@ -277,7 +278,7 @@ describe('LoggerConfiguration', () => {
     
     it('sets minimum level through the verbose() alias', () => {
       let emittedEvents = [];
-      const sink = TypeMoq.Mock.ofType<Sink>();
+      const sink = TypeMoq.Mock.ofType(ConcreteSink);
       sink.setup(m => m.emit(TypeMoq.It.isAny())).callback(events => emittedEvents = emittedEvents.concat(events));
 
       const logger = new LoggerConfiguration()
@@ -334,7 +335,7 @@ describe('LoggerConfiguration', () => {
   describe('writeTo()', () => {
     it('adds a sink to the pipeline', () => {
       let emittedEvents = [];
-      const sink = TypeMoq.Mock.ofType<Sink>();
+      const sink = TypeMoq.Mock.ofType(ConcreteSink);
       sink.setup(m => m.emit(TypeMoq.It.isAny())).callback(events => emittedEvents = emittedEvents.concat(events));
 
       const logger = new LoggerConfiguration()

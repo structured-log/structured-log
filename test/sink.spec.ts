@@ -9,12 +9,13 @@ import { PipelineStage } from '../src/pipeline';
 import { LogEvent, LogEventLevel } from '../src/logEvent';
 import { MessageTemplate } from '../src/messageTemplate';
 import { Sink, SinkStage } from '../src/sink';
+import { ConcreteSink } from './helpers';
 
 describe('SinkStage', () => {
   describe('emit()', () => {
     it('emits events to the sink', () => {
       let emittedEvents = [];
-      const sink = TypeMoq.Mock.ofType<Sink>();
+      const sink = TypeMoq.Mock.ofType(ConcreteSink);
       sink.setup(m => m.emit(TypeMoq.It.isAny())).callback(events => emittedEvents = events);
       const sinkStage = new SinkStage(sink.object);
       const events = [
@@ -28,7 +29,7 @@ describe('SinkStage', () => {
     });
 
     it('returns the emitted events', () => {
-      const sink = TypeMoq.Mock.ofType<Sink>();
+      const sink = TypeMoq.Mock.ofType(ConcreteSink);
       const sinkStage = new SinkStage(sink.object);
       const events = [
         new LogEvent('', LogEventLevel.information, new MessageTemplate('Message 1')),
@@ -43,7 +44,7 @@ describe('SinkStage', () => {
 
   describe('flush()', () => {
     it('flushes the sink', () => {
-      const sink = TypeMoq.Mock.ofType<Sink>();
+      const sink = TypeMoq.Mock.ofType(ConcreteSink);
       sink.setup(m => m.flush()).returns(() => Promise.resolve());
       const sinkStage = new SinkStage(sink.object);
       return sinkStage.flush().then(() => {

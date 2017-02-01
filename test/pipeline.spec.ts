@@ -8,15 +8,16 @@ import { Pipeline } from '../src/pipeline';
 import { PipelineStage } from '../src/pipeline';
 import { LogEvent, LogEventLevel } from '../src/logEvent';
 import { MessageTemplate } from '../src/messageTemplate';
+import { ConcretePipelineStage } from './helpers';
 
 describe('Pipeline', () => {
   describe('emit()', () => {
     it('emits events through its stages', () => {
       let emittedEvents = [];
       const pipeline = new Pipeline();
-      const pipelineStage1 = TypeMoq.Mock.ofType<PipelineStage>();
-      const pipelineStage2 = TypeMoq.Mock.ofType<PipelineStage>();
-      const pipelineStage3 = TypeMoq.Mock.ofType<PipelineStage>();
+      const pipelineStage1 = TypeMoq.Mock.ofType(ConcretePipelineStage);
+      const pipelineStage2 = TypeMoq.Mock.ofType(ConcretePipelineStage);
+      const pipelineStage3 = TypeMoq.Mock.ofType(ConcretePipelineStage);
       pipelineStage1.setup(m => m.emit(TypeMoq.It.isAny())).returns(events => events);
       pipelineStage2.setup(m => m.emit(TypeMoq.It.isAny())).returns(events => events);
       pipelineStage3.setup(m => m.emit(TypeMoq.It.isAny())).callback(events => emittedEvents = events);
@@ -39,8 +40,8 @@ describe('Pipeline', () => {
     it('queues events if a flush is in progress', () => {
       let emittedEvents = [];
       const pipeline = new Pipeline();
-      const pipelineStage1 = TypeMoq.Mock.ofType<PipelineStage>();
-      const pipelineStage2 = TypeMoq.Mock.ofType<PipelineStage>();
+      const pipelineStage1 = TypeMoq.Mock.ofType(ConcretePipelineStage);
+      const pipelineStage2 = TypeMoq.Mock.ofType(ConcretePipelineStage);
       pipelineStage1.setup(m => m.emit(TypeMoq.It.isAny())).returns(events => events);
       pipelineStage1.setup(m => m.flush()).returns(() => new Promise(resolve => setTimeout(resolve, 1)));
       pipelineStage2.setup(m => m.emit(TypeMoq.It.isAny())).callback(events => emittedEvents = emittedEvents.concat(events));
@@ -72,9 +73,9 @@ describe('Pipeline', () => {
   describe('flush()', () => {
     it('flushes events through its stages', () => {
       const pipeline = new Pipeline();
-      const pipelineStage1 = TypeMoq.Mock.ofType<PipelineStage>();
-      const pipelineStage2 = TypeMoq.Mock.ofType<PipelineStage>();
-      const pipelineStage3 = TypeMoq.Mock.ofType<PipelineStage>();
+      const pipelineStage1 = TypeMoq.Mock.ofType(ConcretePipelineStage);
+      const pipelineStage2 = TypeMoq.Mock.ofType(ConcretePipelineStage);
+      const pipelineStage3 = TypeMoq.Mock.ofType(ConcretePipelineStage);
       pipelineStage1.setup(m => m.flush()).returns(() => Promise.resolve());
       pipelineStage2.setup(m => m.flush()).returns(() => Promise.resolve());
       pipelineStage3.setup(m => m.flush()).returns(() => Promise.resolve());
@@ -90,8 +91,8 @@ describe('Pipeline', () => {
 
     it('does nothing if a flush is already in progress', () => {
       const pipeline = new Pipeline();
-      const pipelineStage1 = TypeMoq.Mock.ofType<PipelineStage>();
-      const pipelineStage2 = TypeMoq.Mock.ofType<PipelineStage>();
+      const pipelineStage1 = TypeMoq.Mock.ofType(ConcretePipelineStage);
+      const pipelineStage2 = TypeMoq.Mock.ofType(ConcretePipelineStage);
       pipelineStage1.setup(m => m.flush()).returns(() => new Promise(resolve => setTimeout(resolve, 1)));
       pipelineStage2.setup(m => m.flush()).returns(() => Promise.resolve());
       pipeline.addStage(pipelineStage1.object);

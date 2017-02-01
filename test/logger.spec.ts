@@ -15,7 +15,7 @@ function verifyLevel(level: LogEventLevel) {
 
 describe('Logger', () => {
   it('logs with fatal severity', () => {
-    const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+    const mockPipeline = TypeMoq.Mock.ofType(Pipeline);
     mockPipeline.setup(m => m.emit(TypeMoq.It.is(verifyLevel(LogEventLevel.fatal))));
     const logger = new Logger(mockPipeline.object);
     logger.fatal('Test');
@@ -23,7 +23,7 @@ describe('Logger', () => {
   });
 
   it('logs with error severity', () => {
-    const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+    const mockPipeline = TypeMoq.Mock.ofType(Pipeline);
     mockPipeline.setup(m => m.emit(TypeMoq.It.is(verifyLevel(LogEventLevel.error))));
     const logger = new Logger(mockPipeline.object);
     logger.error('Test');
@@ -31,7 +31,7 @@ describe('Logger', () => {
   });
 
   it('logs with warning severity', () => {
-    const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+    const mockPipeline = TypeMoq.Mock.ofType(Pipeline);
     mockPipeline.setup(m => m.emit(TypeMoq.It.is(verifyLevel(LogEventLevel.warning))));
     const logger = new Logger(mockPipeline.object);
     logger.warn('Test');
@@ -39,7 +39,7 @@ describe('Logger', () => {
   });
   
   it('logs with information severity', () => {
-    const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+    const mockPipeline = TypeMoq.Mock.ofType(Pipeline);
     mockPipeline.setup(m => m.emit(TypeMoq.It.is(verifyLevel(LogEventLevel.information))));
     const logger = new Logger(mockPipeline.object);
     logger.info('Test');
@@ -47,7 +47,7 @@ describe('Logger', () => {
   });
   
   it('logs with debug severity', () => {
-    const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+    const mockPipeline = TypeMoq.Mock.ofType(Pipeline);
     mockPipeline.setup(m => m.emit(TypeMoq.It.is(verifyLevel(LogEventLevel.debug))));
     const logger = new Logger(mockPipeline.object);
     logger.debug('Test');
@@ -55,7 +55,7 @@ describe('Logger', () => {
   });
 
   it('logs with verbose severity', () => {
-    const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+    const mockPipeline = TypeMoq.Mock.ofType(Pipeline);
     mockPipeline.setup(m => m.emit(TypeMoq.It.is(verifyLevel(LogEventLevel.verbose))));
     const logger = new Logger(mockPipeline.object);
     logger.verbose('Test');
@@ -64,7 +64,7 @@ describe('Logger', () => {
 
   it('includes logged properties', () => {
     let loggedEvents = [];
-    const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+    const mockPipeline = TypeMoq.Mock.ofType(Pipeline);
     mockPipeline.setup(m => m.emit(TypeMoq.It.is(verifyLevel(LogEventLevel.information))))
       .callback(events => loggedEvents = loggedEvents.concat(events));
     const logger = new Logger(mockPipeline.object);
@@ -76,7 +76,7 @@ describe('Logger', () => {
   it('includes logged error', () => {
     let loggedEvents = [];
     const error = new Error('Sample');
-    const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+    const mockPipeline = TypeMoq.Mock.ofType(Pipeline);
     mockPipeline.setup(m => m.emit(TypeMoq.It.isAny()))
       .callback(events => loggedEvents = loggedEvents.concat(events));
     const logger = new Logger(mockPipeline.object);
@@ -97,8 +97,8 @@ describe('Logger', () => {
 
   it('catches errors when suppressed', () => {
     let loggedEvents = [];
-    const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
-    const logger = new Logger(TypeMoq.Mock.ofType<Pipeline>().object);
+    const mockPipeline = TypeMoq.Mock.ofType(Pipeline);
+    const logger = new Logger(TypeMoq.Mock.ofType(Pipeline).object);
     expect(() => logger.fatal(undefined)).to.not.throw();
     expect(() => logger.error(undefined)).to.not.throw();
     expect(() => logger.warn(undefined)).to.not.throw();
@@ -109,8 +109,8 @@ describe('Logger', () => {
 
   it('throws errors when not suppressed', () => {
     let loggedEvents = [];
-    const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
-    const logger = new Logger(TypeMoq.Mock.ofType<Pipeline>().object, false);
+    const mockPipeline = TypeMoq.Mock.ofType(Pipeline);
+    const logger = new Logger(TypeMoq.Mock.ofType(Pipeline).object, false);
     expect(() => logger.fatal(undefined)).to.throw();
     expect(() => logger.error(undefined)).to.throw();
     expect(() => logger.warn(undefined)).to.throw();
@@ -121,7 +121,7 @@ describe('Logger', () => {
 
   describe('emit()', () => {
     it('emits events to the pipeline', () => {
-      const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+      const mockPipeline = TypeMoq.Mock.ofType(Pipeline);
       mockPipeline.setup(m => m.emit(TypeMoq.It.isAny()));
       const logger = new Logger(mockPipeline.object);
       logger.emit([new LogEvent('', LogEventLevel.information, new MessageTemplate('Test'))]);
@@ -129,14 +129,14 @@ describe('Logger', () => {
     });
 
     it('catches errors when suppressed', () => {
-      const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+      const mockPipeline = TypeMoq.Mock.ofType(Pipeline);
       mockPipeline.setup(m => m.emit(TypeMoq.It.isAny())).throws(new Error('Error'));
       const logger = new Logger(mockPipeline.object);
       expect(() => logger.emit([])).to.not.throw();
     });
 
     it('throws errors when not suppressed', () => {
-      const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+      const mockPipeline = TypeMoq.Mock.ofType(Pipeline);
       mockPipeline.setup(m => m.emit(TypeMoq.It.isAny())).throws(new Error('Error'));
       const logger = new Logger(mockPipeline.object, false);
       expect(() => logger.emit([])).to.throw();
@@ -145,7 +145,7 @@ describe('Logger', () => {
 
   describe('flush()', () => {
     it('flushes the pipeline', () => {
-      const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+      const mockPipeline = TypeMoq.Mock.ofType(Pipeline);
       mockPipeline.setup(m => m.flush()).returns(() => Promise.resolve());
       const logger = new Logger(mockPipeline.object);
       logger.flush();
@@ -153,14 +153,14 @@ describe('Logger', () => {
     });
 
     it('catches errors when suppressed', () => {
-      const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+      const mockPipeline = TypeMoq.Mock.ofType(Pipeline);
       mockPipeline.setup(m => m.flush()).returns(() => Promise.reject('Error'));
       const logger = new Logger(mockPipeline.object);
       return logger.flush();
     });
 
     it('throws errors when not suppressed', () => {
-      const mockPipeline = TypeMoq.Mock.ofType<Pipeline>();
+      const mockPipeline = TypeMoq.Mock.ofType(Pipeline);
       mockPipeline.setup(m => m.flush()).returns(() => Promise.reject('Error'));
       const logger = new Logger(mockPipeline.object, false);
       return logger.flush().then(
