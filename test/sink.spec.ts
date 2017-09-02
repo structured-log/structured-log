@@ -24,8 +24,8 @@ describe('SinkStage', () => {
       ];
       sinkStage.emit(events);
       expect(emittedEvents).to.have.length(2);
-      expect(emittedEvents[0]).to.equal(events[0]);
-      expect(emittedEvents[1]).to.equal(events[1]);
+      expect(emittedEvents[0]).to.deep.equal(events[0]);
+      expect(emittedEvents[1]).to.deep.equal(events[1]);
     });
 
     it('returns the emitted events', () => {
