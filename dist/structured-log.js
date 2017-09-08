@@ -71,7 +71,7 @@ function isEnabled(level, target) {
 /**
  * Represents a log event.
  */
-var LogEvent = (function () {
+var LogEvent = /** @class */ (function () {
     /**
      * Creates a new log event instance.
      */
@@ -89,7 +89,7 @@ var tokenizer = /\{@?\w+}/g;
 /**
  * Represents a message template that can be rendered into a log message.
  */
-var MessageTemplate = (function () {
+var MessageTemplate = /** @class */ (function () {
     /**
      * Creates a new MessageTemplate instance with the given template.
      */
@@ -232,7 +232,7 @@ var MessageTemplate = (function () {
 /**
  * Logs events.
  */
-var Logger = (function () {
+var Logger = /** @class */ (function () {
     /**
      * Creates a new logger instance using the specified pipeline.
      */
@@ -387,7 +387,7 @@ var Logger = (function () {
     return Logger;
 }());
 
-var ConsoleSink = (function () {
+var ConsoleSink = /** @class */ (function () {
     function ConsoleSink(options) {
         this.options = options || {};
         var internalConsole = this.options.console || typeof console !== 'undefined' && console || null;
@@ -459,7 +459,7 @@ var defaultBatchedSinkOptions = {
     period: 5,
     durableStore: null
 };
-var BatchedSink = (function () {
+var BatchedSink = /** @class */ (function () {
     function BatchedSink(innerSink, options) {
         this.durableStorageKey = 'structured-log-batched-sink-durable-cache';
         this.innerSink = innerSink || null;
@@ -536,7 +536,7 @@ var BatchedSink = (function () {
     return BatchedSink;
 }());
 
-var FilterStage = (function () {
+var FilterStage = /** @class */ (function () {
     function FilterStage(predicate) {
         this.predicate = predicate;
     }
@@ -552,7 +552,7 @@ var FilterStage = (function () {
 /**
  * Allows dynamic control of the logging level.
  */
-var DynamicLevelSwitch = (function () {
+var DynamicLevelSwitch = /** @class */ (function () {
     function DynamicLevelSwitch() {
         this.minLevel = null;
         /**
@@ -594,7 +594,7 @@ var DynamicLevelSwitch = (function () {
     };
     return DynamicLevelSwitch;
 }());
-var DynamicLevelSwitchStage = (function (_super) {
+var DynamicLevelSwitchStage = /** @class */ (function (_super) {
     __extends(DynamicLevelSwitchStage, _super);
     function DynamicLevelSwitchStage(dynamicLevelSwitch) {
         var _this = _super.call(this, function (e) { return dynamicLevelSwitch.isEnabled(e.level); }) || this;
@@ -610,7 +610,7 @@ var DynamicLevelSwitchStage = (function (_super) {
     return DynamicLevelSwitchStage;
 }(FilterStage));
 
-var Pipeline = (function () {
+var Pipeline = /** @class */ (function () {
     function Pipeline() {
         this.stages = [];
         this.eventQueue = [];
@@ -682,7 +682,7 @@ var Pipeline = (function () {
     return Pipeline;
 }());
 
-var SinkStage = (function () {
+var SinkStage = /** @class */ (function () {
     function SinkStage(sink) {
         this.sink = sink;
     }
@@ -696,13 +696,13 @@ var SinkStage = (function () {
     return SinkStage;
 }());
 
-var EnrichStage = (function () {
+var EnrichStage = /** @class */ (function () {
     function EnrichStage(enricher) {
         this.enricher = enricher;
     }
     EnrichStage.prototype.emit = function (events) {
-        var extraProperties = this.enricher instanceof Function ? this.enricher() : this.enricher;
         for (var i = 0; i < events.length; ++i) {
+            var extraProperties = this.enricher instanceof Function ? this.enricher(events[i]) : this.enricher;
             Object.assign(events[i].properties, extraProperties);
         }
         return events;
@@ -716,7 +716,7 @@ var EnrichStage = (function () {
 /**
  * Configures pipelines for new logger instances.
  */
-var LoggerConfiguration = (function () {
+var LoggerConfiguration = /** @class */ (function () {
     function LoggerConfiguration() {
         var _this = this;
         /**

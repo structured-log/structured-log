@@ -1,7 +1,7 @@
 import { PipelineStage } from './pipeline';
 import { LogEvent } from './logEvent';
 
-export type ObjectFactory = () => Object;
+export type ObjectFactory = (event: LogEvent) => Object;
 
 export class EnrichStage implements PipelineStage {
   private enricher: Object | ObjectFactory;
@@ -11,8 +11,8 @@ export class EnrichStage implements PipelineStage {
   }
 
   emit(events: LogEvent[]): LogEvent[] {
-    const extraProperties = this.enricher instanceof Function ? this.enricher() : this.enricher;
     for (let i = 0; i < events.length; ++i) {
+      const extraProperties = this.enricher instanceof Function ? this.enricher(events[i]) : this.enricher;
       Object.assign(events[i].properties, extraProperties);
     }
     return events;

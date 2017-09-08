@@ -1,15 +1,3 @@
-const __assign = Object.assign || function (target) {
-    for (var source, i = 1; i < arguments.length; i++) {
-        source = arguments[i];
-        for (var prop in source) {
-            if (Object.prototype.hasOwnProperty.call(source, prop)) {
-                target[prop] = source[prop];
-            }
-        }
-    }
-    return target;
-};
-
 /**
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/assign
  */
@@ -423,7 +411,7 @@ class BatchedSink {
     constructor(innerSink, options) {
         this.durableStorageKey = 'structured-log-batched-sink-durable-cache';
         this.innerSink = innerSink || null;
-        this.options = __assign({}, defaultBatchedSinkOptions, (options || {}));
+        this.options = Object.assign({}, defaultBatchedSinkOptions, (options || {}));
         this.batchedEvents = [];
         this.cycleBatch();
         if (this.options.durableStore) {
@@ -636,8 +624,8 @@ class EnrichStage {
         this.enricher = enricher;
     }
     emit(events) {
-        const extraProperties = this.enricher instanceof Function ? this.enricher() : this.enricher;
         for (let i = 0; i < events.length; ++i) {
+            const extraProperties = this.enricher instanceof Function ? this.enricher(events[i]) : this.enricher;
             Object.assign(events[i].properties, extraProperties);
         }
         return events;
