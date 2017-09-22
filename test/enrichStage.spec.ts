@@ -38,6 +38,26 @@ describe('EnrichStage', () => {
     expect(enricherParams[1]).to.deep.equal(events[1]);
   });
 
+  it('enriches and masks sensitive data with the enricher function', () => {
+    const enricherParams = [];
+    const enricher = (event) => {
+      let result = { b: 2 };
+
+      if (event.properties.password){
+        result["password"] = "REDACTED";
+      }
+      return result;
+    };
+    const enrichStage = new EnrichStage(enricher);
+    const events = [
+      new LogEvent('', LogEventLevel.information, new MessageTemplate('Message 1'), { password: "secret" }),
+    ];
+    const enrichedEvents = enrichStage.emit(events);
+    expect(enrichedEvents).to.have.length(1);
+    expect(enrichedEvents[0]).to.have.deep.property('properties.password', "REDACTED");
+    expect(enrichedEvents[0]).to.have.deep.property('properties.b', 2);
+  });
+
   it('enriches events with properties from a plain object', () => {
     const enricher = { b: 2 };
     const enrichStage = new EnrichStage(enricher);
