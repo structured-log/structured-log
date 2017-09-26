@@ -341,11 +341,13 @@ class ConsoleSink {
         this.options = options || {};
         const internalConsole = this.options.console || typeof console !== 'undefined' && console || null;
         const stub = function () { };
+        // console.debug is no-op for Node, so use console.log instead.
+        const nodeConsole = !this.options.console && typeof process !== 'undefined' && process.versions.node;
         this.console = {
             error: (internalConsole && (internalConsole.error || internalConsole.log)) || stub,
             warn: (internalConsole && (internalConsole.warn || internalConsole.log)) || stub,
             info: (internalConsole && (internalConsole.info || internalConsole.log)) || stub,
-            debug: (internalConsole && (internalConsole.debug || internalConsole.log)) || stub,
+            debug: (internalConsole && ((!nodeConsole && internalConsole.debug) || internalConsole.log)) || stub,
             log: (internalConsole && internalConsole.log) || stub
         };
     }
@@ -619,13 +621,16 @@ class SinkStage {
     }
 }
 
+const deepClone = (obj) => JSON.parse(JSON.stringify(obj));
 class EnrichStage {
     constructor(enricher) {
         this.enricher = enricher;
     }
     emit(events) {
         for (let i = 0; i < events.length; ++i) {
-            const extraProperties = this.enricher instanceof Function ? this.enricher(events[i]) : this.enricher;
+            const extraProperties = this.enricher instanceof Function
+                ? this.enricher(deepClone(events[i].properties))
+                : this.enricher;
             Object.assign(events[i].properties, extraProperties);
         }
         return events;

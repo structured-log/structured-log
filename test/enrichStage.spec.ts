@@ -1,5 +1,5 @@
 /// <reference path="../node_modules/@types/node/index.d.ts" />
-/// <reference path="../node_modules/@types/mocha/index.d.ts" />
+/// <reference path="../node_modules/@types/jest/index.d.ts" />
 /// <reference path="../node_modules/typemoq/dist/typemoq.d.ts" />
 
 import { expect } from 'chai';
@@ -21,41 +21,37 @@ describe('EnrichStage', () => {
     expect(enrichedEvents[1]).to.have.deep.property('properties.b', 2);
   });
 
-  it('enriches by passing events to the enricher function', () => {
-    const enricherParams = []
-    const enricher = (event) => {
-      enricherParams.push(event)
-      return event;
-    };
-    const enrichStage = new EnrichStage(enricher);
-    const events = [
-      new LogEvent('', LogEventLevel.information, new MessageTemplate('Message 1'), { a: 1 }),
-      new LogEvent('', LogEventLevel.information, new MessageTemplate('Message 2'), { a: 1 })
-    ];
-    const enrichedEvents = enrichStage.emit(events);
-    expect(enricherParams).to.have.length(2);
-    expect(enricherParams[0]).to.deep.equal(events[0]);
-    expect(enricherParams[1]).to.deep.equal(events[1]);
-  });
-
-  it('enriches and masks sensitive data with the enricher function', () => {
+  it('passes the event properties to the enricher to allow conditional masking', () => {
     const enricherParams = [];
-    const enricher = (event) => {
-      let result = { b: 2 };
-
-      if (event.properties.password){
-        result["password"] = "REDACTED";
+    const enricher = (properties) => {
+      if (properties.password) {
+        return {
+          password: 'REDACTED'
+        };
       }
-      return result;
     };
     const enrichStage = new EnrichStage(enricher);
     const events = [
-      new LogEvent('', LogEventLevel.information, new MessageTemplate('Message 1'), { password: "secret" }),
+      new LogEvent('', LogEventLevel.information, new MessageTemplate('Message 1'), { a: 1, password: 'secret' }),
     ];
     const enrichedEvents = enrichStage.emit(events);
     expect(enrichedEvents).to.have.length(1);
-    expect(enrichedEvents[0]).to.have.deep.property('properties.password', "REDACTED");
-    expect(enrichedEvents[0]).to.have.deep.property('properties.b', 2);
+    expect(enrichedEvents[0]).to.have.deep.property('properties.password', 'REDACTED');
+    expect(enrichedEvents[0]).to.have.deep.property('properties.a', 1);
+  });
+  
+  it('does not allow direct manipulation of the event properties', () => {
+    const enricherParams = [];
+    const enricher = (properties) => {
+      delete properties.password;
+    };
+    const enrichStage = new EnrichStage(enricher);
+    const events = [
+      new LogEvent('', LogEventLevel.information, new MessageTemplate('Message 1'), { password: 'secret' }),
+    ];
+    const enrichedEvents = enrichStage.emit(events);
+    expect(enrichedEvents).to.have.length(1);
+    expect(enrichedEvents[0]).to.have.deep.property('properties.password', 'secret');
   });
 
   it('enriches events with properties from a plain object', () => {

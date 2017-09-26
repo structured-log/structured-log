@@ -26,6 +26,10 @@ The above code will print the following to the console:
 
 **structured-log** is distributed through [npm](https://www.npmjs.com/package/structured-log) and [Bower](https://bower.io/). Run the following:
 
+    yarn add structured-log
+
+If not using Yarn:
+
     npm i --save structured-log
 
 Or, using Bower:
@@ -220,6 +224,25 @@ const state = {
 
   .enrich(() => ({ user: state.user.name }))
 ```
+
+The enricher function will receive a copy of the event properties as its first argument, so that you can conditionally mask
+sensitive information from the event. This can be useful when you want to log detailed information in your local console, but not to external sinks further down the pipeline.
+
+```js
+log.info('Incorrect client secret: {Secret}', secret});
+
+// ...
+
+  .enrich((properties) => {
+    if (properties.secret) {
+      return {
+        secret: 'MASKED'
+      };
+    }
+  })
+```
+
+> The `properties` argument is a deep clone of the event properties, and cannot be used to manipulate the source object directly (e.g. `delete properties.secret`).
 
 ### Errors
 
