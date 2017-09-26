@@ -1,7 +1,9 @@
 import { PipelineStage } from './pipeline';
 import { LogEvent } from './logEvent';
 
-export type ObjectFactory = (event: LogEvent) => Object;
+const deepClone = (obj: any) => JSON.parse(JSON.stringify(obj));
+
+export type ObjectFactory = (properties?: Object) => Object;
 
 export class EnrichStage implements PipelineStage {
   private enricher: Object | ObjectFactory;
@@ -12,7 +14,9 @@ export class EnrichStage implements PipelineStage {
 
   emit(events: LogEvent[]): LogEvent[] {
     for (let i = 0; i < events.length; ++i) {
-      const extraProperties = this.enricher instanceof Function ? this.enricher(events[i]) : this.enricher;
+      const extraProperties = this.enricher instanceof Function
+        ? this.enricher(deepClone(events[i].properties))
+        : this.enricher;
       Object.assign(events[i].properties, extraProperties);
     }
     return events;
