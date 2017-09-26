@@ -44,6 +44,7 @@
   "devDependencies": {
     "@types/chai": "^3.4.34",
     "@types/es6-promise": "0.0.32",
+    "@types/jest": "^21.1.1",
     "@types/node": "^6.0.57",
     "chai": "^3.5.0",
     "coveralls": "^2.11.15",
@@ -56,8 +57,5 @@
     "ts-node": "^3.0.0",
     "typemoq": "^1.1.0",
     "typescript": "^2.1.4"
-  },
-  "dependencies": {
-    "@types/jest": "^21.1.1"
   }
 }
