@@ -4,6 +4,7 @@
   "description": "A structured logging framework for JavaScript, inspired by Serilog.",
   "main": "dist/structured-log.js",
   "jsnext:main": "dist/structured-log.es6.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "test": "jest",
     "test-watch": "jest --watch",
