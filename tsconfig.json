@@ -2,8 +2,8 @@
   "compilerOptions": {
     "target": "es5"
   },
-  "files": [
-    "**/*.ts",
-    "test/polyfills.ts"
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts"
   ]
 }
