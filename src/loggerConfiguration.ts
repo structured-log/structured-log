@@ -6,7 +6,7 @@ import { FilterStage } from './filterStage';
 import { Sink, SinkStage } from './sink';
 import { EnrichStage, ObjectFactory } from './enrichStage';
 
-interface MinLevel extends LogEventLevelSwitch<LoggerConfiguration> {
+export interface MinLevel extends LogEventLevelSwitch<LoggerConfiguration> {
   (levelOrSwitch: LogEventLevel | string | number | DynamicLevelSwitch): LoggerConfiguration;
 }
 
