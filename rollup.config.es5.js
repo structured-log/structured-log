@@ -1,13 +1,15 @@
 import typescript from 'rollup-plugin-typescript2';
 
 export default {
-  entry: 'src/index.ts',
-  dest: 'dist/structured-log.js',
-  format: 'umd',
+  input: 'src/index.ts',
+  output: {
+    format: 'umd',
+    file: 'dist/structured-log.js'
+  },
   plugins: [typescript({
     target: 'es5',
     typescript: require('typescript')
   })],
-  moduleName: 'structuredLog',
-  sourceMap: true
+  name: 'structuredLog',
+  sourcemap: true
 }
