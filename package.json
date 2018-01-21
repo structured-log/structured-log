@@ -4,13 +4,15 @@
   "description": "A structured logging framework for JavaScript, inspired by Serilog.",
   "main": "dist/structured-log.js",
   "jsnext:main": "dist/structured-log.es6.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "test": "jest",
     "test-watch": "jest --watch",
     "test-coverage": "jest --coverage",
     "build-es5": "rollup -c rollup.config.es5.js",
     "build-es6": "rollup -c rollup.config.es6.js",
-    "build": "npm run build-es5 && npm run build-es6",
+    "build": "npm run clean-cache && npm run build-es5 && npm run build-es6",
+    "clean-cache": "rimraf .rpt2_cache",
     "prepublish": "npm run build"
   },
   "jest": {
@@ -51,10 +53,12 @@
     "es6-promise": "^4.0.5",
     "es6-symbol": "^3.1.0",
     "jest": "^21.1.0",
-    "rollup": "^0.40.1",
-    "rollup-plugin-typescript": "^0.8.1",
+    "rimraf": "^2.6.2",
+    "rollup": "^0.50.0",
+    "rollup-plugin-typescript2": "^0.9.0",
     "ts-jest": "^21.0.1",
     "ts-node": "^3.0.0",
+    "tslib": "^1.8.1",
     "typemoq": "^1.1.0",
     "typescript": "^2.1.4"
   }
