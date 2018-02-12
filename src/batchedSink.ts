@@ -102,6 +102,8 @@ export class BatchedSink implements Sink {
             this.batchedEvents.length = 0;
             return this.options.durableStore.removeItem(previousBatchKey)
           });
+      }else {
+          this.batchedEvents.length = 0;
       }
       
     }
