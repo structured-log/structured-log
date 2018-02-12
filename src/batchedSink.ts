@@ -98,9 +98,12 @@ export class BatchedSink implements Sink {
       if (this.options.durableStore) {
         const previousBatchKey = this.batchKey;
         (emitPromise instanceof Promise ? emitPromise : Promise.resolve())
-          .then(() => this.options.durableStore.removeItem(previousBatchKey));
+          .then(() => {
+            this.batchedEvents.length = 0;
+            return this.options.durableStore.removeItem(previousBatchKey)
+          });
       }
-      this.batchedEvents.length = 0;
+      
     }
     this.batchKey = `${this.durableStorageKey}-${new Date().getTime()}`;
     if (!isNaN(this.options.period) && this.options.period > 0) {
