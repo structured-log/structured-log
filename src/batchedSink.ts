@@ -64,7 +64,8 @@ export class BatchedSink implements Sink {
       this.batchedEvents.push(...events);
       this.storeEvents();
     } else {
-      let cursor = this.options.maxSize - this.batchedEvents.length;
+      let cursor = this.options.maxSize - this.batchedEvents.length < 0 ? 0 :
+          this.options.maxSize - this.batchedEvents.length;
       this.batchedEvents.push(...events.slice(0, cursor));
       this.storeEvents();
       while (cursor < events.length) {
@@ -94,18 +95,18 @@ export class BatchedSink implements Sink {
   protected cycleBatch() {
     clearTimeout(this.batchTimeout);
     if (this.batchedEvents.length) {
-      const emitPromise = this.emitCore(this.batchedEvents.slice(0));
-      if (this.options.durableStore) {
-        const previousBatchKey = this.batchKey;
-        (emitPromise instanceof Promise ? emitPromise : Promise.resolve())
+      var processEvents = this.batchedEvents.slice(0);
+      this.batchedEvents.length = 0;
+      const emitPromise = this.emitCore(processEvents);
+      (emitPromise instanceof Promise ? emitPromise : Promise.resolve())
           .then(() => {
-            this.batchedEvents.length = 0;
-            return this.options.durableStore.removeItem(previousBatchKey)
-          });
-      }else {
-          this.batchedEvents.length = 0;
-      }
-      
+            if(this.options.durableStore){
+              const previousBatchKey = this.batchKey;
+              return this.options.durableStore.removeItem(previousBatchKey)
+            }
+          }).catch(() => {
+            this.batchedEvents.unshift(...processEvents)
+          })
     }
     this.batchKey = `${this.durableStorageKey}-${new Date().getTime()}`;
     if (!isNaN(this.options.period) && this.options.period > 0) {
