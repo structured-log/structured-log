@@ -1,26 +1,8 @@
 (function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
-    typeof define === 'function' && define.amd ? define(['exports'], factory) :
-    (factory((global.structuredLog = global.structuredLog || {})));
+	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
+	typeof define === 'function' && define.amd ? define(['exports'], factory) :
+	(factory((global.structuredLog = {})));
 }(this, (function (exports) { 'use strict';
-
-const __assign = Object.assign || function (target) {
-    for (var source, i = 1; i < arguments.length; i++) {
-        source = arguments[i];
-        for (var prop in source) {
-            if (Object.prototype.hasOwnProperty.call(source, prop)) {
-                target[prop] = source[prop];
-            }
-        }
-    }
-    return target;
-};
-
-function __extends(d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-}
 
 /**
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/assign
@@ -393,7 +375,10 @@ var ConsoleSink = /** @class */ (function () {
         var internalConsole = this.options.console || typeof console !== 'undefined' && console || null;
         var stub = function () { };
         // console.debug is no-op for Node, so use console.log instead.
-        var nodeConsole = !this.options.console && typeof process !== 'undefined' && process.versions.node;
+        var nodeConsole = !this.options.console &&
+            typeof process !== 'undefined' &&
+            process.versions &&
+            process.versions.node;
         this.console = {
             error: (internalConsole && (internalConsole.error || internalConsole.log)) || stub,
             warn: (internalConsole && (internalConsole.warn || internalConsole.log)) || stub,
@@ -456,6 +441,46 @@ var ConsoleSink = /** @class */ (function () {
     return ConsoleSink;
 }());
 
+/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
+
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+/* global Reflect, Promise */
+
+var extendStatics = function(d, b) {
+    extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return extendStatics(d, b);
+};
+
+function __extends(d, b) {
+    extendStatics(d, b);
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+}
+
+var __assign = function() {
+    __assign = Object.assign || function __assign(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
+
 var defaultBatchedSinkOptions = {
     maxSize: 100,
     period: 5,
@@ -490,7 +515,8 @@ var BatchedSink = /** @class */ (function () {
             this.storeEvents();
         }
         else {
-            var cursor = this.options.maxSize - this.batchedEvents.length;
+            var cursor = this.options.maxSize - this.batchedEvents.length < 0 ? 0 :
+                this.options.maxSize - this.batchedEvents.length;
             (_b = this.batchedEvents).push.apply(_b, events.slice(0, cursor));
             this.storeEvents();
             while (cursor < events.length) {
@@ -517,13 +543,19 @@ var BatchedSink = /** @class */ (function () {
         var _this = this;
         clearTimeout(this.batchTimeout);
         if (this.batchedEvents.length) {
-            var emitPromise = this.emitCore(this.batchedEvents.slice(0));
-            if (this.options.durableStore) {
-                var previousBatchKey_1 = this.batchKey;
-                (emitPromise instanceof Promise ? emitPromise : Promise.resolve())
-                    .then(function () { return _this.options.durableStore.removeItem(previousBatchKey_1); });
-            }
+            var processEvents = this.batchedEvents.slice(0);
             this.batchedEvents.length = 0;
+            var emitPromise = this.emitCore(processEvents);
+            (emitPromise instanceof Promise ? emitPromise : Promise.resolve())
+                .then(function () {
+                if (_this.options.durableStore) {
+                    var previousBatchKey = _this.batchKey;
+                    return _this.options.durableStore.removeItem(previousBatchKey);
+                }
+            }).catch(function () {
+                (_a = _this.batchedEvents).unshift.apply(_a, processEvents);
+                var _a;
+            });
         }
         this.batchKey = this.durableStorageKey + "-" + new Date().getTime();
         if (!isNaN(this.options.period) && this.options.period > 0) {
@@ -733,7 +765,6 @@ var LoggerConfiguration = /** @class */ (function () {
             }
             else if (levelOrSwitch instanceof DynamicLevelSwitch) {
                 var switchStage = new DynamicLevelSwitchStage(levelOrSwitch);
-                var flush = _this.pipeline.flush;
                 switchStage.setFlushDelegate(function () { return _this.pipeline.flush(); });
                 _this.pipeline.addStage(switchStage);
                 return _this;
