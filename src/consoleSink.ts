@@ -27,7 +27,10 @@ export class ConsoleSink implements Sink {
     const stub = function () { };
 
     // console.debug is no-op for Node, so use console.log instead.
-    const nodeConsole = !this.options.console && typeof process !== 'undefined' && process.versions.node;
+    const nodeConsole = !this.options.console &&
+      typeof process !== 'undefined' &&
+      process.versions &&
+      process.versions.node;
 
     this.console = {
       error: (internalConsole && (internalConsole.error || internalConsole.log)) || stub,
