@@ -1,6 +1,6 @@
 {
   "name": "structured-log",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A structured logging framework for JavaScript, inspired by Serilog.",
   "main": "dist/structured-log.js",
   "jsnext:main": "dist/structured-log.es6.js",
@@ -9,16 +9,11 @@
     "test": "jest",
     "test-watch": "jest --watch",
     "test-coverage": "jest --coverage",
-    "build-es5": "rollup -c rollup.config.es5.js",
-    "build-es6": "rollup -c rollup.config.es6.js",
-    "build": "npm run clean-cache && npm run build-es5 && npm run build-es6",
-    "clean-cache": "rimraf .rpt2_cache",
+    "build": "rimraf .rpt2_cache && rollup -c",
     "prepublish": "npm run build"
   },
   "jest": {
-    "transform": {
-      "^.+\\.tsx?$": "./node_modules/ts-jest/preprocessor.js"
-    },
+    "transform": { ".tsx?$": "ts-jest" },
     "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$",
     "moduleFileExtensions": [
       "ts",
@@ -48,19 +43,19 @@
     "@types/chai": "^3.4.34",
     "@types/es6-promise": "0.0.32",
     "@types/jest": "^23.3.1",
-    "@types/node": "^6.0.57",
+    "@types/node": "^6.0.116",
     "chai": "^3.5.0",
     "coveralls": "^2.11.15",
     "es6-promise": "^4.0.5",
     "es6-symbol": "^3.1.0",
-    "jest": "^23.4.1",
+    "jest": "^23.5.0",
     "rimraf": "^2.6.2",
-    "rollup": "^0.50.0",
-    "rollup-plugin-typescript2": "^0.9.0",
-    "ts-jest": "^23.0.1",
-    "ts-node": "^3.0.0",
+    "rollup": "^0.65.0",
+    "rollup-plugin-typescript2": "^0.17.0",
+    "ts-jest": "^23.1.4",
+    "ts-node": "^3.3.0",
     "tslib": "^1.8.1",
     "typemoq": "^1.1.0",
-    "typescript": "^2.1.4"
+    "typescript": "^2.9.2"
   }
 }

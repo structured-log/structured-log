@@ -3,7 +3,6 @@
  */
 if (typeof Object.assign != 'function') {
     Object.assign = function (target, varArgs) {
-        'use strict';
         if (target == null) {
             throw new TypeError('Cannot convert undefined or null to object');
         }
@@ -182,7 +181,6 @@ var MessageTemplate = /** @class */ (function () {
         }
         return property.toString();
     };
-    
     MessageTemplate.prototype.capture = function (property, destructure) {
         if (typeof property === 'function') {
             return property.toString();
@@ -504,6 +502,7 @@ var BatchedSink = /** @class */ (function () {
         }
     }
     BatchedSink.prototype.emit = function (events) {
+        var _a, _b, _c;
         if (this.batchedEvents.length + events.length <= this.options.maxSize) {
             (_a = this.batchedEvents).push.apply(_a, events);
             this.storeEvents();
@@ -520,7 +519,6 @@ var BatchedSink = /** @class */ (function () {
             }
         }
         return events;
-        var _a, _b, _c;
     };
     BatchedSink.prototype.flush = function () {
         this.cycleBatch();
@@ -547,8 +545,8 @@ var BatchedSink = /** @class */ (function () {
                     return _this.options.durableStore.removeItem(previousBatchKey);
                 }
             }).catch(function () {
-                (_a = _this.batchedEvents).unshift.apply(_a, processEvents);
                 var _a;
+                (_a = _this.batchedEvents).unshift.apply(_a, processEvents);
             });
         }
         this.batchKey = this.durableStorageKey + "-" + new Date().getTime();
@@ -759,6 +757,7 @@ var LoggerConfiguration = /** @class */ (function () {
             }
             else if (levelOrSwitch instanceof DynamicLevelSwitch) {
                 var switchStage = new DynamicLevelSwitchStage(levelOrSwitch);
+                var flush = _this.pipeline.flush;
                 switchStage.setFlushDelegate(function () { return _this.pipeline.flush(); });
                 _this.pipeline.addStage(switchStage);
                 return _this;

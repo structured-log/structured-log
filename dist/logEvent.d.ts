@@ -9,7 +9,7 @@ export declare enum LogEventLevel {
     warning = 7,
     information = 15,
     debug = 31,
-    verbose = 63,
+    verbose = 63
 }
 /**
  * Represents an object that can switch between log levels.

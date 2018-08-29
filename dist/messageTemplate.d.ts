@@ -23,7 +23,7 @@ export declare class MessageTemplate {
      * @returns Object containing the properties.
      */
     bindProperties(positionalArgs: any): Object;
-    private tokenize(template);
-    private toText(property);
-    private capture(property, destructure?);
+    private tokenize;
+    private toText;
+    private capture;
 }

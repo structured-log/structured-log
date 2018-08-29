@@ -98,5 +98,5 @@ export declare class Logger implements Sink {
      * Emits events through this logger's pipeline.
      */
     emit(events: LogEvent[]): LogEvent[];
-    private write(level, rawMessageTemplate, unboundProperties, error?);
+    private write;
 }

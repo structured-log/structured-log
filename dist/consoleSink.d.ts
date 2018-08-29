@@ -19,5 +19,5 @@ export declare class ConsoleSink implements Sink {
     constructor(options?: ConsoleSinkOptions);
     emit(events: LogEvent[]): void;
     flush(): Promise<{}>;
-    private writeToConsole(logMethod, prefix, e);
+    private writeToConsole;
 }

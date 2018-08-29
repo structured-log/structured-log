@@ -28,5 +28,5 @@ export declare class BatchedSink implements Sink {
     protected emitCore(events: LogEvent[]): any;
     protected flushCore(): Promise<any>;
     protected cycleBatch(): void;
-    private storeEvents();
+    private storeEvents;
 }
