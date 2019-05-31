@@ -229,7 +229,7 @@ The enricher function will receive a copy of the event properties as its first a
 sensitive information from the event. This can be useful when you want to log detailed information in your local console, but not to external sinks further down the pipeline.
 
 ```js
-log.info('Incorrect client secret: {Secret}', secret});
+log.info('Incorrect client secret: {Secret}', secret);
 
 // ...
 
@@ -319,4 +319,4 @@ It supports the following properties:
 |---|---|---|
 |`durableStore`|An instance implementing the [Web Storage API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API) interface (such as `localStorage` in the browser, or [node-localstorage](https://github.com/lmaccherone/node-localstorage) for Node.js applications). If this is set, it will be used as an intermediate store for events until they have been successfully flushed through the pipeline.|`null`|
 |`maxSize`|The maximum number of events in a single batch. The sink will be flushed immediately when this limit is hit.|`100`|
-|`period`|The interval for autmoatic flushing of batches, in seconds.|`10`|
+|`period`|The interval for automatic flushing of batches, in seconds.|`10`|
